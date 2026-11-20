@@ -66,3 +66,85 @@ if missing:
     sys.exit("unused snippets: %s" % sorted(missing))
 (here / "index.html").write_text(out)
 print("index.html", len(out.encode()), "bytes,", len(used), "code blocks")
+
+# README.md, the repository's front page on GitHub: the same handbook, in English, with the same code.
+# GitHub shows no style or script, so there is no language switch, no schematic and no copy button:
+# French and Spanish stay in index.html. Never edit README.md by hand: it is rewritten here.
+from html.parser import HTMLParser
+
+class English(HTMLParser):
+    """Keep the blocks in English or with no lang. Drop the other languages, the schematic, scripts."""
+    VOID = {"br", "hr", "img", "wbr", "input", "meta", "link", "source"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.out, self.drop, self.toc, self.head = [], 0, [], None
+
+    def emit(self, s):
+        if not self.drop:
+            self.out.append(s)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if self.drop:
+            self.drop += tag not in self.VOID
+        elif a.get("lang", "en") != "en" or tag in ("svg", "script", "style", "button"):
+            if tag == "svg":
+                self.out.append("<p><em>The schematic is in tao/index.html.</em></p>")
+            self.drop = tag not in self.VOID
+        else:
+            self.out.append(self.get_starttag_text())
+            if tag in ("h2", "h3") and a.get("id"):
+                self.head = (tag, a["id"], len(self.out))
+
+    def handle_startendtag(self, tag, attrs):
+        if not self.drop and dict(attrs).get("lang", "en") == "en" and tag != "svg":
+            self.out.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        if self.drop:
+            self.drop -= tag not in self.VOID
+            return
+        if self.head and tag == self.head[0]:
+            text = re.sub(r'<span class="st[ "].*?</span>', "", "".join(self.out[self.head[2]:]))  # no status mark
+            self.toc.append((tag, self.head[1], re.sub(r"<[^>]*>", "", text).strip()))
+            self.head = None
+        self.out.append("</%s>" % tag)
+
+    def handle_data(self, d): self.emit(d)
+    def handle_entityref(self, n): self.emit("&%s;" % n)
+    def handle_charref(self, n): self.emit("&#%s;" % n)
+
+p = English()
+p.feed(out.split("<main>", 1)[1].split("</main>", 1)[0])
+p.close()
+if p.drop:
+    sys.exit("README.md: a tag is left open in tao.src.html")
+
+toc, part = ["<ul>"], False             # the parts (h2), each with its sections (h3)
+for tag, hid, text in p.toc:
+    item = '<a href="#%s">%s</a>' % (hid, text)
+    if tag == "h2":
+        toc.append(("</ul></li>" if part else "") + "<li>" + item + "<ul>")
+        part = True
+    else:
+        toc.append("<li>" + item + "</li>")
+toc.append(("</ul></li>" if part else "") + "</ul>")
+
+# Markdown reads raw HTML only up to the first blank line: no blank line outside the code, and an
+# empty line inside the code becomes a space (&#32;), which looks the same.
+parts = re.split(r"(<pre.*?</pre>)", "".join(p.out), flags=re.S)
+body = "".join(re.sub(r"\n[ \t]*(?=\n)", "", s) if i % 2 == 0 else re.sub(r"(?m)^[ \t]*$", "&#32;", s)
+               for i, s in enumerate(parts))
+readme = ("<!-- Written by tao/build.py from tao/tao.src.html. Edit the source and run build.py: never this file. -->\n\n"
+          "<div>\n"
+          "<p><em>This is the Sparrows Tao in English. In English, French and Spanish: <a href=\"tao/index.html\">tao/index.html</a>, "
+          "to download and open in a browser.<br>\n"
+          "Le Sparrows Tao en français, anglais et espagnol : <a href=\"tao/index.html\">tao/index.html</a>, à télécharger "
+          "et à ouvrir dans un navigateur.<br>\n"
+          "El Sparrows Tao en español, inglés y francés: <a href=\"tao/index.html\">tao/index.html</a>, para descargar y abrir "
+          "en un navegador.</em></p>\n"
+          "<details><summary>Contents</summary>\n" + "\n".join(toc) + "\n</details>\n"
+          + body.strip("\n") + "\n</div>\n")
+(here.parent / "README.md").write_text(readme)
+print("README.md", len(readme.encode()), "bytes,", readme.count("<pre"), "code blocks")
