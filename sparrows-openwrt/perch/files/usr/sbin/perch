@@ -1,0 +1,40 @@
+#!/bin/sh
+# perch: switch this perch between flyway roles, or show its state.
+#   perch ap  [channel]   this end beacons and does the radar duty (one AP per flyway)
+#   perch sta [channel]   this end follows its AP (default after flashing)
+#   perch status
+# Channel: outdoor FR, HT20 = 100 104 108 112 116 132 136 140 (120-128 forbidden: weather radar).
+
+OK_CHANNELS='100 104 108 112 116 132 136 140'
+
+R=$(uci -q get wireless.flyway.device) || { echo "no flyway interface: not a perch image?" >&2; exit 1; }
+
+case "$1" in
+ap|sta)
+	if [ -n "$2" ]; then
+		case " $OK_CHANNELS " in
+			*" $2 "*) uci set wireless.$R.channel="$2" ;;
+			*) echo "channel $2 not allowed outdoors. Use one of: $OK_CHANNELS" >&2; exit 1 ;;
+		esac
+	fi
+	uci set wireless.flyway.mode="$1"
+	if [ "$1" = ap ]; then uci set wireless.flyway.hidden='1'; else uci -q delete wireless.flyway.hidden; fi
+	uci commit wireless
+	wifi
+	echo "flyway: $1 on channel $(uci get wireless.$R.channel)."
+	if [ "$1" = ap ]; then
+		echo "The AP listens 60 s for radar before it transmits: wait for DFS-CAC-COMPLETED in logread."
+	fi
+	;;
+status)
+	echo "role: $(uci get wireless.flyway.mode)  channel: $(uci get wireless.$R.channel)  txpower: $(uci -q get wireless.$R.txpower) dBm"
+	iw dev 2>/dev/null | grep -e Interface -e channel -e txpower
+	batctl if
+	batctl n          # neighbours on the flyway (needs batctl-default, not -tiny)
+	logread | grep -i -e cac -e connected | tail -n 5
+	;;
+*)
+	sed -n '2,7s/^# \{0,1\}//p' "$0"
+	exit 1
+	;;
+esac

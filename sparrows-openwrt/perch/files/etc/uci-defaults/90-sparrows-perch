@@ -1,0 +1,63 @@
+#!/bin/sh
+# Sparrows-Network: perch = backbone radio on a mast, one end of a flyway.
+# 5 GHz AP + client carrying batman-adv (802.11s does not work on DFS channels).
+# Every perch boots as a CLIENT. Make the one perch per flyway that does the radar
+# duty an AP with:  perch ap [channel]   (see /usr/sbin/perch)
+# Status: NOT YET TESTED as an image (same radio settings as the retired per-node script, which ran in IPv6 on 2026-11-14).
+
+. /etc/sparrows/station          # ROLE, TX2, TX5
+
+CHANNEL='108'                    # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
+SSID='wifilibre-link'            # same as the running flyway, so new perches join it
+KEY=$(cat /etc/sparrows/flyway.key)
+chmod 600 /etc/sparrows/flyway.key
+# Key must be 8-63 printable ASCII, or the flyway never links (tested 2026-11-14, Sparrows Tao, Pitfalls).
+# build.sh already refuses a bad key; this only catches a hand-edited flyway.key.
+printf '%s' "$KEY" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
+	logger -p daemon.err -t sparrows "flyway.key is not 8-63 printable ASCII: the flyway will not link"
+
+# --- batman-adv on the flyway, bridged with Ethernet in br-lan ---
+uci set network.bat0=interface
+uci set network.bat0.proto='batadv'
+uci set network.bat0.routing_algo='BATMAN_IV'
+uci set network.bat0.bridge_loop_avoidance='1'   # needed once a site switch holds 2 batman nodes (perch, hedge)
+uci set network.mesh0=interface
+uci set network.mesh0.proto='batadv_hardif'
+uci set network.mesh0.master='bat0'
+uci set network.mesh0.mtu='1536'          # batman header, avoids fragmentation
+BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
+uci -q del_list network.$BR.ports='bat0'
+uci add_list network.$BR.ports='bat0'
+uci commit network
+
+# --- Radio: the 5 GHz radio carries the flyway, any other radio is off ---
+[ -s /etc/config/wireless ] || wifi config
+R5=''
+for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q delete wireless.default_$r
+	if [ -z "$R5" ] && [ "$(uci -q get wireless.$r.band)" = '5g' ]; then
+		R5=$r
+	else
+		uci set wireless.$r.disabled='1'
+	fi
+done
+if [ -n "$R5" ]; then
+	uci set wireless.$R5.disabled='0'
+	uci set wireless.$R5.country='FR'
+	uci set wireless.$R5.channel="$CHANNEL"
+	uci set wireless.$R5.htmode='HT20'
+	uci set wireless.$R5.txpower="$TX5"
+	uci set wireless.$R5.log_level='4'
+
+	uci -q delete wireless.mesh               # no 802.11s
+	uci set wireless.flyway=wifi-iface
+	uci set wireless.flyway.device="$R5"
+	uci set wireless.flyway.mode='sta'        # safe default: a client only transmits after hearing its AP
+	uci set wireless.flyway.ssid="$SSID"
+	uci set wireless.flyway.encryption='sae'
+	uci set wireless.flyway.key="$KEY"
+	uci set wireless.flyway.network='mesh0'
+fi
+uci commit wireless
+
+exit 0

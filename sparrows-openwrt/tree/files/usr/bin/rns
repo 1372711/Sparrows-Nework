@@ -1,0 +1,8 @@
+#!/bin/sh
+# rns: the Reticulum tools on a Sparrows tree, with its config.
+#   rns status          interfaces and traffic (rnstatus)
+#   rns path <hash>     is there a path to this destination (rnpath)
+#   rns probe <...>     (rnprobe)
+[ -n "$1" ] || { sed -n '2,5s/^# \{0,1\}//p' "$0"; exit 1; }
+TOOL=$1; shift
+PYTHONPATH=/usr/lib/sparrows/python exec /usr/bin/python3 -m "RNS.Utilities.rn$TOOL" --config /etc/reticulum "$@"

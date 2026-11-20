@@ -1,0 +1,15 @@
+# Sparrows-Network tree: Reticulum transport node. Status: NOT YET TESTED on OpenWrt.
+[reticulum]
+  enable_transport = Yes          # a tree relays for the others
+  share_instance = Yes            # rns status and the other tools use this rnsd
+  panic_on_interface_error = No
+
+[logging]
+  loglevel = 2                    # errors only: a tree remembers as little as possible
+
+[interfaces]
+  # The village's open Wi-Fi, through the client interface (wsta)
+  [[Sparrows]]
+    type = AutoInterface
+    enabled = yes
+    devices = wsta

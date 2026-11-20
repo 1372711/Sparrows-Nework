@@ -1,0 +1,73 @@
+#!/bin/sh
+# Sparrows-Network: hedge = a feeder and a perch in one box (example: EAP225-Outdoor).
+#   5 GHz radio:   open "Sparrows" Wi-Fi for people's devices, as on a feeder.
+#   2.4 GHz radio: 802.11s mesh to the neighbouring hedges, carrying batman-adv
+#                  (802.11s works on 2.4 GHz, never on DFS channels), plus the same
+#                  open "Sparrows" Wi-Fi for devices that only have 2.4 GHz.
+# No AP / client roles: every hedge on the same channel and mesh ID finds the others.
+# Bridge only (base in 10-sparrows-common): no IPv4, no DHCP, no RA, no firewall, no Reticulum.
+# Status: NOT YET TESTED.
+
+. /etc/sparrows/station          # ROLE, TX2, TX5
+
+SSID='Sparrows'
+MESH_ID='sparrows-hedge'         # same on every hedge of the village
+CH2='1'                          # fixed, same on every hedge (a mesh can't use ACS): 1, 6 or 11
+CH5='132'                        # open Wi-Fi, outdoor DFS, VHT40 = 132+136. Never 120-128
+KEY=$(cat /etc/sparrows/hedge.key)
+chmod 600 /etc/sparrows/hedge.key
+# 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Sparrows Tao, Pitfalls).
+printf '%s' "$KEY" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
+	logger -p daemon.err -t sparrows "hedge.key is not 8-63 printable ASCII: hedges will not mesh"
+
+# --- batman-adv on the 2.4 GHz mesh, bridged with Ethernet and the open Wi-Fi in br-lan ---
+uci set network.bat0=interface
+uci set network.bat0.proto='batadv'
+uci set network.bat0.routing_algo='BATMAN_IV'
+uci set network.bat0.bridge_loop_avoidance='1'   # a hedge cabled to a switch that also has a perch or
+                                                 # another hedge = two paths; BLA must be on all of them
+uci set network.mesh0=interface
+uci set network.mesh0.proto='batadv_hardif'
+uci set network.mesh0.master='bat0'
+uci set network.mesh0.mtu='1536'                 # batman header, avoids fragmentation
+BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
+uci -q del_list network.$BR.ports='bat0'
+uci add_list network.$BR.ports='bat0'
+uci commit network
+
+# --- Radios ---
+[ -s /etc/config/wireless ] || wifi config
+for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q delete wireless.default_$r
+	uci set wireless.$r.disabled='0'
+	uci set wireless.$r.country='FR'
+	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
+	if [ "$(uci -q get wireless.$r.band)" = '2g' ]; then
+		uci set wireless.$r.channel="$CH2"
+		uci set wireless.$r.htmode='HT20'
+		uci set wireless.$r.txpower="$TX2"
+		uci set wireless.mesh_$r=wifi-iface
+		uci set wireless.mesh_$r.device="$r"
+		uci set wireless.mesh_$r.mode='mesh'
+		uci set wireless.mesh_$r.mesh_id="$MESH_ID"
+		uci set wireless.mesh_$r.encryption='sae'
+		uci set wireless.mesh_$r.key="$KEY"
+		uci set wireless.mesh_$r.mesh_fwding='0'     # batman-adv does the routing, not 802.11s
+		uci set wireless.mesh_$r.network='mesh0'
+	else
+		uci set wireless.$r.channel="$CH5"
+		uci set wireless.$r.htmode='VHT40'
+		uci set wireless.$r.txpower="$TX5"
+	fi
+	uci set wireless.ap_$r=wifi-iface
+	uci set wireless.ap_$r.device="$r"
+	uci set wireless.ap_$r.mode='ap'
+	uci set wireless.ap_$r.ssid="$SSID"
+	uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
+	uci set wireless.ap_$r.network='lan'
+	uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
+	uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
+done
+uci commit wireless
+
+exit 0

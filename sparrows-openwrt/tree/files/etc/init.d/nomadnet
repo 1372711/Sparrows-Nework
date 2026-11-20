@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+# Sparrows-Network tree: Nomad Network page node (the Sparrows page), as user rns.
+# It uses the rnsd started just before it (shared instance).
+
+START=96
+STOP=09
+USE_PROCD=1
+
+start_service() {
+	procd_open_instance
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME=/etc/nomadnetwork
+	procd_set_param command /usr/bin/python3 -m nomadnet.nomadnet --daemon \
+		--config /etc/nomadnetwork --rnsconfig /etc/reticulum
+	procd_set_param user rns
+	procd_set_param respawn 3600 10 0
+	procd_close_instance
+}

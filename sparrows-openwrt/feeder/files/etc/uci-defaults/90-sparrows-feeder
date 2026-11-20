@@ -1,0 +1,41 @@
+#!/bin/sh
+# Sparrows-Network: feeder = open access Wi-Fi bridged to the village segment.
+# Bridge only (base in 10-sparrows-common): no IPv4, no DHCP, no RA, no firewall, no Reticulum.
+# Status: NOT YET TESTED.
+
+. /etc/sparrows/station          # ROLE, TX2, TX5
+
+SSID='Sparrows'
+CH2="${CH2:-auto}"   # 2.4 GHz: automatic channel (ACS), unless the device sets one (no ACS). Else 1, 6 or 11
+CH5='132'    # 5 GHz outdoor DFS, VHT40 = 132+136. Far from the backbone (108). Never 120-128
+
+[ -s /etc/config/wireless ] || wifi config
+for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q delete wireless.default_$r
+	if [ "$(uci -q get wireless.$r.band)" = '2g' ]; then
+		CH=$CH2; HT='HT20'; TX=$TX2
+	else
+		CH=$CH5; HT='VHT40'; TX=$TX5
+	fi
+	if [ "$TX" = '-' ]; then                   # band not used on this device (profiles.txt)
+		uci set wireless.$r.disabled='1'
+		continue
+	fi
+	uci set wireless.$r.disabled='0'
+	uci set wireless.$r.country='FR'
+	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
+	uci set wireless.$r.channel="$CH"
+	uci set wireless.$r.htmode="$HT"
+	uci set wireless.$r.txpower="$TX"
+	uci set wireless.ap_$r=wifi-iface
+	uci set wireless.ap_$r.device="$r"
+	uci set wireless.ap_$r.mode='ap'
+	uci set wireless.ap_$r.ssid="$SSID"
+	uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
+	uci set wireless.ap_$r.network='lan'
+	uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
+	uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
+done
+uci commit wireless
+
+exit 0

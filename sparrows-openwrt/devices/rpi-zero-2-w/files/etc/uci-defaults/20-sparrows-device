@@ -1,0 +1,23 @@
+#!/bin/sh
+# Sparrows-Network: Raspberry Pi Zero 2 W. Runs after the common base, before the role.
+# No Ethernet on the board: OpenWrt puts the Wi-Fi in the LAN bridge. Here the bridge gets the USB
+# Ethernet adapter (eth0) instead; the role adds its Wi-Fi to the bridge itself.
+# Name and address both come from the radio's MAC (MACDEV in device.conf), not the adapter's.
+# Status: NOT YET TESTED.
+
+BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
+if [ -z "$BR" ]; then
+	BR='brlan'
+	uci set network.$BR=device
+	uci set network.$BR.name='br-lan'
+	uci set network.$BR.type='bridge'
+fi
+uci -q delete network.$BR.ports
+uci add_list network.$BR.ports='eth0'
+uci set network.lan.device='br-lan'
+# The bridge takes the radio's MAC, so the village address comes from the same MAC as the name
+MAC=$(cat /sys/class/ieee80211/phy0/macaddress 2>/dev/null)
+[ -z "$MAC" ] || uci set network.$BR.macaddr="$MAC"
+uci commit network
+
+exit 0

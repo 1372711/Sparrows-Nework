@@ -1,0 +1,18 @@
+# Sparrows-Network tree: Nomad Network in node mode, serving the Sparrows page. No client, no UI.
+# Status: NOT YET TESTED on OpenWrt.
+[logging]
+  loglevel = 2                    # errors only
+  destination = file
+
+[client]
+  enable_client = no
+  announce_at_start = no
+
+[node]
+  enable_node = yes
+  node_name = Sparrows-Network (@NAME@)       # first boot puts the unit's name here
+  announce_at_start = yes
+  announce_interval = 360         # minutes: every 6 hours
+  pages_path = /usr/share/sparrows/nomadnet/pages
+  files_path = /usr/share/sparrows/nomadnet/files
+  disable_propagation = yes       # message storage stays on the nests (lxmd)

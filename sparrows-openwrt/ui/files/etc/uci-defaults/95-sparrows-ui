@@ -1,0 +1,26 @@
+#!/bin/sh
+# Sparrows-Network: web interface (LuCI). Only in images built with the web interface on.
+# It listens on the unit itself only, never on the village: reach it through SSH with the admin key.
+#   On the laptop:  ssh -N -L 8080:127.0.0.1:80 root@<station address>
+#   Then open:      http://localhost:8080
+# LuCI asks for the root password, which every image locks. Set one once, over SSH:  passwd
+# SSH itself stays keys only. `sysupgrade -n` and `firstboot` lock the password again.
+# A change made in LuCI is a test: to keep it, put it in the build tree and rebuild.
+# Status: NOT YET TESTED.
+
+uci -q delete uhttpd.main.listen_http
+uci -q delete uhttpd.main.listen_https
+uci add_list uhttpd.main.listen_http='127.0.0.1:80'
+uci add_list uhttpd.main.listen_http='[::1]:80'
+uci set uhttpd.main.redirect_https='0'
+uci commit uhttpd
+
+# Reminder at every SSH login (once in the banner, even if this file runs again)
+grep -q 'Sparrows web interface' /etc/banner 2>/dev/null || cat >> /etc/banner <<'EOF'
+ Sparrows web interface (LuCI): only through SSH. On your laptop:
+   ssh -N -L 8080:127.0.0.1:80 root@<this station>   then open http://localhost:8080
+   First time: set the root password here with  passwd   (SSH stays keys only)
+
+EOF
+
+exit 0

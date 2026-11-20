@@ -1,0 +1,10 @@
+
+    .-.     Sparrows-Network   @NAME@
+   (o >     @ROLE@
+   / )\     @RELEASE@
+  --"-"--
+ Handbook: http://sparrows.lan/  (the Sparrows Tao)
+ This unit runs what the build tree makes. A change made here by hand is a test:
+ to keep it, put it in sparrows-openwrt/ and rebuild.
+ @HINT@
+

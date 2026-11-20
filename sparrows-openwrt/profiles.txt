@@ -1,0 +1,24 @@
+# Sparrows-Network: hardware that can take each role.
+# One line per device. To support another device, add a line: nothing else changes.
+#
+# tx2 / tx5 = power set at the radio, in dBm = legal EIRP limit (FR) - antenna gain.
+#   2.4 GHz: 20 dBm EIRP.
+#   5 GHz outdoor (ch 100-140): 30 dBm EIRP with TPC, 27 dBm without TPC.
+# "-" = this band is not used on this device (its radio is switched off).
+#
+# ui = the web interface (LuCI) may go in this image, when the build asks for it (UI=1, or w in the menu).
+# "-" = never: 8 MB of flash or 64 MB of RAM is too small (Sparrows Tao, Hard rules). No column = "-".
+#
+# profile = the OpenWrt profile name, or a folder in devices/ for a device that needs more than a
+#   line (another OpenWrt profile, firmware to fetch, its own first-boot file). See devices/*/device.conf.
+#
+# role   target          profile                    tx2  tx5  ui
+perch    ath79/generic   tplink_cpe510-v3           -    17   -
+feeder   ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+feeder   ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+hedge    ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+hedge    ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+# Pi Zero 2 W: 2.4 GHz only, with a USB Ethernet adapter for the village cable. Not yet tested.
+feeder   bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+# Same Pi Zero 2 W as a tree: a Wi-Fi client of the village running Reticulum. No adapter needed.
+tree     bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui

@@ -1,0 +1,58 @@
+#!/bin/sh
+# Sparrows-Network: base shared by every OpenWrt station (perch, feeder, hedge, tree).
+# No IPv4, no DHCP, no RA, no firewall, SSH keys only. Perch, feeder and hedge are a Layer 2 bridge
+# with no Reticulum; the tree adds its Wi-Fi client and Reticulum (90-sparrows-tree).
+# Runs once at first boot (and again after `firstboot && reboot`).
+# Status: NOT YET TESTED.
+
+. /etc/sparrows/station          # ROLE, TX2, TX5 (written by build.sh from profiles.txt)
+
+# --- Name: <role>-<last 4 hex of the MAC>, e.g. perch-3fa2. Same image on every unit ---
+# MACDEV (in /etc/sparrows/station) = where the fixed MAC is: eth0 on most units; phy0 (the radio)
+# on a unit with no Ethernet of its own, like the Pi Zero 2 W
+case "${MACDEV:-eth0}" in
+	phy*) MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2>/dev/null) ;;
+	*)    MAC=$(cat "/sys/class/net/${MACDEV:-eth0}/address" 2>/dev/null) ;;
+esac
+[ -n "$MAC" ] || MAC=$(cat /sys/class/net/*/address 2>/dev/null | grep -v '^00:00:00' | head -n1)
+ID=$(echo "$MAC" | tr -d ':' | tail -c 5)
+uci set system.@system[0].hostname="$ROLE-$ID"
+uci set system.@system[0].log_size='16'
+uci set system.@system[0].cronloglevel='9'
+uci commit system
+
+# --- Login text: /etc/sparrows/banner (edit it in the build tree), filled in for this unit ---
+case "$ROLE" in
+	perch)  WHAT='perch: backbone radio, one end of a flyway'; HINT='perch status   perch ap | perch sta' ;;
+	feeder) WHAT='feeder: open Wi-Fi for people, bridged to the village'; HINT='iw dev   logread | grep -i cac' ;;
+	hedge)  WHAT='hedge: open Wi-Fi + 2.4 GHz mesh to the other hedges'; HINT='batctl n   batctl o' ;;
+	tree)   WHAT='tree: Reticulum relay + the Sparrows page, on the village Wi-Fi'; HINT='rns status   /etc/init.d/nomadnet status' ;;
+	*)      WHAT=$ROLE; HINT='' ;;
+esac
+REL=$( [ -f /etc/openwrt_release ] && . /etc/openwrt_release; echo "${DISTRIB_DESCRIPTION:-OpenWrt}")
+[ -z "$HINT" ] || HINT="Useful here: $HINT"
+sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
+	/etc/sparrows/banner > /etc/banner
+
+# --- Admin: SSH keys only (P1). Failsafe mode still works for recovery ---
+passwd -l root >/dev/null 2>&1
+uci set dropbear.@dropbear[0].PasswordAuth='off'
+uci set dropbear.@dropbear[0].RootPasswordAuth='off'
+uci commit dropbear
+
+# --- Network: br-lan = plain bridge. Management address by SLAAC from the nests' RAs ---
+# odhcp6c is an RA *client*: it never sends RAs. With no nest up, link-local still works.
+uci -q delete network.globals.ula_prefix
+uci -q delete network.wan
+uci -q delete network.wan6
+uci -q delete network.lan.ipaddr
+uci -q delete network.lan.netmask
+uci -q delete network.lan.ip6assign
+uci -q delete network.lan.ip6addr
+uci -q delete network.lan.dns
+uci set network.lan.proto='dhcpv6'
+uci set network.lan.reqaddress='none'
+uci set network.lan.reqprefix='no'
+uci commit network
+
+exit 0
