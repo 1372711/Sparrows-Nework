@@ -69,10 +69,13 @@ uci add_list dhcp.lan.domain='sparrows.lan'
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci set dhcp.@dnsmasq[0].domainneeded='1'
 uci set dhcp.@dnsmasq[0].domain='sparrows.lan'
-uci set dhcp.@dnsmasq[0].local='/sparrows.lan/'
+# No "local=/sparrows.lan/": it means "only names written here" and, being more specific than the
+# catch-all, made sparrows.lan itself unknown (seen 2026-11-21). The names come from "address" instead
+uci -q delete dhcp.@dnsmasq[0].local
 uci set dhcp.@dnsmasq[0].logqueries='0'   # never log who asks for what
 uci -q delete dhcp.@dnsmasq[0].address
-uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any name -> the welcome page
+uci add_list dhcp.@dnsmasq[0].address="/sparrows.lan/$ADDR"   # sparrows.lan, www.sparrows.lan...
+uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any other name -> the welcome page
 uci commit dhcp
 
 # --- Welcome page (uhttpd), on the village addresses only. LuCI, if any, stays on 127.0.0.1 ---

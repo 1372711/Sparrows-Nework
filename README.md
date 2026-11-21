@@ -2219,7 +2219,7 @@ rnstatus
   <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Seen on 2026-11-21: the card written from the nest image shows a 1 GB root partition. The rest of the card stays unused. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
   <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
 </ul>
-<p lang="en"><span class="k">So far</span>first boot on 2026-11-21: the Pi 4 booted, took SSH keys over link-local, and named itself <code>nest-feeder-9b58</code>. Two bugs, both fixed in the build tree the same day: the village interface stayed down because the bench prefix gave an address of 7 groups, which netifd refused; and the Wi-Fi chip showed up after first boot, so it kept OpenWrt's default config (5 GHz, no access point). Not yet tested with the fixes.</p>
+<p lang="en"><span class="k">So far</span>first boot on 2026-11-21: the Pi 4 booted, took SSH keys over link-local, and named itself <code>nest-feeder-9b58</code>. Two bugs, both fixed in the build tree the same day: the village interface stayed down because the bench prefix gave an address of 7 groups, which netifd refused; and the Wi-Fi chip showed up after first boot, so it kept OpenWrt's default config (5 GHz, no access point). With both fixed by hand on the unit (2026-11-21), a Linux laptop on the <code>Sparrows</code> Wi-Fi got both addresses by SLAAC, the nest as default router and DNS server, and <code>sparrows.lan</code> as domain; Reticulum's interface came up. A third bug showed then: <code>sparrows.lan</code> itself was unknown to the DNS (a <code>local=</code> rule beat the catch-all), fixed in the build tree the same day. The rebuilt image is not yet tested.</p>
 <p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
 <div class="code"><div class="hd"><span class="file">admin laptop, then a laptop on the village</span></div><pre><code># Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
 #   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
@@ -2322,10 +2322,13 @@ uci add_list dhcp.lan.domain='sparrows.lan'
 uci set dhcp.@dnsmasq[0].noresolv='1'
 uci set dhcp.@dnsmasq[0].domainneeded='1'
 uci set dhcp.@dnsmasq[0].domain='sparrows.lan'
-uci set dhcp.@dnsmasq[0].local='/sparrows.lan/'
+# No "local=/sparrows.lan/": it means "only names written here" and, being more specific than the
+# catch-all, made sparrows.lan itself unknown (seen 2026-11-21). The names come from "address" instead
+uci -q delete dhcp.@dnsmasq[0].local
 uci set dhcp.@dnsmasq[0].logqueries='0'   # never log who asks for what
 uci -q delete dhcp.@dnsmasq[0].address
-uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any name -&gt; the welcome page
+uci add_list dhcp.@dnsmasq[0].address="/sparrows.lan/$ADDR"   # sparrows.lan, www.sparrows.lan...
+uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any other name -&gt; the welcome page
 uci commit dhcp
 &#32;
 # --- Welcome page (uhttpd), on the village addresses only. LuCI, if any, stays on 127.0.0.1 ---
