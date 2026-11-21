@@ -8,6 +8,13 @@
 [ -f /etc/sparrows/radios.done ] && exit 0
 . /etc/sparrows/station
 
+# A perch's own choice, made with `perch ap` and kept through updates. Only ap or sta, and only an
+# outdoor channel the perch tool allows; anything else is ignored
+PERCH_MODE='' PERCH_CH=''
+[ ! -f /etc/sparrows/perch ] || . /etc/sparrows/perch
+case "$PERCH_MODE" in ap|sta) ;; *) PERCH_MODE='' ;; esac
+case " 100 104 108 112 116 132 136 140 " in *" $PERCH_CH "*) ;; *) PERCH_CH='' ;; esac   # as in the perch tool
+
 SSID='Sparrows'                  # the open Wi-Fi, for people's devices
 FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
 FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
@@ -78,7 +85,7 @@ for r in $RADIOS; do
 		HT='HT20'
 		if has "$U" flyway; then CH=$MESH_CH; elif has "$U" join; then CH='auto'; else CH=$FEED_CH2; fi
 	else
-		if has "$U" flyway; then CH=$FLYWAY_CH; HT='HT20'
+		if has "$U" flyway; then CH=${PERCH_CH:-$FLYWAY_CH}; HT='HT20'
 		elif has "$U" join; then CH='auto'; HT='VHT40'
 		else CH=$FEED_CH5; HT='VHT40'; fi
 	fi
@@ -88,7 +95,10 @@ for r in $RADIOS; do
 	if has "$U" flyway && [ "$B" = 5g ]; then
 		uci set wireless.flyway=wifi-iface       # the perch tool works on this one
 		uci set wireless.flyway.device="$r"
-		uci set wireless.flyway.mode='sta'       # safe default: a client only transmits after hearing its AP
+		# Client by default: it only transmits after hearing its AP. The AP end keeps `perch ap`
+		# through updates (/etc/sparrows/perch, kept by sysupgrade -v)
+		uci set wireless.flyway.mode="${PERCH_MODE:-sta}"
+		if [ "${PERCH_MODE:-sta}" = ap ]; then uci set wireless.flyway.hidden='1'; else uci -q delete wireless.flyway.hidden; fi
 		uci set wireless.flyway.ssid="$FLYWAY_SSID"
 		uci set wireless.flyway.encryption='sae'
 		uci set wireless.flyway.key="$(key flyway.key)"

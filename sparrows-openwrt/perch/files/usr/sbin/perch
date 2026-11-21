@@ -20,6 +20,9 @@ ap|sta)
 	uci set wireless.flyway.mode="$1"
 	if [ "$1" = ap ]; then uci set wireless.flyway.hidden='1'; else uci -q delete wireless.flyway.hidden; fi
 	uci commit wireless
+	# Kept for the next image: radios reads it, and sysupgrade keeps it (keep.d/sparrows-perch).
+	# Without it, an update would put an AP back to client and its flyway would go down
+	printf "PERCH_MODE='%s'\nPERCH_CH='%s'\n" "$1" "$(uci get wireless.$R.channel)" > /etc/sparrows/perch
 	wifi
 	echo "flyway: $1 on channel $(uci get wireless.$R.channel)."
 	if [ "$1" = ap ]; then
