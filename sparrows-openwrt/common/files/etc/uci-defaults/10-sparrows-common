@@ -2,7 +2,7 @@
 # Sparrows-Network: base shared by every OpenWrt station, whatever its role.
 # No IPv4, no DHCP, no RA (except on a nest: 91-sparrows-nest), no firewall, SSH keys only. The ports and radios get their uses in
 # 90-sparrows-station, from /etc/sparrows/station.
-# Runs once at first boot (and again after `firstboot && reboot`).
+# Runs at first boot, again after `firstboot && reboot`, and after every sysupgrade.
 # Status: NOT YET TESTED.
 
 . /etc/sparrows/station          # ROLE, TX2, TX5, PORTS, USE2, USE5, RETICULUM, NEST (written by build.sh)
@@ -11,7 +11,11 @@
 # MACDEV (in /etc/sparrows/station) = where the fixed MAC is: eth0 on most units; phy0 (the radio)
 # on a unit with no Ethernet of its own, like the Pi Zero 2 W
 case "${MACDEV:-eth0}" in
-	phy*) MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2>/dev/null) ;;
+	phy*) # A Pi's Wi-Fi chip shows up seconds after boot (seen 2026-11-21 on a Pi 4): wait for it, or the
+	      # name would come from another MAC, such as a USB adapter that can be swapped
+	      i=0
+	      while [ ! -e "/sys/class/ieee80211/$MACDEV/macaddress" ] && [ $i -lt 30 ]; do sleep 1; i=$((i + 1)); done
+	      MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2>/dev/null) ;;
 	*)    MAC=$(cat "/sys/class/net/${MACDEV:-eth0}/address" 2>/dev/null) ;;
 esac
 [ -n "$MAC" ] || MAC=$(cat /sys/class/net/*/address 2>/dev/null | grep -v '^00:00:00' | head -n1)
@@ -44,6 +48,12 @@ sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@
 	/etc/sparrows/banner > /etc/banner
 
 # --- Admin: SSH keys only (P1). Failsafe mode still works for recovery ---
+# The keys are always the image's own: sysupgrade -v brings the old file back, which would keep a key
+# taken out of keys/ (an admin who left, a lost laptop). This file runs again after every update
+if [ -f /rom/etc/dropbear/authorized_keys ]; then
+	cp /rom/etc/dropbear/authorized_keys /etc/dropbear/authorized_keys
+	chmod 600 /etc/dropbear/authorized_keys
+fi
 passwd -l root >/dev/null 2>&1
 uci set dropbear.@dropbear[0].PasswordAuth='off'
 uci set dropbear.@dropbear[0].RootPasswordAuth='off'

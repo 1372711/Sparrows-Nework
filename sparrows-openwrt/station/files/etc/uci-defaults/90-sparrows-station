@@ -5,7 +5,7 @@
 #   RETICULUM, NEST = 1 | 0         feeder (open Wi-Fi), flyway (batman-adv link), join (Wi-Fi client)
 # Bridge only: no IPv4, no DHCP, no RA, no firewall (base in 10-sparrows-common). A nest adds its
 # services after this file (91-sparrows-nest).
-# Runs once at first boot (and again after `firstboot && reboot`).
+# Runs at first boot, again after `firstboot && reboot`, and after every sysupgrade.
 # Status: NOT YET TESTED. Replaces the per-role files (2026-11-21), with the same radio settings.
 
 . /etc/sparrows/station
