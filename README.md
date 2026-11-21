@@ -231,7 +231,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
     <p lang="en"><span class="k">App file and SHA-256</span>not filled in yet</p>
     <p lang="en"><span class="k">Propagation node</span>not filled in yet</p>
     <p lang="en"><span class="k">Village pages</span>not filled in yet</p>
-    <p lang="en"><span class="k">Files and scripts</span><code>git clone https://github.com/1372711/Sparrows-Nework.git</code>, or a USB copy checked against <code>SHA256SUMS</code> (<a href="#kit">how</a>)</p>
+    <p lang="en"><span class="k">Files and scripts</span><a href="kit/sparrows-kit.tar.gz">the kit</a> on a nest, or <code>git clone https://github.com/1372711/Sparrows-Nework.git</code>, or a USB copy checked against <code>SHA256SUMS</code> (<a href="#kit">how</a>)</p>
     <p lang="en">This page arrives over plain HTTP on an open Wi-Fi, so anyone could alter it on the way. Trust these values only if they match the paper notice.</p>
   </div>
 </div>
@@ -766,7 +766,12 @@ logger -t sparrows "radios set from the station's uses: 2.4 GHz '${USE2:-off}', 
 exit 0</code></pre></div>
 <h4 id="kit"><span lang="en">Get the files</span></h4>
 <p lang="en">On any computer with git and Internet: the whole project from GitHub, public, no account needed. Without Internet, someone who has it copies it on a USB stick, with a <code>SHA256SUMS</code> list to check every file. Only public files travel this way: no SSH key, no radio key, no built perch or hedge image (those carry the village's radio keys and are handed over in person).</p>
-<div class="code"><div class="hd"><span class="file">any computer, then the admin laptop</span></div><pre><code># On any computer with Internet and git: the whole project from GitHub. Public: no account needed
+<p lang="en">On the village, with no Internet: a nest offers the kit next to this page, at <a href="kit/sparrows-kit.tar.gz">kit/sparrows-kit.tar.gz</a>, and every tree and nest offers it on its Sparrows page over Reticulum, each with a <code>.sha256</code> file. <code>build.sh</code> makes it from git, so it holds only committed files, never <code>keys/</code>, <code>secrets/</code> or <code>build/</code>. Made and checked on the admin laptop on 2026-11-21; not yet tested in an image.</p>
+<div class="code"><div class="hd"><span class="file">any computer, then the admin laptop</span></div><pre><code># On the village, no Internet needed: from a nest (or the Sparrows page of a tree, in Nomad Network)
+wget http://sparrows.lan/kit/sparrows-kit.tar.gz http://sparrows.lan/kit/sparrows-kit.tar.gz.sha256
+sha256sum -c sparrows-kit.tar.gz.sha256 &amp;&amp; tar -xzf sparrows-kit.tar.gz &amp;&amp; cd sparrows
+&#32;
+# On any computer with Internet and git: the whole project from GitHub. Public: no account needed
 git clone https://github.com/1372711/Sparrows-Nework.git sparrows
 cd sparrows &amp;&amp; ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
 git pull                                      # later, from inside sparrows/: get the latest
@@ -1090,6 +1095,25 @@ bad_line() {
 &#32;
 ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
 &#32;
+# The kit: the project's public files in one archive, which trees and nests offer for download
+# (KIT_TO in tree/ and nest/role.conf), so anyone on the village can get what builds it. Made from git:
+# only committed files, so keys/, secrets/ and build/ can't be in it. Made once per version, then
+# checked for a private key. Prints the archive's path.
+make_kit() {
+	local K="$BUILD/kit/sparrows-kit-$VERSION.tar.gz" TOP
+	if [ ! -s "$K" ]; then
+		TOP=$(git -C "$HERE" rev-parse --show-toplevel 2&gt;/dev/null) || { echo "Not a git checkout: no kit" &gt;&amp;2; return 1; }
+		mkdir -p "$BUILD/kit"
+		git -C "$TOP" archive --format=tar.gz --prefix=sparrows/ -o "$K.part" HEAD || { rm -f "$K.part"; return 1; }
+		# A real key block starts its own line (this script only names the words, inside quotes)
+		if tar -xzOf "$K.part" | grep -a -q -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY( BLOCK)?-----'; then
+			rm -f "$K.part"; echo "The kit would hold a private key: not made. Check what is committed" &gt;&amp;2; return 1
+		fi
+		mv "$K.part" "$K"
+	fi
+	echo "$K"
+}
+&#32;
 # OpenWrt's signature on a file, checked with the public keys kept in trust/. The checksums only prove
 # the download isn't broken; the signature proves it is OpenWrt's, whatever server or mirror it came
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
@@ -1258,7 +1282,7 @@ build_one() (
 	done
 &#32;
 	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
-	WHEELS='' HANDBOOK_TO='' PKG_nest=''
+	WHEELS='' HANDBOOK_TO='' KIT_TO='' PKG_nest=''
 	if [ "$RNS" = 1 ]; then
 		# shellcheck source=/dev/null
 		. "$HERE/tree/role.conf"
@@ -1283,6 +1307,17 @@ build_one() (
 			for H in $HANDBOOK_TO; do install -D -m 644 "$HERE/../tao/index.html" "$F/$H"; done
 		else
 			echo "$ROLE $PROFILE: no ../tao/index.html next to the build tree, so no handbook file in the image" &gt;&amp;2
+		fi
+	fi
+	# The kit, next to the handbook, with its checksum (the line sha256sum -c reads)
+	if [ -n "$KIT_TO" ]; then
+		if K=$(make_kit); then
+			for H in $KIT_TO; do
+				install -D -m 644 "$K" "$F/$H"
+				printf '%s  %s\n' "$(sha256sum "$K" | cut -d' ' -f1)" "${H##*/}" &gt; "$F/$H.sha256"
+			done
+		else
+			echo "$ROLE $PROFILE: no kit in this image" &gt;&amp;2
 		fi
 	fi
 &#32;
@@ -2068,7 +2103,11 @@ bb075315d310951d3cc894f7c21cc7fab3c5b8c802af3ffad4d1fa4e54093329  https://files.
 &#32;
 # The built handbook (tao/index.html, next to sparrows-openwrt/) goes in the image too, as a file the
 # page node offers for download. Rebuild the Tao before the image to ship the latest one.
-HANDBOOK_TO='usr/share/sparrows/nomadnet/files/sparrows-tao.html'</code></pre></div>
+HANDBOOK_TO='usr/share/sparrows/nomadnet/files/sparrows-tao.html'
+&#32;
+# The kit (build.sh, the scripts and the handbook's sources, from git), offered next to the handbook,
+# with a .sha256 file. Made by build.sh from what is committed.
+KIT_TO='usr/share/sparrows/nomadnet/files/sparrows-kit.tar.gz'</code></pre></div>
 <p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>tree wire join join reticulum</code>.</p>
 <p lang="en">On a <code>tree+feeder</code> unit (or a nest) no radio joins, so Reticulum runs on the village bridge, <code>br-lan</code>, instead of <code>wsta</code>: first boot writes the right one in the config below.</p>
 <div class="code"><div class="hd"><span class="file">tree/files/etc/reticulum/config</span></div><pre><code># Sparrows-Network: Reticulum transport node (tree, or any unit with the reticulum service).
@@ -2155,7 +2194,8 @@ Stations are named after birds:
 &gt;&gt;Help
 &#32;
 Plant a tree, put up a feeder, or bring a mast. Everything is in the handbook.
-`[Download the handbook (HTML file)`:/file/sparrows-tao.html]</code></pre></div>
+`[Download the handbook (HTML file)`:/file/sparrows-tao.html]
+`[Download the kit: scripts and sources to build the stations (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[its SHA-256`:/file/sparrows-kit.tar.gz.sha256]</code></pre></div>
 <div class="code"><div class="hd"><span class="file">tree/files/etc/nomadnetwork/config</span></div><pre><code># Sparrows-Network tree: Nomad Network in node mode, serving the Sparrows page. No client, no UI.
 # Status: NOT YET TESTED on OpenWrt.
 [logging]
@@ -2371,6 +2411,8 @@ exit 0</code></pre></div>
 &#32;
 # The built handbook is the welcome page, served by uhttpd on the village address
 HANDBOOK_TO="$HANDBOOK_TO www/sparrows/index.html"
+# ...and the kit next to it: http://sparrows.lan/kit/sparrows-kit.tar.gz
+KIT_TO="$KIT_TO www/sparrows/kit/sparrows-kit.tar.gz"
 &#32;
 # A nest sends RAs and answers DNS: odhcpd and dnsmasq stay in its image (DNS only, no DHCP),
 # and uhttpd serves the page. Still no firewall.
@@ -2750,16 +2792,17 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 /etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart</code></pre></div>
 <p class="note" lang="en">It keeps the hard rule "Standalone": no Internet and no company on the link. LoRa itself is not encrypted, but Reticulum encrypts every packet. The board and the antenna on a public building need the owner's agreement.</p>
 <h3 id="home"><span lang="en">Kept data: a locked /home</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
-<p lang="en">Decided on 2026-11-21. Nothing is built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the Reticulum and Nomad Network identities, the message store, and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and it opens in one of two ways: by itself when at least 2 other units of the village answer (<a href="#g-tang">Tang</a>), or by hand with the admin's passphrase. Public bulk data (Wikipedia, films) doesn't need the lock. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
-<h4><span lang="en">How it opens</span></h4>
+<p lang="en">Decided on 2026-11-21. Nothing is built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the identities people know (the unit's address, its message store, its Sparrows page) and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and opens in one of two ways: a person approves a request the unit sends over Reticulum, or the admin types the passphrase over SSH. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
+<h4><span lang="en">How it opens: a request over Reticulum</span></h4>
 <ul lang="en">
-  <li><strong>Every Pi unit runs Tang</strong>, a tiny server. Its key stays on the system side, which is not locked, so it answers before its own <code>/home</code> is open. After a power cut of the whole village, the units unlock each other: nobody waits for anybody.</li>
-  <li><strong>A unit never counts itself.</strong> It needs 2 answers from the others. A unit that answers learns nothing of the disk key and keeps nothing about who asked.</li>
-  <li><strong>The admin chooses which units to trust</strong>, and their public keys go in the image (no secret: the image stays shareable). Never whatever announces itself on the village.</li>
-  <li><strong>Until <code>/home</code> opens</strong>, the unit already does its station job (Wi-Fi, flyway, welcome page). Only Reticulum and the message store wait.</li>
+  <li><strong>At boot</strong> the unit messages its approvers: "tree-26de asks to open <code>/home</code>, started at 04:12, heard through nest-9b58". It asks with a small separate "door" identity kept on the system side, because its own identities are inside <code>/home</code>.</li>
+  <li><strong>One approver says yes</strong> in a small tool on their phone or laptop, and <code>/home</code> opens. No SSH session, nothing to type.</li>
+  <li><strong>The passphrase never travels.</strong> At setup, a random unlock key gets its own LUKS slot, and the unit keeps it sealed for each approver's Reticulum key. The request carries the sealed key; the approver's tool opens it and sends it back sealed for a key the unit made for this boot only.</li>
+  <li><strong>Until then</strong> the unit already does its station job (Wi-Fi, flyway, welcome page, relay). Only what needs its identities waits: the message store and its Sparrows page.</li>
   <li><strong>By hand:</strong> over SSH, <code>sparrows-unlock</code> asks for the passphrase (below). It is never removed.</li>
-  <li><strong>Small village:</strong> with fewer than 2 other units running Tang, unlocking is by hand after each reboot. With exactly 2 others, both must answer; from 3 others on, one can be down. When units join or leave, a script binds the locks to the new list: it adds, tests, and only then removes the old.</li>
 </ul>
+<h4><span lang="en">Who to ask</span></h4>
+<p lang="en"><code>build.sh</code> asks once for the approvers: the unit's owner, the village admins. For each, only a Reticulum address, the 32 hex characters Sideband or MeshChat show as "your address". That is enough and safe: the address is a hash of the person's public key, so the unit fetches the key over Reticulum and checks it against the address, and nobody can slip another key in under it. The list stays in <code>keys/approvers.txt</code> on the admin laptop, out of git, and goes in the image. It is not secret, but anyone holding the image can see which addresses approve.</p>
 <h4><span lang="en">Updates never touch it</span></h4>
 <ul lang="en">
   <li>The partition is found by the label in its LUKS header, <code>sparrows-home</code>, which can be read without the key. The first-boot script runs again after every <code>sysupgrade</code>: it looks for that label first, and creates a partition only when there is none.</li>
@@ -2768,22 +2811,21 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
   <li>With the identities on <code>/home</code>, a Pi can update with <code>sysupgrade -n</code> (the NixOS card in <a href="#ideas">Ideas</a>) and lose nothing it needs.</li>
 </ul>
 <h4><span lang="en">The passphrase</span></h4>
-<p lang="en">Decided on 2026-11-21. One passphrase per unit, made when the admin sets up <code>/home</code> on that unit, not when the image is built: an image goes on many units and can be read from any card, so a passphrase inside it would open every lock. <code>build.sh</code> makes a long random passphrase, or takes one the admin chooses (it refuses a short one), shows it once, keeps a copy in <code>secrets/home/&lt;unit name&gt;.key</code> on the admin laptop, and says to save it somewhere safe: on paper or in a password manager, away from the laptop. It reaches the unit over SSH and is never written on the unit's card. Without it, and without 2 units to answer, <code>/home</code> is lost.</p>
-<h4><span lang="en">Asked over Reticulum</span> <span class="st idea" data-ui="idea">idea</span></h4>
-<p lang="en">Discussed on 2026-11-21. Instead of opening by itself, or when it can't, a unit sends a message over Reticulum to its owner or the village admins: "tree-26de asks to open <code>/home</code>, started at 04:12, heard through nest-9b58". One of them approves, and it opens. The passphrase never travels: at setup, a random unlock key gets its own LUKS slot, and the unit keeps that key sealed to each admin's Reticulum key. The request carries the sealed key; the admin's tool opens it and sends it back sealed to a key the unit made for this boot only. The unit's own identity is locked inside <code>/home</code>, so it asks with a small separate "door" identity on the system side.</p>
-<p lang="en"><span class="k">Gives</span>a person sees every unlock, so a stolen unit plugged back in near the village no longer opens by itself, and an unexpected request is itself a theft alarm. No HTTP: only key-addressed Reticulum. No SSH session and nothing to type; it works from anywhere Reticulum reaches.</p>
-<p lang="en"><span class="k">Cost</span>after a power cut of the whole village, someone must answer for every unit before Reticulum and the message store come back. The door identity sits on the card, so a thief can send a request from elsewhere: the admin must judge whether that unit should be asking now, and from where. Sideband can't open a sealed key: a small tool is needed on the admin's laptop or phone. Can be the only way to open by itself, or a third way next to the 2 units and the passphrase.</p>
-<h4><span lang="en">If a unit is stolen</span></h4>
+<p lang="en">Decided on 2026-11-21. One passphrase per unit, made when the admin sets up <code>/home</code> on that unit, not when the image is built: an image goes on many units and can be read from any card, so a passphrase inside it would open every lock. <code>build.sh</code> makes a long random passphrase, or takes one the admin chooses (it refuses a short one), shows it once, keeps a copy in <code>secrets/home/&lt;unit name&gt;.key</code> on the admin laptop, and says to save it somewhere safe: on paper or in a password manager, away from the laptop. It reaches the unit over SSH and is never written on the unit's card. Without it, and with no approver left, <code>/home</code> is lost.</p>
+<h4><span lang="en">Threats</span></h4>
 <ul lang="en">
-  <li><strong>Card taken away:</strong> <code>/home</code> stays locked. The thief needs the passphrase or 2 answers from the village.</li>
-  <li><strong>Unit plugged back in within reach of the village:</strong> it unlocks, as after a power cut. A Tang server can't refuse one unit, so after a theft, give the other units new Tang keys and bind the remaining units to them: the stolen lock then points at keys that no longer answer.</li>
-  <li><strong>Two more units stolen too:</strong> their Tang keys sit on their unlocked system side, so with them the thief opens the first card anywhere. Spread the units over several places.</li>
-  <li><strong>What is not locked can be read:</strong> the system side, with the flyway passphrase built into the image and the Tang keys. After a theft, change the flyway passphrase too.</li>
+  <li><strong>Card taken away:</strong> <code>/home</code> stays locked. The thief needs the passphrase, or an approver who says yes.</li>
+  <li><strong>A stolen unit asks:</strong> its request looks like any reboot. Before saying yes, ask whether that unit had a reason to restart now, and which nest heard it. Sparrows doesn't reach the Internet, so a request can only come from within radio reach of the village (or through a hub, if there is one). In doubt, say no and go and look.</li>
+  <li><strong>Someone anonymous can't forge a yes.</strong> The unit takes only a reply signed by an approver, and an old reply is useless because every boot makes a new key. They can only send fake requests: the tool shows only those from the door identities it learned at setup.</li>
+  <li><strong>An approver's key is a master key:</strong> whoever holds an approver's Reticulum identity and a stolen card opens it, with no request at all. Keep it on a locked phone, with a backup. If one is lost or leaks, set <code>/home</code> up again without it; the passphrase stays.</li>
+  <li><strong>What is not locked can be read:</strong> the system side, with the flyway passphrase built into the image and the door identity. After a theft, change the flyway passphrase too.</li>
   <li><strong>Guessing the passphrase:</strong> the LUKS header can be attacked offline. A long random passphrase puts it out of reach.</li>
   <li><strong>A running unit is open:</strong> the lock protects a unit that is off. Taken while running, its <code>/home</code> is readable until it loses power.</li>
 </ul>
+<h4><span lang="en">Later: opened by 2 other units (Tang)</span> <span class="st idea" data-ui="idea">idea</span></h4>
+<p lang="en">Discussed on 2026-11-21, kept for later. Instead of a person, every Pi unit runs <a href="#g-tang">Tang</a>, and a unit opens by itself when 2 others answer (never itself). No one is needed after a power cut, and the units can't lock each other out because Tang's keys stay on the system side. But a stolen unit plugged back in near the village opens alone, and Tang speaks HTTP. Tang is in OpenWrt's packages; Clevis, its client, must be ported. It would be one more LUKS slot next to the others.</p>
 <h4><span lang="en">Still to do</span></h4>
-<p lang="en">Tang is in OpenWrt's packages; Clevis, the client that asks the units, is not, and must be ported (mostly shell scripts on <code>jose</code>, <code>luksmeta</code> and <code>cryptsetup</code>). The Pi 4 has no AES in hardware, so the cipher should be Adiantum: check that OpenWrt's kernel has it. Tang talks HTTP, on village addresses only; later the same short exchange could go over Reticulum. Bench test: a Pi nest, a Pi Zero tree and a laptop running Tang. With all up, <code>/home</code> opens by itself; one other down, it waits for the passphrase; all three rebooted at once, they open each other; an update keeps <code>/home</code>.</p>
+<p lang="en">The sealing, on the unit and in the approver's tool, with Reticulum's own keys and crypto, so nothing new to trust. Sideband can't open a sealed key, so the approver's tool is a small program for a laptop, or Termux on a phone. The door identity. LUKS with Adiantum, as the Pi 4 has no AES in hardware: check that OpenWrt's kernel has it. Bench test: a unit reboots and the request reaches a laptop; yes opens <code>/home</code>, no keeps it locked; an old reply sent again is refused; the passphrase opens it over SSH; an update keeps <code>/home</code>.</p>
 <h3 id="growing"><span lang="en">How this page grows</span></h3>
 <ul lang="en">
   <li><strong>One file.</strong> No outside font, script or image, so a Pi can serve it on the mesh as it is.</li>

@@ -240,6 +240,10 @@ scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
 sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
 ### kit
+# On the village, no Internet needed: from a nest (or the Sparrows page of a tree, in Nomad Network)
+wget http://sparrows.lan/kit/sparrows-kit.tar.gz http://sparrows.lan/kit/sparrows-kit.tar.gz.sha256
+sha256sum -c sparrows-kit.tar.gz.sha256 && tar -xzf sparrows-kit.tar.gz && cd sparrows
+
 # On any computer with Internet and git: the whole project from GitHub. Public: no account needed
 git clone https://github.com/1372711/Sparrows-Nework.git sparrows
 cd sparrows && ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
