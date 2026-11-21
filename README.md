@@ -40,6 +40,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
 <li><a href="#ideas">Ideas not yet decided</a></li>
 <li><a href="#outside">A hub between villages, on a VPS</a></li>
 <li><a href="#lora">A LoRa flyway to a town 15 km away</a></li>
+<li><a href="#home">Kept data: a locked /home</a></li>
 <li><a href="#growing">How this page grows</a></li>
 </ul></li><li><a href="#glossary">Glossary</a><ul>
 </ul></li></ul>
@@ -3119,6 +3120,35 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 # Undo on the nest: enabled = no on that block (or delete it), then
 sudo systemctl restart rnsd lxmd</code></pre></div>
 <p class="note" lang="en">It keeps the hard rule "Standalone": no Internet and no company on the link. LoRa itself is not encrypted, but Reticulum encrypts every packet. The board and the antenna on a public building need the owner's agreement.</p>
+<h3 id="home"><span lang="en">Kept data: a locked /home</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
+<p lang="en">Decided on 2026-11-21. Nothing is built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the Reticulum and Nomad Network identities, the message store, and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and it opens in one of two ways: by itself when at least 2 other units of the village answer (<a href="#g-tang">Tang</a>), or by hand with the admin's passphrase. Public bulk data (Wikipedia, films) doesn't need the lock. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
+<h4><span lang="en">How it opens</span></h4>
+<ul lang="en">
+  <li><strong>Every Pi unit runs Tang</strong>, a tiny server. Its key stays on the system side, which is not locked, so it answers before its own <code>/home</code> is open. After a power cut of the whole village, the units unlock each other: nobody waits for anybody.</li>
+  <li><strong>A unit never counts itself.</strong> It needs 2 answers from the others. A unit that answers learns nothing of the disk key and keeps nothing about who asked.</li>
+  <li><strong>The admin chooses which units to trust</strong>, and their public keys go in the image (no secret: the image stays shareable). Never whatever announces itself on the village.</li>
+  <li><strong>Until <code>/home</code> opens</strong>, the unit already does its station job (Wi-Fi, flyway, welcome page). Only Reticulum and the message store wait.</li>
+  <li><strong>By hand:</strong> over SSH, <code>sparrows-unlock</code> asks for the passphrase. It is never removed. Long, random, kept offline.</li>
+  <li><strong>Small village:</strong> with fewer than 2 other units running Tang, unlocking is by hand after each reboot. With exactly 2 others, both must answer; from 3 others on, one can be down. When units join or leave, a script binds the locks to the new list: it adds, tests, and only then removes the old.</li>
+</ul>
+<h4><span lang="en">Updates never touch it</span></h4>
+<ul lang="en">
+  <li>The partition is found by the label in its LUKS header, <code>sparrows-home</code>, which can be read without the key. The first-boot script runs again after every <code>sysupgrade</code>: it looks for that label first, and creates a partition only when there is none.</li>
+  <li><code>sysupgrade</code> rewrites only the boot and system partitions, as long as their size stays the same. So <code>ROOTFS_MB</code> never changes; the unit and <code>build.sh</code> refuse an image that would run into <code>/home</code>.</li>
+  <li><code>build.sh sd</code> sees <code>sparrows-home</code> on a card and offers to rewrite the system only, keeping the card's partition table. Erasing everything still needs the disk name typed, with a warning that <code>/home</code> is lost.</li>
+  <li>With the identities on <code>/home</code>, a Pi can update with <code>sysupgrade -n</code> (the NixOS card in <a href="#ideas">Ideas</a>) and lose nothing it needs.</li>
+</ul>
+<h4><span lang="en">If a unit is stolen</span></h4>
+<ul lang="en">
+  <li><strong>Card taken away:</strong> <code>/home</code> stays locked. The thief needs the passphrase or 2 answers from the village.</li>
+  <li><strong>Unit plugged back in within reach of the village:</strong> it unlocks, as after a power cut. A Tang server can't refuse one unit, so after a theft, give the other units new Tang keys and bind the remaining units to them: the stolen lock then points at keys that no longer answer.</li>
+  <li><strong>Two more units stolen too:</strong> their Tang keys sit on their unlocked system side, so with them the thief opens the first card anywhere. Spread the units over several places.</li>
+  <li><strong>What is not locked can be read:</strong> the system side, with the flyway passphrase built into the image and the Tang keys. After a theft, change the flyway passphrase too.</li>
+  <li><strong>Guessing the passphrase:</strong> the LUKS header can be attacked offline. A long random passphrase puts it out of reach.</li>
+  <li><strong>A running unit is open:</strong> the lock protects a unit that is off. Taken while running, its <code>/home</code> is readable until it loses power.</li>
+</ul>
+<h4><span lang="en">Still to do</span></h4>
+<p lang="en">Tang is in OpenWrt's packages; Clevis, the client that asks the units, is not, and must be ported (mostly shell scripts on <code>jose</code>, <code>luksmeta</code> and <code>cryptsetup</code>). The Pi 4 has no AES in hardware, so the cipher should be Adiantum: check that OpenWrt's kernel has it. Tang talks HTTP, on village addresses only; later the same short exchange could go over Reticulum. Bench test: a Pi nest, a Pi Zero tree and a laptop running Tang. With all up, <code>/home</code> opens by itself; one other down, it waits for the passphrase; all three rebooted at once, they open each other; an update keeps <code>/home</code>.</p>
 <h3 id="growing"><span lang="en">How this page grows</span></h3>
 <ul lang="en">
   <li><strong>One file.</strong> No outside font, script or image, so a Pi can serve it on the mesh as it is.</li>
@@ -3205,6 +3235,10 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
   <dd lang="en">The OpenWrt command that writes a new image to a running station. <code>-v</code> keeps the config; <code>-n</code> keeps nothing, so the image's first-boot defaults run again.</dd>
   <dt>RAUC</dt>
   <dd lang="en">An update tool for Linux devices. It keeps two system slots, writes a signed update bundle to the unused one, and switches to it; if it doesn't boot, the device goes back to the old slot.</dd>
+  <dt id="g-luks">LUKS</dt>
+  <dd lang="en">The standard way to lock a disk partition on Linux. Its header holds several key slots: any one of them opens the partition.</dd>
+  <dt id="g-tang">Tang</dt>
+  <dd lang="en">A small server that helps a unit open its locked disk without ever seeing the key, and keeps nothing about who asked. Its client is Clevis.</dd>
   <dt>LuCI</dt>
   <dd lang="en">OpenWrt's web interface. Optional in Sparrows images, and reached only through SSH.</dd>
 </dl>

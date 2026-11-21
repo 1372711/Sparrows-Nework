@@ -203,6 +203,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#ideas"><span lang="en">Ideas not yet decided</span><span lang="fr">Idées pas encore décidées</span><span lang="es">Ideas aún sin decidir</span></a>
     <a href="#outside"><span lang="en">A hub between villages (VPS)</span><span lang="fr">Un hub entre villages (VPS)</span><span lang="es">Un hub entre pueblos (VPS)</span></a>
     <a href="#lora"><span lang="en">A LoRa flyway (15 km)</span><span lang="fr">Une voie LoRa (15 km)</span><span lang="es">Una ruta LoRa (15 km)</span></a>
+    <a href="#home"><span lang="en">Kept data: a locked /home</span><span lang="fr">Données gardées : /home verrouillé</span><span lang="es">Datos guardados: /home cerrado</span></a>
     <a href="#growing"><span lang="en">How this page grows</span><span lang="fr">Comment cette page grandit</span><span lang="es">Cómo crece esta página</span></a>
     <p class="tg"><span lang="en">Glossary</span><span lang="fr">Lexique</span><span lang="es">Glosario</span></p>
     <a href="#glossary"><span lang="en">Names and terms</span><span lang="fr">Noms et termes</span><span lang="es">Nombres y términos</span></a>
@@ -4429,6 +4430,88 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
 <p class="note" lang="fr">Cela respecte la règle dure « Autonome » : ni Internet ni entreprise sur le lien. Le LoRa lui-même n'est pas chiffré, mais Reticulum chiffre chaque paquet. La carte et l'antenne sur un bâtiment public demandent l'accord du propriétaire.</p>
 <p class="note" lang="es">Respeta la regla firme «Autónoma»: ni Internet ni empresa en el enlace. LoRa en sí no va cifrado, pero Reticulum cifra cada paquete. La placa y la antena en un edificio público necesitan el permiso del dueño.</p>
 
+<h3 id="home"><span lang="en">Kept data: a locked /home</span><span lang="fr">Les données gardées : un /home verrouillé</span><span lang="es">Los datos guardados: un /home cerrado</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
+<p lang="en">Decided on 2026-11-21. Nothing is built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the Reticulum and Nomad Network identities, the message store, and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and it opens in one of two ways: by itself when at least 2 other units of the village answer (<a href="#g-tang">Tang</a>), or by hand with the admin's passphrase. Public bulk data (Wikipedia, films) doesn't need the lock. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
+<p lang="fr">Décidé le 2026-11-21. Rien n'est encore construit. Sur les boîtiers à carte SD (nids et arbres sur Pi), ce qui doit survivre à chaque mise à jour vit sur une troisième partition, <code>/home</code>, créée au premier démarrage dans le reste vide de la carte : les identités Reticulum et Nomad Network, la boîte aux lettres, et les choix propres au boîtier. Elle est verrouillée avec <a href="#g-luks">LUKS</a>, et s'ouvre de deux façons : toute seule quand au moins 2 autres boîtiers du village répondent (<a href="#g-tang">Tang</a>), ou à la main avec la phrase de passe de l'admin. Les grosses données publiques (Wikipédia, films) n'ont pas besoin du verrou. Les boîtiers à mémoire flash seule (CPE510, EAP225) n'ont pas la place, et rien à eux à garder.</p>
+<p lang="es">Decidido el 2026-11-21. Aún no hay nada construido. En las unidades con tarjeta SD (nidos y árboles en Pi), lo que debe sobrevivir a cada actualización vive en una tercera partición, <code>/home</code>, creada en el primer arranque en el resto vacío de la tarjeta: las identidades de Reticulum y Nomad Network, el buzón, y las elecciones propias de la unidad. Está cerrada con <a href="#g-luks">LUKS</a>, y se abre de dos maneras: sola cuando responden al menos otras 2 unidades del pueblo (<a href="#g-tang">Tang</a>), o a mano con la frase de paso del administrador. Los datos públicos grandes (Wikipedia, películas) no necesitan el cierre. Las unidades con solo memoria flash (CPE510, EAP225) no tienen sitio, ni nada propio que guardar.</p>
+
+<h4><span lang="en">How it opens</span><span lang="fr">Comment elle s'ouvre</span><span lang="es">Cómo se abre</span></h4>
+<ul lang="en">
+  <li><strong>Every Pi unit runs Tang</strong>, a tiny server. Its key stays on the system side, which is not locked, so it answers before its own <code>/home</code> is open. After a power cut of the whole village, the units unlock each other: nobody waits for anybody.</li>
+  <li><strong>A unit never counts itself.</strong> It needs 2 answers from the others. A unit that answers learns nothing of the disk key and keeps nothing about who asked.</li>
+  <li><strong>The admin chooses which units to trust</strong>, and their public keys go in the image (no secret: the image stays shareable). Never whatever announces itself on the village.</li>
+  <li><strong>Until <code>/home</code> opens</strong>, the unit already does its station job (Wi-Fi, flyway, welcome page). Only Reticulum and the message store wait.</li>
+  <li><strong>By hand:</strong> over SSH, <code>sparrows-unlock</code> asks for the passphrase. It is never removed. Long, random, kept offline.</li>
+  <li><strong>Small village:</strong> with fewer than 2 other units running Tang, unlocking is by hand after each reboot. With exactly 2 others, both must answer; from 3 others on, one can be down. When units join or leave, a script binds the locks to the new list: it adds, tests, and only then removes the old.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Chaque boîtier Pi fait tourner Tang</strong>, un tout petit serveur. Sa clé reste côté système, qui n'est pas verrouillé : il répond avant que son propre <code>/home</code> soit ouvert. Après une coupure de courant de tout le village, les boîtiers se déverrouillent entre eux : personne n'attend personne.</li>
+  <li><strong>Un boîtier ne se compte jamais lui-même.</strong> Il lui faut 2 réponses des autres. Un boîtier qui répond n'apprend rien de la clé du disque et ne garde rien sur celui qui demande.</li>
+  <li><strong>L'admin choisit les boîtiers de confiance</strong>, et leurs clés publiques vont dans l'image (aucun secret : l'image reste partageable). Jamais ce qui s'annonce tout seul sur le village.</li>
+  <li><strong>Tant que <code>/home</code> n'est pas ouvert</strong>, le boîtier fait déjà son travail de station (Wi-Fi, voie, page d'accueil). Seuls Reticulum et la boîte aux lettres attendent.</li>
+  <li><strong>À la main :</strong> par SSH, <code>sparrows-unlock</code> demande la phrase de passe. Elle n'est jamais retirée. Longue, aléatoire, gardée hors ligne.</li>
+  <li><strong>Petit village :</strong> avec moins de 2 autres boîtiers sous Tang, on déverrouille à la main après chaque redémarrage. Avec exactement 2 autres, il faut les deux ; à partir de 3 autres, un peut être éteint. Quand des boîtiers arrivent ou partent, un script lie les verrous à la nouvelle liste : il ajoute, teste, et seulement ensuite retire l'ancien.</li>
+</ul>
+<ul lang="es">
+  <li><strong>Cada unidad Pi ejecuta Tang</strong>, un servidor diminuto. Su clave se queda en el lado del sistema, que no está cerrado, así que responde antes de que su propio <code>/home</code> se abra. Tras un corte de luz de todo el pueblo, las unidades se abren entre ellas: nadie espera a nadie.</li>
+  <li><strong>Una unidad nunca se cuenta a sí misma.</strong> Necesita 2 respuestas de las demás. Una unidad que responde no aprende nada de la clave del disco y no guarda nada de quién pregunta.</li>
+  <li><strong>El administrador elige en qué unidades confiar</strong>, y sus claves públicas van en la imagen (ningún secreto: la imagen se puede compartir). Nunca lo que se anuncia solo en el pueblo.</li>
+  <li><strong>Hasta que <code>/home</code> se abre</strong>, la unidad ya hace su trabajo de estación (Wi-Fi, ruta, página de bienvenida). Solo Reticulum y el buzón esperan.</li>
+  <li><strong>A mano:</strong> por SSH, <code>sparrows-unlock</code> pide la frase de paso. Nunca se quita. Larga, aleatoria, guardada fuera de línea.</li>
+  <li><strong>Pueblo pequeño:</strong> con menos de 2 otras unidades con Tang, se abre a mano tras cada reinicio. Con exactamente 2 otras, hacen falta las dos; a partir de 3 otras, una puede estar apagada. Cuando llegan o se van unidades, un script ata los cierres a la nueva lista: añade, prueba, y solo entonces quita el antiguo.</li>
+</ul>
+
+<h4><span lang="en">Updates never touch it</span><span lang="fr">Les mises à jour n'y touchent jamais</span><span lang="es">Las actualizaciones nunca lo tocan</span></h4>
+<ul lang="en">
+  <li>The partition is found by the label in its LUKS header, <code>sparrows-home</code>, which can be read without the key. The first-boot script runs again after every <code>sysupgrade</code>: it looks for that label first, and creates a partition only when there is none.</li>
+  <li><code>sysupgrade</code> rewrites only the boot and system partitions, as long as their size stays the same. So <code>ROOTFS_MB</code> never changes; the unit and <code>build.sh</code> refuse an image that would run into <code>/home</code>.</li>
+  <li><code>build.sh sd</code> sees <code>sparrows-home</code> on a card and offers to rewrite the system only, keeping the card's partition table. Erasing everything still needs the disk name typed, with a warning that <code>/home</code> is lost.</li>
+  <li>With the identities on <code>/home</code>, a Pi can update with <code>sysupgrade -n</code> (the NixOS card in <a href="#ideas">Ideas</a>) and lose nothing it needs.</li>
+</ul>
+<ul lang="fr">
+  <li>La partition se reconnaît à l'étiquette de son en-tête LUKS, <code>sparrows-home</code>, lisible sans la clé. Le script de premier démarrage repasse après chaque <code>sysupgrade</code> : il cherche d'abord cette étiquette, et ne crée une partition que s'il n'y en a pas.</li>
+  <li><code>sysupgrade</code> ne réécrit que les partitions de démarrage et de système, tant que leur taille ne change pas. Donc <code>ROOTFS_MB</code> ne change jamais ; le boîtier et <code>build.sh</code> refusent une image qui empiéterait sur <code>/home</code>.</li>
+  <li><code>build.sh sd</code> voit <code>sparrows-home</code> sur une carte et propose de ne réécrire que le système, en gardant la table de partitions de la carte. Tout effacer demande toujours de taper le nom du disque, avec un avertissement : <code>/home</code> sera perdu.</li>
+  <li>Avec les identités sur <code>/home</code>, un Pi peut se mettre à jour avec <code>sysupgrade -n</code> (la carte NixOS dans les <a href="#ideas">Idées</a>) sans rien perdre de ce dont il a besoin.</li>
+</ul>
+<ul lang="es">
+  <li>La partición se reconoce por la etiqueta de su cabecera LUKS, <code>sparrows-home</code>, que se lee sin la clave. El script de primer arranque vuelve a ejecutarse tras cada <code>sysupgrade</code>: busca primero esa etiqueta, y solo crea una partición si no hay ninguna.</li>
+  <li><code>sysupgrade</code> solo reescribe las particiones de arranque y de sistema, mientras su tamaño no cambie. Así que <code>ROOTFS_MB</code> no cambia nunca; la unidad y <code>build.sh</code> rechazan una imagen que invadiría <code>/home</code>.</li>
+  <li><code>build.sh sd</code> ve <code>sparrows-home</code> en una tarjeta y ofrece reescribir solo el sistema, conservando la tabla de particiones de la tarjeta. Borrarlo todo sigue pidiendo teclear el nombre del disco, con un aviso: <code>/home</code> se pierde.</li>
+  <li>Con las identidades en <code>/home</code>, una Pi puede actualizarse con <code>sysupgrade -n</code> (la tarjeta NixOS en <a href="#ideas">Ideas</a>) sin perder nada de lo que necesita.</li>
+</ul>
+
+<h4><span lang="en">If a unit is stolen</span><span lang="fr">Si un boîtier est volé</span><span lang="es">Si roban una unidad</span></h4>
+<ul lang="en">
+  <li><strong>Card taken away:</strong> <code>/home</code> stays locked. The thief needs the passphrase or 2 answers from the village.</li>
+  <li><strong>Unit plugged back in within reach of the village:</strong> it unlocks, as after a power cut. A Tang server can't refuse one unit, so after a theft, give the other units new Tang keys and bind the remaining units to them: the stolen lock then points at keys that no longer answer.</li>
+  <li><strong>Two more units stolen too:</strong> their Tang keys sit on their unlocked system side, so with them the thief opens the first card anywhere. Spread the units over several places.</li>
+  <li><strong>What is not locked can be read:</strong> the system side, with the flyway passphrase built into the image and the Tang keys. After a theft, change the flyway passphrase too.</li>
+  <li><strong>Guessing the passphrase:</strong> the LUKS header can be attacked offline. A long random passphrase puts it out of reach.</li>
+  <li><strong>A running unit is open:</strong> the lock protects a unit that is off. Taken while running, its <code>/home</code> is readable until it loses power.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Carte emportée :</strong> <code>/home</code> reste verrouillé. Il faut au voleur la phrase de passe ou 2 réponses du village.</li>
+  <li><strong>Boîtier rebranché à portée du village :</strong> il se déverrouille, comme après une coupure. Un serveur Tang ne peut pas refuser un boîtier : après un vol, on donne de nouvelles clés Tang aux autres boîtiers et on y relie les boîtiers restants. Le verrou volé pointe alors vers des clés qui ne répondent plus.</li>
+  <li><strong>Deux autres boîtiers volés aussi :</strong> leurs clés Tang sont côté système, non verrouillé, donc avec eux le voleur ouvre la première carte n'importe où. Répartir les boîtiers en plusieurs endroits.</li>
+  <li><strong>Ce qui n'est pas verrouillé se lit :</strong> le côté système, avec la phrase de passe de la voie mise dans l'image et les clés Tang. Après un vol, changer aussi la phrase de passe de la voie.</li>
+  <li><strong>Deviner la phrase de passe :</strong> l'en-tête LUKS peut être attaqué hors ligne. Une phrase longue et aléatoire le met hors de portée.</li>
+  <li><strong>Un boîtier allumé est ouvert :</strong> le verrou protège un boîtier éteint. Emporté allumé, son <code>/home</code> se lit jusqu'à ce qu'il perde le courant.</li>
+</ul>
+<ul lang="es">
+  <li><strong>Tarjeta robada:</strong> <code>/home</code> sigue cerrado. El ladrón necesita la frase de paso o 2 respuestas del pueblo.</li>
+  <li><strong>Unidad reconectada al alcance del pueblo:</strong> se abre, como tras un corte de luz. Un servidor Tang no puede rechazar a una unidad: tras un robo, se dan claves Tang nuevas a las demás unidades y se atan a ellas las unidades que quedan. El cierre robado apunta entonces a claves que ya no responden.</li>
+  <li><strong>Dos unidades más robadas también:</strong> sus claves Tang están en el lado del sistema, sin cerrar, así que con ellas el ladrón abre la primera tarjeta en cualquier sitio. Repartir las unidades en varios lugares.</li>
+  <li><strong>Lo que no está cerrado se lee:</strong> el lado del sistema, con la frase de paso de la ruta puesta en la imagen y las claves Tang. Tras un robo, cambiar también la frase de paso de la ruta.</li>
+  <li><strong>Adivinar la frase de paso:</strong> la cabecera LUKS se puede atacar fuera de línea. Una frase larga y aleatoria la pone fuera de alcance.</li>
+  <li><strong>Una unidad encendida está abierta:</strong> el cierre protege una unidad apagada. Robada encendida, su <code>/home</code> se lee hasta que pierde la corriente.</li>
+</ul>
+
+<h4><span lang="en">Still to do</span><span lang="fr">Reste à faire</span><span lang="es">Queda por hacer</span></h4>
+<p lang="en">Tang is in OpenWrt's packages; Clevis, the client that asks the units, is not, and must be ported (mostly shell scripts on <code>jose</code>, <code>luksmeta</code> and <code>cryptsetup</code>). The Pi 4 has no AES in hardware, so the cipher should be Adiantum: check that OpenWrt's kernel has it. Tang talks HTTP, on village addresses only; later the same short exchange could go over Reticulum. Bench test: a Pi nest, a Pi Zero tree and a laptop running Tang. With all up, <code>/home</code> opens by itself; one other down, it waits for the passphrase; all three rebooted at once, they open each other; an update keeps <code>/home</code>.</p>
+<p lang="fr">Tang est dans les paquets d'OpenWrt ; Clevis, le client qui interroge les boîtiers, n'y est pas, et doit être porté (surtout des scripts shell sur <code>jose</code>, <code>luksmeta</code> et <code>cryptsetup</code>). Le Pi 4 n'a pas d'AES matériel : le chiffrement devrait être Adiantum, à vérifier dans le noyau d'OpenWrt. Tang parle HTTP, seulement sur les adresses du village ; plus tard le même court échange pourrait passer par Reticulum. Essai sur le banc : un nid Pi, un arbre Pi Zero et un portable avec Tang. Tous allumés, <code>/home</code> s'ouvre seul ; un autre éteint, il attend la phrase de passe ; les trois redémarrés en même temps, ils s'ouvrent entre eux ; une mise à jour garde <code>/home</code>.</p>
+<p lang="es">Tang está en los paquetes de OpenWrt; Clevis, el cliente que pregunta a las unidades, no está, y hay que portarlo (sobre todo scripts de shell sobre <code>jose</code>, <code>luksmeta</code> y <code>cryptsetup</code>). La Pi 4 no tiene AES por hardware, así que el cifrado debería ser Adiantum: comprobar que el núcleo de OpenWrt lo tiene. Tang habla HTTP, solo en las direcciones del pueblo; más adelante el mismo intercambio corto podría ir por Reticulum. Prueba en el banco: un nido Pi, un árbol Pi Zero y un portátil con Tang. Todos encendidos, <code>/home</code> se abre solo; otro apagado, espera la frase de paso; los tres reiniciados a la vez, se abren entre ellos; una actualización conserva <code>/home</code>.</p>
+
 <h3 id="growing"><span lang="en">How this page grows</span><span lang="fr">Comment cette page grandit</span><span lang="es">Cómo crece esta página</span></h3>
 <ul lang="en">
   <li><strong>One file.</strong> No outside font, script or image, so a Pi can serve it on the mesh as it is.</li>
@@ -4605,6 +4688,14 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
   <dd lang="en">An update tool for Linux devices. It keeps two system slots, writes a signed update bundle to the unused one, and switches to it; if it doesn't boot, the device goes back to the old slot.</dd>
   <dd lang="fr">Un outil de mise à jour pour appareils Linux. Il garde deux emplacements système, écrit un paquet de mise à jour signé dans celui qui ne sert pas, puis bascule dessus ; s'il ne démarre pas, l'appareil revient à l'ancien emplacement.</dd>
   <dd lang="es">Una herramienta de actualización para aparatos Linux. Guarda dos huecos de sistema, escribe un paquete de actualización firmado en el que no se usa y cambia a él; si no arranca, el aparato vuelve al hueco antiguo.</dd>
+  <dt id="g-luks">LUKS</dt>
+  <dd lang="en">The standard way to lock a disk partition on Linux. Its header holds several key slots: any one of them opens the partition.</dd>
+  <dd lang="fr">La façon standard de verrouiller une partition de disque sous Linux. Son en-tête a plusieurs emplacements de clé : n'importe lequel ouvre la partition.</dd>
+  <dd lang="es">La forma estándar de cerrar una partición de disco en Linux. Su cabecera tiene varios huecos de clave: cualquiera de ellos abre la partición.</dd>
+  <dt id="g-tang">Tang</dt>
+  <dd lang="en">A small server that helps a unit open its locked disk without ever seeing the key, and keeps nothing about who asked. Its client is Clevis.</dd>
+  <dd lang="fr">Un petit serveur qui aide un boîtier à ouvrir son disque verrouillé sans jamais voir la clé, et ne garde rien sur qui a demandé. Son client s'appelle Clevis.</dd>
+  <dd lang="es">Un pequeño servidor que ayuda a una unidad a abrir su disco cerrado sin ver nunca la clave, y no guarda nada de quién preguntó. Su cliente se llama Clevis.</dd>
   <dt>LuCI</dt>
   <dd lang="en">OpenWrt's web interface. Optional in Sparrows images, and reached only through SSH.</dd>
   <dd lang="fr">L'interface web d'OpenWrt. En option dans les images Sparrows, et accessible seulement par SSH.</dd>
