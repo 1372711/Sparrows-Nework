@@ -4,7 +4,8 @@
 #   On the laptop:  ssh -N -L 8080:127.0.0.1:80 root@<station address>
 #   Then open:      http://localhost:8080
 # LuCI asks for the root password, which every image locks. Set one once, over SSH:  passwd
-# SSH itself stays keys only. `sysupgrade -n` and `firstboot` lock the password again.
+# SSH itself stays keys only. Every update (sysupgrade) and `firstboot` lock the password again:
+# set it again after each one.
 # A change made in LuCI is a test: to keep it, put it in the build tree and rebuild.
 # Status: NOT YET TESTED.
 

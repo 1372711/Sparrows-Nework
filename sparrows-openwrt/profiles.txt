@@ -34,5 +34,5 @@ tree      bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
 # Both at once: its Wi-Fi serves Sparrows, Reticulum runs on the cable (USB adapter). Not yet tested.
 tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
 # Pi 4 as a nest, its own Wi-Fi as Sparrows Wi-Fi (2.4 GHz: its chip has no radar check for 5 GHz
-# outdoor channels). Replaces the Debian nest once it passes the same checks. Not yet tested.
+# outdoor channels). First run on the bench 2026-11-21 (fixed by hand); the rebuilt image not yet tested.
 nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui
