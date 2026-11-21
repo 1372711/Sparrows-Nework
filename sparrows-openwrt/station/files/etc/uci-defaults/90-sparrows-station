@@ -10,26 +10,10 @@
 
 . /etc/sparrows/station
 
-SSID='Sparrows'                  # the open Wi-Fi, for people's devices
-FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
-FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
-MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
-MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
-FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
-FEED_CH5='132'                   # 5 GHz feeder: outdoor DFS, VHT40 = 132+136. Far from 108
-
+# The radio settings (SSIDs, channels, keys) are in /usr/lib/sparrows/radios
 has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
 ALL="$USE2 $USE5"
 
-# A radio key: 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Pitfalls).
-# build.sh already refuses a bad key; this only catches a hand-edited one.
-key() {
-	chmod 600 "/etc/sparrows/$1"
-	K=$(cat "/etc/sparrows/$1")
-	printf '%s' "$K" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
-		logger -p daemon.err -t sparrows "$1 is not 8-63 printable ASCII: this flyway will not link"
-	printf '%s' "$K"
-}
 
 # --- Ports: wire = in the village bridge (the image's default); off = out of it ---
 BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
@@ -59,102 +43,10 @@ if has "$ALL" join; then
 fi
 uci commit network
 
-# --- Radios: the first radio of each band takes that band's uses, any other is off ---
-[ -s /etc/config/wireless ] || wifi config
-RADIOS=$(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
-# A radio that can do two bands gets the highest one from OpenWrt (seen 2026-11-21 on a Pi 4: 5 GHz,
-# so a 2.4 GHz-only feeder came up with its radio off). A band that has uses but no radio takes a
-# radio whose own band has none.
-for B in 2g 5g; do
-	if [ "$B" = 2g ]; then U=$USE2 TX=$TX2; else U=$USE5 TX=$TX5; fi
-	{ [ -n "$U" ] && [ "$TX" != '-' ]; } || continue
-	FOUND=''
-	for r in $RADIOS; do [ "$(uci -q get wireless.$r.band)" != "$B" ] || FOUND=$r; done
-	[ -z "$FOUND" ] || continue
-	for r in $RADIOS; do
-		case "$(uci -q get wireless.$r.band)" in
-			2g) RU=$USE2 RT=$TX2 ;;
-			5g) RU=$USE5 RT=$TX5 ;;
-			*)  RU='' RT='-' ;;
-		esac
-		if [ -z "$RU" ] || [ "$RT" = '-' ]; then
-			logger -t sparrows "radio $r: band $(uci -q get wireless.$r.band) has no use here, set to $B"
-			uci set wireless.$r.band="$B"
-			break
-		fi
-	done
-done
-DONE=''
-for r in $RADIOS; do
-	uci -q delete wireless.default_$r
-	B=$(uci -q get wireless.$r.band)
-	case "$B" in
-		2g) U=$USE2; TX=$TX2 ;;
-		5g) U=$USE5; TX=$TX5 ;;
-		*)  U=''; TX='-' ;;
-	esac
-	if [ "$TX" = '-' ] || [ -z "$U" ] || [ "$U" = off ] || has "$DONE" "$B"; then
-		uci set wireless.$r.disabled='1'
-		continue
-	fi
-	DONE="$DONE $B"
-	uci set wireless.$r.disabled='0'
-	uci set wireless.$r.country='FR'
-	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
-	uci set wireless.$r.txpower="$TX"
-
-	# Channel: a flyway fixes it; a client follows its AP; a feeder alone uses the feeder's
-	if [ "$B" = 2g ]; then
-		HT='HT20'
-		if has "$U" flyway; then CH=$MESH_CH; elif has "$U" join; then CH='auto'; else CH=$FEED_CH2; fi
-	else
-		if has "$U" flyway; then CH=$FLYWAY_CH; HT='HT20'
-		elif has "$U" join; then CH='auto'; HT='VHT40'
-		else CH=$FEED_CH5; HT='VHT40'; fi
-	fi
-	uci set wireless.$r.channel="$CH"
-	uci set wireless.$r.htmode="$HT"
-
-	if has "$U" flyway && [ "$B" = 5g ]; then
-		uci set wireless.flyway=wifi-iface       # the perch tool works on this one
-		uci set wireless.flyway.device="$r"
-		uci set wireless.flyway.mode='sta'       # safe default: a client only transmits after hearing its AP
-		uci set wireless.flyway.ssid="$FLYWAY_SSID"
-		uci set wireless.flyway.encryption='sae'
-		uci set wireless.flyway.key="$(key flyway.key)"
-		uci set wireless.flyway.network='mesh0'
-	fi
-	if has "$U" flyway && [ "$B" = 2g ]; then
-		uci set wireless.mesh_$r=wifi-iface
-		uci set wireless.mesh_$r.device="$r"
-		uci set wireless.mesh_$r.mode='mesh'
-		uci set wireless.mesh_$r.mesh_id="$MESH_ID"
-		uci set wireless.mesh_$r.encryption='sae'
-		uci set wireless.mesh_$r.key="$(key hedge.key)"
-		uci set wireless.mesh_$r.mesh_fwding='0'     # batman-adv does the routing, not 802.11s
-		uci set wireless.mesh_$r.network='mesh0'
-	fi
-	if has "$U" feeder; then
-		uci set wireless.ap_$r=wifi-iface
-		uci set wireless.ap_$r.device="$r"
-		uci set wireless.ap_$r.mode='ap'
-		uci set wireless.ap_$r.ssid="$SSID"
-		uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
-		uci set wireless.ap_$r.network='lan'
-		uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
-		uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
-	fi
-	if has "$U" join; then
-		uci set wireless.wsta=wifi-iface
-		uci set wireless.wsta.device="$r"
-		uci set wireless.wsta.mode='sta'
-		uci set wireless.wsta.ssid="$SSID"
-		uci set wireless.wsta.encryption='none'          # the open on-ramp Wi-Fi, like any phone
-		uci set wireless.wsta.network='wsta'
-		uci set wireless.wsta.ifname='wsta'              # fixed name: the Reticulum config uses it
-	fi
-done
-uci commit wireless
+# --- Radios: /usr/lib/sparrows/radios. Run here when the radios are already there (most routers),
+# and again by hotplug when a radio shows up later: a Raspberry Pi's Wi-Fi chip appears seconds after
+# this file has run (seen 2026-11-21: the Pi 4 nest kept OpenWrt's default Wi-Fi, never ours) ---
+/usr/lib/sparrows/radios
 
 # --- Reticulum: on the Wi-Fi client if a radio joins, else on the village bridge ---
 if [ "$RETICULUM" = 1 ]; then

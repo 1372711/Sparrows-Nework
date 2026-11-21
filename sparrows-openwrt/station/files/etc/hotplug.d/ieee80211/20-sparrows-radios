@@ -1,0 +1,8 @@
+#!/bin/sh
+# Sparrows-Network: a radio that appears after first boot (a Raspberry Pi's Wi-Fi chip) gets its uses.
+# Runs after OpenWrt's 10-wifi-detect, which has just written its default config for it.
+[ "$ACTION" = add ] || exit 0
+[ -f /etc/sparrows/radios.done ] && exit 0
+[ -f /etc/sparrows/station ] || exit 0
+/usr/lib/sparrows/radios && [ -f /etc/sparrows/radios.done ] && wifi reload
+exit 0

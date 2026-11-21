@@ -12,8 +12,10 @@
 . /etc/sparrows/station
 
 ULA='fd7e:4c1a:9b20:1'           # the village prefix, as on the Debian nest
-NONULA='2001:db8:1'              # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
-                                 # The real one is not decided yet
+NONULA='2001:db8:1:0'            # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
+                                 # The real one is not decided yet. Like ULA above: 4 groups, a /64
+                                 # (seen 2026-11-21: '2001:db8:1' gave 7 groups, netifd refused the
+                                 # address and the whole interface stayed down)
 
 # --- Interface ID from the MAC, the same rule as every station: flip bit 2 of byte 1, ff:fe inside ---
 case "${MACDEV:-eth0}" in
@@ -27,6 +29,10 @@ IFS=$OLDIFS
 IID=$(printf '%02x%s:%sff:fe%s:%s%s' $((0x$1 ^ 2)) "$2" "$3" "$4" "$5" "$6")
 ADDR="$ULA:$IID"
 ADDR2="$NONULA:$IID"
+# Each must be a full address: 8 groups. A wrong prefix above would keep the village interface down
+for A in "$ADDR" "$ADDR2"; do
+	[ "$(echo "$A" | awk -F: '{ print NF }')" = 8 ] || logger -p daemon.err -t sparrows "nest: $A is not a full IPv6 address: fix ULA/NONULA in 91-sparrows-nest"
+done
 echo "ADDR='$ADDR'" >> /etc/sparrows/station
 
 # --- The village bridge gets fixed addresses instead of SLAAC: a nest sends RAs, it doesn't take them ---

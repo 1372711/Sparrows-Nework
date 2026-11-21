@@ -575,26 +575,10 @@ nest      wire   off            off      nest</code></pre></div>
 &#32;
 . /etc/sparrows/station
 &#32;
-SSID='Sparrows'                  # the open Wi-Fi, for people's devices
-FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
-FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
-MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
-MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
-FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
-FEED_CH5='132'                   # 5 GHz feeder: outdoor DFS, VHT40 = 132+136. Far from 108
-&#32;
+# The radio settings (SSIDs, channels, keys) are in /usr/lib/sparrows/radios
 has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
 ALL="$USE2 $USE5"
 &#32;
-# A radio key: 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Pitfalls).
-# build.sh already refuses a bad key; this only catches a hand-edited one.
-key() {
-	chmod 600 "/etc/sparrows/$1"
-	K=$(cat "/etc/sparrows/$1")
-	printf '%s' "$K" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
-		logger -p daemon.err -t sparrows "$1 is not 8-63 printable ASCII: this flyway will not link"
-	printf '%s' "$K"
-}
 &#32;
 # --- Ports: wire = in the village bridge (the image's default); off = out of it ---
 BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
@@ -624,9 +608,60 @@ if has "$ALL" join; then
 fi
 uci commit network
 &#32;
+# --- Radios: /usr/lib/sparrows/radios. Run here when the radios are already there (most routers),
+# and again by hotplug when a radio shows up later: a Raspberry Pi's Wi-Fi chip appears seconds after
+# this file has run (seen 2026-11-21: the Pi 4 nest kept OpenWrt's default Wi-Fi, never ours) ---
+/usr/lib/sparrows/radios
+&#32;
+# --- Reticulum: on the Wi-Fi client if a radio joins, else on the village bridge ---
+if [ "$RETICULUM" = 1 ]; then
+	if has "$ALL" join; then DEV='wsta'; else DEV='br-lan'; fi
+	sed -i "s|@RNSDEV@|$DEV|" /etc/reticulum/config
+	. /lib/functions.sh
+	group_add rns 1500 2&gt;/dev/null
+	user_add rns 1500 1500 rns /etc/reticulum /bin/false 2&gt;/dev/null   # its own user, never root
+	sed -i "s|@NAME@|$(uci -q get system.@system[0].hostname)|" /etc/nomadnetwork/config
+	chown -R rns:rns /etc/reticulum /etc/nomadnetwork
+	/etc/init.d/rnsd enable
+	/etc/init.d/nomadnet enable
+fi
+&#32;
+exit 0</code></pre></div>
+<p lang="en">The radios are set by a script of their own, run at first boot and again by hotplug when a radio shows up later: a Raspberry Pi's Wi-Fi chip appears a few seconds after first boot has run (seen 2026-11-21). Once done it leaves <code>/etc/sparrows/radios.done</code>; delete that file to set the radios again from the uses.</p>
+<div class="code"><div class="hd"><span class="file">station/files/usr/lib/sparrows/radios</span></div><pre><code>#!/bin/sh
+# Sparrows-Network: the radios of this station, from its uses (/etc/sparrows/station: USE2, USE5, TX2, TX5).
+# Run by 90-sparrows-station at first boot, and by hotplug (/etc/hotplug.d/ieee80211/20-sparrows-radios)
+# when a radio shows up after that, as on a Raspberry Pi. Once the radios are set, it writes
+# /etc/sparrows/radios.done and does nothing more: to redo it, delete that file (or firstboot).
+# Status: NOT YET TESTED on a unit (2026-11-21).
+&#32;
+[ -f /etc/sparrows/radios.done ] &amp;&amp; exit 0
+. /etc/sparrows/station
+&#32;
+SSID='Sparrows'                  # the open Wi-Fi, for people's devices
+FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
+FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
+MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
+MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
+FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
+FEED_CH5='132'                   # 5 GHz feeder: outdoor DFS, VHT40 = 132+136. Far from 108
+&#32;
+has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
+&#32;
+# A radio key: 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Pitfalls).
+# build.sh already refuses a bad key; this only catches a hand-edited one.
+key() {
+	chmod 600 "/etc/sparrows/$1"
+	K=$(cat "/etc/sparrows/$1")
+	printf '%s' "$K" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
+		logger -p daemon.err -t sparrows "$1 is not 8-63 printable ASCII: this flyway will not link"
+	printf '%s' "$K"
+}
+&#32;
 # --- Radios: the first radio of each band takes that band's uses, any other is off ---
 [ -s /etc/config/wireless ] || wifi config
-RADIOS=$(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
+RADIOS=$(uci -q show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
+[ -n "$RADIOS" ] || exit 0           # no radio yet: hotplug runs this again when one appears
 # A radio that can do two bands gets the highest one from OpenWrt (seen 2026-11-21 on a Pi 4: 5 GHz,
 # so a 2.4 GHz-only feeder came up with its radio off). A band that has uses but no radio takes a
 # radio whose own band has none.
@@ -720,20 +755,15 @@ for r in $RADIOS; do
 	fi
 done
 uci commit wireless
-&#32;
-# --- Reticulum: on the Wi-Fi client if a radio joins, else on the village bridge ---
-if [ "$RETICULUM" = 1 ]; then
-	if has "$ALL" join; then DEV='wsta'; else DEV='br-lan'; fi
-	sed -i "s|@RNSDEV@|$DEV|" /etc/reticulum/config
-	. /lib/functions.sh
-	group_add rns 1500 2&gt;/dev/null
-	user_add rns 1500 1500 rns /etc/reticulum /bin/false 2&gt;/dev/null   # its own user, never root
-	sed -i "s|@NAME@|$(uci -q get system.@system[0].hostname)|" /etc/nomadnetwork/config
-	chown -R rns:rns /etc/reticulum /etc/nomadnetwork
-	/etc/init.d/rnsd enable
-	/etc/init.d/nomadnet enable
-fi
-&#32;
+touch /etc/sparrows/radios.done
+logger -t sparrows "radios set from the station's uses: 2.4 GHz '${USE2:-off}', 5 GHz '${USE5:-off}'"</code></pre></div>
+<div class="code"><div class="hd"><span class="file">station/files/etc/hotplug.d/ieee80211/20-sparrows-radios</span></div><pre><code>#!/bin/sh
+# Sparrows-Network: a radio that appears after first boot (a Raspberry Pi's Wi-Fi chip) gets its uses.
+# Runs after OpenWrt's 10-wifi-detect, which has just written its default config for it.
+[ "$ACTION" = add ] || exit 0
+[ -f /etc/sparrows/radios.done ] &amp;&amp; exit 0
+[ -f /etc/sparrows/station ] || exit 0
+/usr/lib/sparrows/radios &amp;&amp; [ -f /etc/sparrows/radios.done ] &amp;&amp; wifi reload
 exit 0</code></pre></div>
 <h4><span lang="en">1. Build</span></h4>
 <p lang="en">On any x86_64 Linux machine with Internet access.</p>
@@ -2141,6 +2171,7 @@ rnstatus
   <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Seen on 2026-11-21: the card written from the nest image shows a 1 GB root partition. The rest of the card stays unused. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
   <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
 </ul>
+<p lang="en"><span class="k">So far</span>first boot on 2026-11-21: the Pi 4 booted, took SSH keys over link-local, and named itself <code>nest-feeder-9b58</code>. Two bugs, both fixed in the build tree the same day: the village interface stayed down because the bench prefix gave an address of 7 groups, which netifd refused; and the Wi-Fi chip showed up after first boot, so it kept OpenWrt's default config (5 GHz, no access point). Not yet tested with the fixes.</p>
 <p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
 <div class="code"><div class="hd"><span class="file">admin laptop, then a laptop on the village</span></div><pre><code># Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
 #   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
@@ -2186,8 +2217,10 @@ ping 192.168.1.1                  # must FAIL (no IPv4)
 . /etc/sparrows/station
 &#32;
 ULA='fd7e:4c1a:9b20:1'           # the village prefix, as on the Debian nest
-NONULA='2001:db8:1'              # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
-                                 # The real one is not decided yet
+NONULA='2001:db8:1:0'            # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
+                                 # The real one is not decided yet. Like ULA above: 4 groups, a /64
+                                 # (seen 2026-11-21: '2001:db8:1' gave 7 groups, netifd refused the
+                                 # address and the whole interface stayed down)
 &#32;
 # --- Interface ID from the MAC, the same rule as every station: flip bit 2 of byte 1, ff:fe inside ---
 case "${MACDEV:-eth0}" in
@@ -2201,6 +2234,10 @@ IFS=$OLDIFS
 IID=$(printf '%02x%s:%sff:fe%s:%s%s' $((0x$1 ^ 2)) "$2" "$3" "$4" "$5" "$6")
 ADDR="$ULA:$IID"
 ADDR2="$NONULA:$IID"
+# Each must be a full address: 8 groups. A wrong prefix above would keep the village interface down
+for A in "$ADDR" "$ADDR2"; do
+	[ "$(echo "$A" | awk -F: '{ print NF }')" = 8 ] || logger -p daemon.err -t sparrows "nest: $A is not a full IPv6 address: fix ULA/NONULA in 91-sparrows-nest"
+done
 echo "ADDR='$ADDR'" &gt;&gt; /etc/sparrows/station
 &#32;
 # --- The village bridge gets fixed addresses instead of SLAAC: a nest sends RAs, it doesn't take them ---

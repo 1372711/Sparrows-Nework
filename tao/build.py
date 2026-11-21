@@ -24,6 +24,8 @@ for key, rel in {
     "owrt-build": "build.sh",
     "owrt-common": "common/files/etc/uci-defaults/10-sparrows-common",
     "station-defaults": "station/files/etc/uci-defaults/90-sparrows-station",
+    "station-radios": "station/files/usr/lib/sparrows/radios",
+    "station-hotplug": "station/files/etc/hotplug.d/ieee80211/20-sparrows-radios",
     "perch-tool": "perch/files/usr/sbin/perch",
     "ui-defaults": "ui/files/etc/uci-defaults/95-sparrows-ui",
     "zero-conf": "devices/rpi-zero-2-w/device.conf",
