@@ -239,6 +239,7 @@ scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/
 # On the station
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
 sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
+# Kept: the config, the identities, a perch's `perch ap`. From the new image: the admin keys, the radios
 ### kit
 # On the village, no Internet needed: from a nest (or the Sparrows page of a tree, in Nomad Network)
 wget http://sparrows.lan/kit/sparrows-kit.tar.gz http://sparrows.lan/kit/sparrows-kit.tar.gz.sha256
@@ -256,7 +257,7 @@ mkdir -p kit
 rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
 cp <app-install-file> kit/                    # e.g. the Sideband APK, once chosen
 ( cd kit && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
-grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ && echo "STOP: check these files"   # should print nothing
+grep -r -l -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY' kit/ && echo "STOP: a private key in these files"   # should print nothing
 
 # Anyone who gets the copy checks it
 cd kit && sha256sum -c SHA256SUMS
@@ -393,4 +394,15 @@ git push origin v2026.11.21
 
 # Undo: flash the images of an earlier version, from its folder
 ls build/images/<earlier version>/
+### unnamed
+# Before the first commit, in the build tree: a pseudonym and a no-reply address
+git config user.name "sparrow-7"
+git config user.email "<id>+<account>@users.noreply.github.com"   # GitHub's no-reply address for the account
+git log --format='%an <%ae>' | sort -u      # who the commits already made are signed by
 
+# The project's SSH key, with a neutral comment (build.sh drops comments anyway)
+ssh-keygen -t ed25519 -C "sparrows-admin"
+
+# Before sharing a photo or a document: remove its hidden data (GPS, camera, author)
+mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
+exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)

@@ -30,6 +30,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
 </ul></li><li><a href="#part-build">III. How to build it</a><ul>
 <li><a href="#images">Station images: perch, feeder, hedge, tree, nest</a></li>
 <li><a href="#reticulum">Reticulum</a></li>
+<li><a href="#unnamed">Staying unnamed</a></li>
 <li><a href="#pitfalls">Pitfalls</a></li>
 <li><a href="#recovery">Recovery</a></li>
 </ul></li><li><a href="#part-road">IV. The open road</a><ul>
@@ -156,9 +157,10 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
 <p lang="en">Already decided or learned the hard way. They change only by an explicit decision, written here with its date.</p>
 <ul lang="en">
   <li><strong>Standalone.</strong> No Internet gateway, VPN exit or Tor exit on the mesh. It would change the legal status of the network.</li>
+  <li><strong>Nobody is named.</strong> Not the people who use the network, not the people who build or run it. No account, no log of who did what, and no name, address or contact of a person in an image, a page, a file name or a commit. What software can't hide (where a unit stands, its radio, who pays for a server) is written down, so people can choose. Anything that would name someone is a bug (decided 2026-11-21; <a href="#unnamed">how</a>).</li>
   <li><strong>IPv6 only.</strong> No IPv4 and no DHCP on the mesh. Legacy IPv4-only devices are not supported.</li>
   <li><strong>Only nests send router advertisements.</strong> Never a perch, a feeder, a hedge, a tree or a user device.</li>
-  <li><strong>Names and addresses come from the MAC.</strong> Every station is <code>role-xxxx</code>, the last four hex digits of its MAC, and builds its IPv6 address from the same MAC. Nothing to set per unit, no list to keep (decided 2026-11-15). Nests still hold <code>::1</code> and <code>::2</code> for now.</li>
+  <li><strong>Names and addresses come from the MAC.</strong> Every station is <code>role-xxxx</code>, the last four hex digits of its MAC, and builds its IPv6 address from the same MAC. Nothing to set per unit, no list to keep (decided 2026-11-15). Nests too, since 2026-11-21: they set that address themselves and announce it as the DNS server.</li>
   <li><strong>Never filter ICMPv6.</strong> IPv6 doesn't work without it.</li>
   <li><strong>DNS and HTTP are the on-ramp and nothing more.</strong> No accounts, no logs, no streaming, no service that depends on a DNS name.</li>
   <li><strong>No user key on a nest.</strong> So no web client hosted on a nest.</li>
@@ -431,7 +433,7 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
 <ul lang="en">
   <li><strong>Read the sticker, know the station.</strong> Name and address can be worked out on paper before the unit is even powered. Write the name on the box.</li>
   <li><strong>Moving a station changes nothing.</strong> In another village it keeps its name and its ending, and takes that village's prefix.</li>
-  <li><strong>Nests, today's exception.</strong> A nest is named <code>nest-xxxx</code> like the others, but still holds a short static address (<code>::1</code>, <code>::2</code>): the DNS server announced in the RA and the catch-all point at it. The <a href="#ideas">zero-config nest</a> removes that exception. <span class="st nt" data-ui="nt">not yet tested</span></li>
+  <li><strong>Nests too.</strong> Since 2026-11-21 a nest sets that same address itself, from its MAC, and announces it as the DNS server: no <code>::1</code> or <code>::2</code> to hand out, and two nests never clash. Seen on the bench on 2026-11-21, on a unit fixed by hand.</li>
   <li><strong>User devices</strong> choose their own ending, often a random one that changes. That is their business: nothing in the network depends on it.</li>
 </ul>
 <h3 id="talk"><span lang="en">Talking: messages, groups, calls</span></h3>
@@ -500,10 +502,9 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
   <tbody>
   <tr><td><code>fd7e:4c1a:9b20::/48</code></td><td><span lang="en">The whole network (ULA, chosen 2026-11-11): infrastructure, admin, Reticulum</span></td></tr>
   <tr><td><code>fd7e:4c1a:9b20:1::/64</code></td><td><span lang="en">Village 1. One /64 per village: <code>:2::</code>, <code>:3::</code>…</span></td></tr>
-  <tr><td><code>…:1::1</code>, <code>…:1::2</code></td><td><span lang="en">First nest, second nest: static for now (<a href="#names">see why</a>). The range <code>::1</code> to <code>::ff</code> is kept for nests</span></td></tr>
-  <tr><td><code>…:1::99</code></td><td><span lang="en">Admin laptop on the bench (never <code>::2</code>: it belongs to the second nest)</span></td></tr>
-  <tr><td>SLAAC</td><td><span lang="en">Every perch, feeder and hedge: the prefix + an ending built from the MAC on the sticker (<a href="#names">see how</a>). User devices: the prefix + an ending they choose</span></td></tr>
-  <tr><td><code>2001:db8:1::/64</code></td><td><span lang="en">Bench only: the non-ULA prefix Android needs (<a href="#android">see above</a>), first nest at <code>::1</code>. Documentation range: never on a roof</span></td></tr>
+  <tr><td><span lang="en">from the MAC</span></td><td><span lang="en">Nests: the prefix + the ending of their MAC, set by the nest itself (since 2026-11-21, <a href="#names">see how</a>). The admin laptop: SLAAC, like any device</span></td></tr>
+  <tr><td>SLAAC</td><td><span lang="en">Every perch, feeder, hedge and tree: the prefix + an ending built from the MAC on the sticker (<a href="#names">see how</a>). User devices: the prefix + an ending they choose</span></td></tr>
+  <tr><td><code>2001:db8:1::/64</code></td><td><span lang="en">Bench only: the non-ULA prefix Android needs (<a href="#android">see above</a>), nests at their MAC ending. Documentation range: never on a roof</span></td></tr>
   <tr><td><span lang="en">not decided</span></td><td><span lang="en">The non-ULA prefix for real villages: one /64 per village, next to the ULA</span></td></tr>
   </tbody>
 </table></div>
@@ -569,7 +570,7 @@ nest      wire   off            off      nest</code></pre></div>
 #   RETICULUM, NEST = 1 | 0         feeder (open Wi-Fi), flyway (batman-adv link), join (Wi-Fi client)
 # Bridge only: no IPv4, no DHCP, no RA, no firewall (base in 10-sparrows-common). A nest adds its
 # services after this file (91-sparrows-nest).
-# Runs once at first boot (and again after `firstboot &amp;&amp; reboot`).
+# Runs at first boot, again after `firstboot &amp;&amp; reboot`, and after every sysupgrade.
 # Status: NOT YET TESTED. Replaces the per-role files (2026-11-21), with the same radio settings.
 &#32;
 . /etc/sparrows/station
@@ -636,6 +637,13 @@ exit 0</code></pre></div>
 &#32;
 [ -f /etc/sparrows/radios.done ] &amp;&amp; exit 0
 . /etc/sparrows/station
+&#32;
+# A perch's own choice, made with `perch ap` and kept through updates. Only ap or sta, and only an
+# outdoor channel the perch tool allows; anything else is ignored
+PERCH_MODE='' PERCH_CH=''
+[ ! -f /etc/sparrows/perch ] || . /etc/sparrows/perch
+case "$PERCH_MODE" in ap|sta) ;; *) PERCH_MODE='' ;; esac
+case " 100 104 108 112 116 132 136 140 " in *" $PERCH_CH "*) ;; *) PERCH_CH='' ;; esac   # as in the perch tool
 &#32;
 SSID='Sparrows'                  # the open Wi-Fi, for people's devices
 FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
@@ -707,7 +715,7 @@ for r in $RADIOS; do
 		HT='HT20'
 		if has "$U" flyway; then CH=$MESH_CH; elif has "$U" join; then CH='auto'; else CH=$FEED_CH2; fi
 	else
-		if has "$U" flyway; then CH=$FLYWAY_CH; HT='HT20'
+		if has "$U" flyway; then CH=${PERCH_CH:-$FLYWAY_CH}; HT='HT20'
 		elif has "$U" join; then CH='auto'; HT='VHT40'
 		else CH=$FEED_CH5; HT='VHT40'; fi
 	fi
@@ -717,7 +725,10 @@ for r in $RADIOS; do
 	if has "$U" flyway &amp;&amp; [ "$B" = 5g ]; then
 		uci set wireless.flyway=wifi-iface       # the perch tool works on this one
 		uci set wireless.flyway.device="$r"
-		uci set wireless.flyway.mode='sta'       # safe default: a client only transmits after hearing its AP
+		# Client by default: it only transmits after hearing its AP. The AP end keeps `perch ap`
+		# through updates (/etc/sparrows/perch, kept by sysupgrade -v)
+		uci set wireless.flyway.mode="${PERCH_MODE:-sta}"
+		if [ "${PERCH_MODE:-sta}" = ap ]; then uci set wireless.flyway.hidden='1'; else uci -q delete wireless.flyway.hidden; fi
 		uci set wireless.flyway.ssid="$FLYWAY_SSID"
 		uci set wireless.flyway.encryption='sae'
 		uci set wireless.flyway.key="$(key flyway.key)"
@@ -783,7 +794,7 @@ mkdir -p kit
 rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
 cp &lt;app-install-file&gt; kit/                    # e.g. the Sideband APK, once chosen
 ( cd kit &amp;&amp; find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum &gt; SHA256SUMS )
-grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ &amp;&amp; echo "STOP: check these files"   # should print nothing
+grep -r -l -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY' kit/ &amp;&amp; echo "STOP: a private key in these files"   # should print nothing
 &#32;
 # Anyone who gets the copy checks it
 cd kit &amp;&amp; sha256sum -c SHA256SUMS</code></pre></div>
@@ -854,7 +865,7 @@ tree      bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
 # Both at once: its Wi-Fi serves Sparrows, Reticulum runs on the cable (USB adapter). Not yet tested.
 tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
 # Pi 4 as a nest, its own Wi-Fi as Sparrows Wi-Fi (2.4 GHz: its chip has no radar check for 5 GHz
-# outdoor channels). Replaces the Debian nest once it passes the same checks. Not yet tested.
+# outdoor channels). First run on the bench 2026-11-21 (fixed by hand); the rebuilt image not yet tested.
 nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui</code></pre></div>
 <div class="code"><div class="hd"><span class="file">build.sh</span></div><pre><code>#!/usr/bin/env bash
 # Build the Sparrows-Network OpenWrt images with the OpenWrt Image Builder.
@@ -939,6 +950,31 @@ nftables-json nftables-nojson iptables iptables-nft ppp ppp-mod-pppoe luci-app-f
 FORBIDDEN_NO_UI="luci-base uhttpd"     # ...and no web interface unless it was asked for
 &#32;
 die() { echo "$*" &gt;&amp;2; exit 1; }
+&#32;
+# Identity (hard rule: nobody is named). What a machine can catch before anything is built; the rest
+# is in the Sparrows Tao, "Staying unnamed". Warnings only, except the rights on secrets/.
+identity_check() {
+	local GE GN HITS
+	if git -C "$HERE" rev-parse &gt;/dev/null 2&gt;&amp;1; then
+		GE=$(git -C "$HERE" config user.email || true)
+		GN=$(git -C "$HERE" config user.name || true)
+		echo "  Commits made here are signed \"${GN:-?} &lt;${GE:-?}&gt;\": public for good once pushed."
+		case "$GE" in
+			*noreply*|*no-reply*) ;;
+			*) echo "    Safer: a pseudonym and a no-reply address (git config user.name / user.email)." ;;
+		esac
+	fi
+	# An e-mail address in a file that goes into the images (the project's shared contact is fine)
+	HITS=$(grep -rInE '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' \
+		"$HERE/common" "$HERE/station" "$HERE/perch" "$HERE/tree" "$HERE/nest" "$HERE/ui" "$HERE/devices" \
+		2&gt;/dev/null | grep -v -e 'sparrows-network@riseup\.net' || true)
+	if [ -n "$HITS" ]; then
+		echo "  Identity: an e-mail address in a file that goes into the images. Is it someone's?"
+		printf '%s\n' "$HITS" | head -n 5 | sed 's/^/    /'
+	fi
+	# The radio keys and passphrases: readable by you only
+	[ ! -d "$HERE/secrets" ] || chmod -R go-rwx "$HERE/secrets"
+}
 &#32;
 # The device lines of profiles.txt: role target profile tx2 tx5 [ui] [uses=...]. A # starts a comment anywhere
 profiles() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/profiles.txt"; }
@@ -1437,6 +1473,7 @@ add_device() {
 	RS=$(ask "Role(s) for this device (several with spaces), or m for manual mode: ")
 	[ -n "$RS" ] || { echo "Nothing added."; return; }
 	if [ "$RS" = m ]; then
+		echo "Every unit of this kind carries the name, and a tree or a nest announces it: never a person's, a house's or a street's."
 		RS=$(ask "A name for this kind of unit (letters, digits, -), e.g. garden: ")
 		[[ "$RS" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "Not a name. Nothing added."; return; }
 		SPEC=$(ask_uses)
@@ -1647,6 +1684,7 @@ case "$VERSION" in
 esac
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
+identity_check
 if [ "$MENU" = 1 ]; then
 	case "$(ask "Go? [Y/n] ")" in [nN]*) exit 0 ;; esac
 fi
@@ -1716,7 +1754,7 @@ git push origin v2026.11.21
 ls build/images/&lt;earlier version&gt;/</code></pre></div>
 <h4 id="web-ui"><span lang="en">Web interface, optional</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en">Added on 2026-11-18. Off by default. With <code>w</code> in the menu (or <code>UI=1</code>), images get LuCI, OpenWrt's web interface: radios, signal, clients and logs in a browser, with no commands to learn. Only on devices marked <code>ui</code> in <code>profiles.txt</code>: small ones (8 MB of flash, 64 MB of RAM, like the CPE510) are built without it and the build says so (hard rule). If an image comes out too big for the flash, that one is skipped and the others are built. Images with it have <code>-ui</code> in their name. It comes without LuCI's firewall page: the usual LuCI bundle (<code>luci-light</code>) would bring the firewall back, which the hard rules forbid (found 2026-11-20), so the image takes LuCI's parts without it.</p>
-<p lang="en">It listens on the unit itself only, never on the open Wi-Fi: you reach it through SSH with your admin key (first lines of the file below). LuCI asks for the root password, which every image locks, so set one once over SSH with <code>passwd</code>. SSH itself stays keys only, so the password is useless without the key. A change made in LuCI is a test, as on the command line: to keep it, put it in the build tree and rebuild.</p>
+<p lang="en">It listens on the unit itself only, never on the open Wi-Fi: you reach it through SSH with your admin key (first lines of the file below). LuCI asks for the root password, which every image locks, so set one over SSH with <code>passwd</code>, again after each update. SSH itself stays keys only, so the password is useless without the key. A change made in LuCI is a test, as on the command line: to keep it, put it in the build tree and rebuild.</p>
 <p lang="en"><strong>How to reach it.</strong> The same reminder is printed at the end of every build that made a <code>-ui</code> image, and at every SSH login on the unit.</p>
 <div class="code"><div class="hd"><span class="file">laptop, then the station</span></div><pre><code># On your laptop: a tunnel through SSH, with your admin key. Leave it open.
 ssh -N -L 8080:127.0.0.1:80 root@&lt;station address&gt;
@@ -1737,7 +1775,8 @@ curl -m 5 'http://[&lt;station address&gt;]/'
 #   On the laptop:  ssh -N -L 8080:127.0.0.1:80 root@&lt;station address&gt;
 #   Then open:      http://localhost:8080
 # LuCI asks for the root password, which every image locks. Set one once, over SSH:  passwd
-# SSH itself stays keys only. `sysupgrade -n` and `firstboot` lock the password again.
+# SSH itself stays keys only. Every update (sysupgrade) and `firstboot` lock the password again:
+# set it again after each one.
 # A change made in LuCI is a test: to keep it, put it in the build tree and rebuild.
 # Status: NOT YET TESTED.
 &#32;
@@ -1778,7 +1817,7 @@ sudo cmp -n "$(stat -c %s card.img)" card.img /dev/sdX &amp;&amp; echo "OK: the 
 # Sparrows-Network: base shared by every OpenWrt station, whatever its role.
 # No IPv4, no DHCP, no RA (except on a nest: 91-sparrows-nest), no firewall, SSH keys only. The ports and radios get their uses in
 # 90-sparrows-station, from /etc/sparrows/station.
-# Runs once at first boot (and again after `firstboot &amp;&amp; reboot`).
+# Runs at first boot, again after `firstboot &amp;&amp; reboot`, and after every sysupgrade.
 # Status: NOT YET TESTED.
 &#32;
 . /etc/sparrows/station          # ROLE, TX2, TX5, PORTS, USE2, USE5, RETICULUM, NEST (written by build.sh)
@@ -1787,7 +1826,11 @@ sudo cmp -n "$(stat -c %s card.img)" card.img /dev/sdX &amp;&amp; echo "OK: the 
 # MACDEV (in /etc/sparrows/station) = where the fixed MAC is: eth0 on most units; phy0 (the radio)
 # on a unit with no Ethernet of its own, like the Pi Zero 2 W
 case "${MACDEV:-eth0}" in
-	phy*) MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2&gt;/dev/null) ;;
+	phy*) # A Pi's Wi-Fi chip shows up seconds after boot (seen 2026-11-21 on a Pi 4): wait for it, or the
+	      # name would come from another MAC, such as a USB adapter that can be swapped
+	      i=0
+	      while [ ! -e "/sys/class/ieee80211/$MACDEV/macaddress" ] &amp;&amp; [ $i -lt 30 ]; do sleep 1; i=$((i + 1)); done
+	      MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2&gt;/dev/null) ;;
 	*)    MAC=$(cat "/sys/class/net/${MACDEV:-eth0}/address" 2&gt;/dev/null) ;;
 esac
 [ -n "$MAC" ] || MAC=$(cat /sys/class/net/*/address 2&gt;/dev/null | grep -v '^00:00:00' | head -n1)
@@ -1820,6 +1863,12 @@ sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@
 	/etc/sparrows/banner &gt; /etc/banner
 &#32;
 # --- Admin: SSH keys only (P1). Failsafe mode still works for recovery ---
+# The keys are always the image's own: sysupgrade -v brings the old file back, which would keep a key
+# taken out of keys/ (an admin who left, a lost laptop). This file runs again after every update
+if [ -f /rom/etc/dropbear/authorized_keys ]; then
+	cp /rom/etc/dropbear/authorized_keys /etc/dropbear/authorized_keys
+	chmod 600 /etc/dropbear/authorized_keys
+fi
 passwd -l root &gt;/dev/null 2&gt;&amp;1
 uci set dropbear.@dropbear[0].PasswordAuth='off'
 uci set dropbear.@dropbear[0].RootPasswordAuth='off'
@@ -1864,7 +1913,7 @@ vi /etc/banner
 &#32;
 # Undo: put the old text back in the build tree and rebuild</code></pre></div>
 <h4 id="perch-image"><span lang="en">3. Perch image</span></h4>
-<p lang="en">The same radio settings as the per-node script that ran on the bench on 2026-11-14, with nothing left to set per unit (name and address come from the MAC), plus bridge loop avoidance. Every perch boots as a client: a client only transmits after hearing its AP, so a fresh perch is harmless. On the one perch per flyway that must carry the radar duty, <code>perch ap</code> makes it the AP. The tool refuses channels 120 to 128 and the indoor channels. The image carries <code>batctl-default</code>, not <code>batctl-tiny</code>: <code>batctl n</code>, <code>o</code>, <code>ping</code>, <code>traceroute</code> and <code>tp</code> all work, and the CPE510 image built that way fits in its 8 MB of flash (2026-11-14). The flyway key is checked twice: by <code>build.sh</code>, and again at first boot, which logs an error if it was edited by hand.</p>
+<p lang="en">The same radio settings as the per-node script that ran on the bench on 2026-11-14, with nothing left to set per unit (name and address come from the MAC), plus bridge loop avoidance. Every perch boots as a client: a client only transmits after hearing its AP, so a fresh perch is harmless. On the one perch per flyway that must carry the radar duty, <code>perch ap</code> makes it the AP. The choice is written to <code>/etc/sparrows/perch</code> and comes back after an update, so the AP stays the AP (fixed 2026-11-21, not yet tested: before, an update turned it back into a client). The tool refuses channels 120 to 128 and the indoor channels. The image carries <code>batctl-default</code>, not <code>batctl-tiny</code>: <code>batctl n</code>, <code>o</code>, <code>ping</code>, <code>traceroute</code> and <code>tp</code> all work, and the CPE510 image built that way fits in its 8 MB of flash (2026-11-14). The flyway key is checked twice: by <code>build.sh</code>, and again at first boot, which logs an error if it was edited by hand.</p>
 <p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>perch wire off flyway -</code>.</p>
 <div class="code"><div class="hd"><span class="file">perch/files/usr/sbin/perch</span></div><pre><code>#!/bin/sh
 # perch: switch this perch between flyway roles, or show its state.
@@ -1888,6 +1937,9 @@ ap|sta)
 	uci set wireless.flyway.mode="$1"
 	if [ "$1" = ap ]; then uci set wireless.flyway.hidden='1'; else uci -q delete wireless.flyway.hidden; fi
 	uci commit wireless
+	# Kept for the next image: radios reads it, and sysupgrade keeps it (keep.d/sparrows-perch).
+	# Without it, an update would put an AP back to client and its flyway would go down
+	printf "PERCH_MODE='%s'\nPERCH_CH='%s'\n" "$1" "$(uci get wireless.$R.channel)" &gt; /etc/sparrows/perch
 	wifi
 	echo "flyway: $1 on channel $(uci get wireless.$R.channel)."
 	if [ "$1" = ap ]; then
@@ -2452,7 +2504,9 @@ CH2='6'
 MACDEV='eth0'
 &#32;
 # A nest keeps messages (lxmd) and files: a 1 GB root partition instead of OpenWrt's 104 MB. Big data
-# (Wikipedia, films) still goes on a USB disk. Writing the card takes longer: the image is 1 GB
+# (Wikipedia, films) still goes on a USB disk. Writing the card takes longer: the image is 1 GB.
+# Never change it once units are out: the planned /home partition starts right after it, and
+# sysupgrade keeps it only while the system partitions keep their size (Sparrows Tao, locked /home)
 ROOTFS_MB='1024'</code></pre></div>
 <h4 id="flash-eap"><span lang="en">6. Flash an EAP225-Outdoor from TP-Link stock firmware</span> <span class="st ok" data-ui="ok">tested</span></h4>
 <p lang="en">Tested on 2026-11-14 on a v3 (hardware 3.0, stock firmware 5.1.0) with the hedge image. The v1 is not yet tested; the OpenWrt wiki gives the same method. The same steps serve the feeder image.</p>
@@ -2480,13 +2534,14 @@ uci get system.@system[0].hostname                  # hedge-26de
 # Back to stock: convert TP-Link's file with tplink-safeloader -z (OpenWrt wiki, EAP225 page),
 # then sysupgrade -n it. A unit that no longer boots needs a serial console on its test points.</code></pre></div>
 <h4 id="upgrade"><span lang="en">7. Update a running station</span></h4>
-<p lang="en">To a rebuilt image of the same role, keeping its config. On a flyway, update the far end first: if it fails, the near end still reaches you.</p>
+<p lang="en">To a rebuilt image of the same role, keeping its config. On a flyway, update the far end first: if it fails, the near end still reaches you. What comes back after the update: the config, the identities, a perch's <code>perch ap</code>. What always follows the new image: the admin SSH keys (a key taken out of <code>keys/</code> is gone from the unit too, since 2026-11-21) and the radios. A root password set for LuCI is locked again.</p>
 <div class="code"><div class="hd"><span class="file">laptop, then the station</span></div><pre><code># From a laptop on the village. dropbear has no sftp server, so -O; an IPv6 address needs [brackets]
 scp -O &lt;image&gt;-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/fw.bin'
 # A Raspberry Pi takes its &lt;image&gt;-squashfs-sysupgrade.img.gz the same way
 # On the station
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
-sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)</code></pre></div>
+sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
+# Kept: the config, the identities, a perch's `perch ap`. From the new image: the admin keys, the radios</code></pre></div>
 <h4><span lang="en">Bench plan with the three units</span></h4>
 <ol lang="en">
   <li>The v3 as a feeder first: the simplest image, and it checks flashing from stock firmware and the "no RA" rule. Done differently on 2026-11-14: the v3 went straight to the hedge image, and a laptop and a phone joined through it.</li>
@@ -2508,6 +2563,41 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 <h4><span lang="en">1. Install, while the Pi has Internet through the home Wi-Fi</span></h4>
 <p lang="en">On Android: install Sideband, connect through local Wi-Fi (AutoInterface), restart the app, then pick the nest as propagation node. The test that matters: two phones swap addresses, phone B is switched off, A sends a message, B comes back on the village. The message must arrive through the nest.</p>
 <p lang="en">The identities are the addresses: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> and, on a nest, <code>/etc/lxmd/</code>. <code>sysupgrade</code> keeps them (they are listed in <code>/lib/upgrade/keep.d/</code>), but writing a card again erases them: copy them to the admin laptop first. Later they live on the locked <code>/home</code> (<a href="#home">Part IV</a>).</p>
+<h3 id="unnamed"><span lang="en">Staying unnamed</span></h3>
+<p lang="en">The hard rule <a href="#limits">Nobody is named</a>, in practice. The network itself keeps nothing about people: no account, addresses by SLAAC instead of DHCP leases, no DNS log, radios that log warnings only, logs in RAM only and small. Most leaks come from the people who build and run it. <code>build.sh</code> catches what a machine can; the rest is a habit.</p>
+<h4><span lang="en">What build.sh does</span></h4>
+<ul lang="en">
+  <li>Admin SSH keys go into images without their comment, which is often <code>name@laptop</code>.</li>
+  <li>Before building, it says who the commits made in the tree are signed by, and says so again when it isn't a no-reply address.</li>
+  <li>It warns about an e-mail address in any file that goes into an image (the project's shared contact excepted).</li>
+  <li>It makes <code>secrets/</code> readable by you only. <code>keys/</code>, <code>secrets/</code> and <code>build/</code> are out of git, so out of the kit.</li>
+  <li>The build menu reminds you that a manual unit name is carried, and announced by trees and nests.</li>
+</ul>
+<p lang="en">Tried on the admin laptop on 2026-11-21 (key comments, the commit and e-mail warnings); not yet in a full build.</p>
+<h4><span lang="en">Mistakes to avoid</span></h4>
+<ul lang="en">
+  <li><strong>Git.</strong> Every commit carries a name and an e-mail, public for good once pushed. Set a pseudonym and a no-reply address before the first commit: rewriting history later doesn't remove the copies.</li>
+  <li><strong>Accounts.</strong> The account that hosts the repository, rents a server or buys a domain is tied to a payment, a phone or an e-mail. Use one made for the project, never your everyday one.</li>
+  <li><strong>Names you type.</strong> Unit names, page and node names, display names in Sideband or MeshChat, file names: never a person, a house, a street or a family.</li>
+  <li><strong>One identity per use.</strong> Chatting, approving a <code>/home</code>, publishing pages: a different Reticulum identity for each, so one never leads to another.</li>
+  <li><strong>Files you share.</strong> Photos and documents carry hidden data: GPS position, camera, author. Remove it before sharing (commands below).</li>
+  <li><strong>Hardware.</strong> A unit's MAC is in its name and its address, and a shop can link it to a delivery address. Second-hand, or cash, where it matters.</li>
+  <li><strong>Where units stand, and photos of them.</strong> A box in a house points at whoever lives there; a photo of a mast shows the street.</li>
+  <li><strong>Logs.</strong> Never raise a log level for good, never turn on DNS query logging, never keep a list of who joined. After debugging, put things back; a reboot empties the logs.</li>
+  <li><strong>The admin laptop</strong> holds the radio keys, the <code>/home</code> passphrases and the approvers' list: encrypt its disk, and keep its backups encrypted, somewhere else.</li>
+  <li><strong>Phones.</strong> Keep Android's random MAC for the <code>Sparrows</code> Wi-Fi (the default).</li>
+</ul>
+<div class="code"><div class="hd"><span class="file">admin laptop, before the first commit; any computer, before sharing a file</span></div><pre><code># Before the first commit, in the build tree: a pseudonym and a no-reply address
+git config user.name "sparrow-7"
+git config user.email "&lt;id&gt;+&lt;account&gt;@users.noreply.github.com"   # GitHub's no-reply address for the account
+git log --format='%an &lt;%ae&gt;' | sort -u      # who the commits already made are signed by
+&#32;
+# The project's SSH key, with a neutral comment (build.sh drops comments anyway)
+ssh-keygen -t ed25519 -C "sparrows-admin"
+&#32;
+# Before sharing a photo or a document: remove its hidden data (GPS, camera, author)
+mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
+exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)</code></pre></div>
 <h3 id="pitfalls"><span lang="en">Pitfalls</span></h3>
 <h4><span lang="en">Building images</span></h4>
 <ul lang="en">
@@ -2548,7 +2638,7 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 </ul>
 <h4><span lang="en">Reticulum and laptops</span></h4>
 <ul lang="en">
-  <li>The nest answers <code>dig</code> but the laptop can't resolve any name: the laptop sends its queries to its own resolver on <code>127.0.0.1</code> and ignores the RA's DNS server (seen 2026-11-14 with resolvconf and a stopped dnsmasq). Start that resolver and give it <code>server=/sparrows.lan/fd7e:4c1a:9b20:1::1</code> and <code>rebind-domain-ok=/sparrows.lan/</code>.</li>
+  <li>The nest answers <code>dig</code> but the laptop can't resolve any name: the laptop sends its queries to its own resolver on <code>127.0.0.1</code> and ignores the RA's DNS server (seen 2026-11-14 with resolvconf and a stopped dnsmasq). Start that resolver and give it <code>server=/sparrows.lan/&lt;nest address&gt;</code> and <code>rebind-domain-ok=/sparrows.lan/</code>.</li>
   <li>Reticulum's founder stepped back in December 2025. Pin the versions that were tested, keep the wheels for offline installs, and keep the design portable to another implementation.</li>
   <li>The protocol is public domain, but the reference implementation's licence carries conditions. Read it before selling a kit.</li>
   <li>No Reticulum on perches, feeders or hedges (decided 2026-11-12). They bridge, so every phone already reaches the nest's <code>rnsd</code> directly. A relay on them would add announce traffic, not reach. Extra relays go where two media meet.</li>
@@ -2618,8 +2708,8 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 <div class="cards">
   <div class="card">
     <h4><span lang="en">A nest image with nothing to configure</span></h4>
-    <p lang="en">At first boot the nest makes its own keys, then listens for RAs. If it hears one, it joins that village as an equal peer and takes a free address in the infrastructure range. If it hears none, it is the first nest of a new village and needs one thing from a person: the village number. Home Wi-Fi stays off.</p>
-    <p lang="en"><span class="k">Changes</span>the static <code>::1</code>, <code>::2</code> rule becomes "any free address in <code>::10</code> to <code>::ff</code>".</p>
+    <p lang="en">At first boot the nest makes its own keys, then listens for RAs. If it hears one, it joins that village as an equal peer. If it hears none, it is the first nest of a new village and needs one thing from a person: the village number.</p>
+    <p lang="en"><span class="k">Left to do</span>its address already comes from its MAC (2026-11-21); what is left is finding the village number by itself.</p>
   </div>
   <div class="card">
     <h4><span lang="en">Updates carried by the mesh itself</span></h4>
@@ -2644,15 +2734,10 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
     <p lang="en"><span class="k">Cost</span>one more service on every nest, and a young tool to pin and test. Write access by key, read access open. The Reticulum manual warns to take care when hosting public repositories: never commit a secret, and check who may push. The <code>kit/</code> folder stays as the way in for people with no app.</p>
   </div>
   <div class="card">
-    <h4><span lang="en">A nest on the open Wi-Fi, with no home side</span></h4>
-    <p lang="en">A nest can join the <code>Sparrows</code> Wi-Fi as a client: IPv4 off, its static address set by hand, Reticulum on that interface. Dropping the home side removes the only link to the Internet: admin comes from a laptop on the village with SSH keys, and software arrives as signed bundles.</p>
-    <p lang="en"><span class="k">Cost</span>RAs over Wi-Fi are less reliable than on a cable, because multicast over Wi-Fi is slow and lossy. Fine for a light nest next to a feeder; a store nest stays on a cable.</p>
-  </div>
-  <div class="card">
     <h4><span lang="en">One build, the same on every unit (the NixOS way)</span></h4>
     <p lang="en">Discussed on 2026-11-18. Taken from NixOS: a unit runs only what the repository builds, and the previous build is kept to go back to. A change made by hand on a unit is a test. To keep it, put it in the repository and rebuild. NixOS itself runs on a Pi 4, but every volunteer would have to learn Nix: we copy the method, not the system.</p>
     <p lang="en"><span class="k">Stations</span>update with <code>sysupgrade -n</code> instead of <code>-v</code> (<a href="#upgrade">Part III, 7</a>), so nothing survives but what the image makes from the MAC. Today <code>-v</code> keeps hand edits, and stations slowly drift apart. The kit keeps the last two images of each role; going back means flashing the previous one. A CPE510 has one firmware slot, so failsafe mode stays the last resort.</p>
-    <p lang="en"><span class="k">Cost</span>with <code>-n</code>, the one choice made on a unit today, <code>perch ap</code>, is lost at each update: either the <code>perch</code> tool keeps it in one small file that comes back after the update, or it is redone by hand. The SSH host key also changes at each update; host certificates signed by a village key would fix that. On a Pi, the identities must survive <code>-n</code>: that is the locked <code>/home</code> (<a href="#home">below</a>).</p>
+    <p lang="en"><span class="k">Cost</span>the one choice made on a unit today, <code>perch ap</code>, now lives in a small file that <code>-v</code> keeps (2026-11-21); <code>-n</code> keeps nothing, so after <code>-n</code> it is redone by hand. The SSH host key also changes at each update; host certificates signed by a village key would fix that. On a Pi, the identities must survive <code>-n</code>: that is the locked <code>/home</code> (<a href="#home">below</a>).</p>
   </div>
   <div class="card">
     <h4><span lang="en">The role chosen on the unit</span></h4>
