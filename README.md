@@ -626,8 +626,31 @@ uci commit network
 &#32;
 # --- Radios: the first radio of each band takes that band's uses, any other is off ---
 [ -s /etc/config/wireless ] || wifi config
+RADIOS=$(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
+# A radio that can do two bands gets the highest one from OpenWrt (seen 2026-11-21 on a Pi 4: 5 GHz,
+# so a 2.4 GHz-only feeder came up with its radio off). A band that has uses but no radio takes a
+# radio whose own band has none.
+for B in 2g 5g; do
+	if [ "$B" = 2g ]; then U=$USE2 TX=$TX2; else U=$USE5 TX=$TX5; fi
+	{ [ -n "$U" ] &amp;&amp; [ "$TX" != '-' ]; } || continue
+	FOUND=''
+	for r in $RADIOS; do [ "$(uci -q get wireless.$r.band)" != "$B" ] || FOUND=$r; done
+	[ -z "$FOUND" ] || continue
+	for r in $RADIOS; do
+		case "$(uci -q get wireless.$r.band)" in
+			2g) RU=$USE2 RT=$TX2 ;;
+			5g) RU=$USE5 RT=$TX5 ;;
+			*)  RU='' RT='-' ;;
+		esac
+		if [ -z "$RU" ] || [ "$RT" = '-' ]; then
+			logger -t sparrows "radio $r: band $(uci -q get wireless.$r.band) has no use here, set to $B"
+			uci set wireless.$r.band="$B"
+			break
+		fi
+	done
+done
 DONE=''
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+for r in $RADIOS; do
 	uci -q delete wireless.default_$r
 	B=$(uci -q get wireless.$r.band)
 	case "$B" in
@@ -2700,6 +2723,7 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
   <li>OpenWrt 25.12 has no <code>wpa_cli</code>: the Wi-Fi config is pushed over ubus. Debug with <code>logread</code>, and raise the radio's <code>log_level</code> to 2 on the AP to see its side.</li>
   <li>Node clocks are not synchronised. Ignore timestamps when comparing logs between nodes.</li>
   <li>EAP225-Outdoor: the OpenWrt wiki says recent TP-Link stock firmware can block installing OpenWrt, and v4 is not supported. Check the revision and the stock firmware first.</li>
+  <li>A single radio that can do both bands, like the Raspberry Pi 4's, is set to 5 GHz by OpenWrt (seen 2026-11-21: the Pi 4 nest + feeder, 2.4 GHz only, came up with no Wi-Fi at all). Since then the first-boot file gives such a radio the band that has a use. On a unit already flashed, write the rebuilt image again (<code>sysupgrade -n</code>, or the SD card).</li>
 </ul>
 <h4><span lang="en">Admin access</span></h4>
 <ul lang="en">

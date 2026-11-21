@@ -1347,8 +1347,31 @@ uci commit network
 
 # --- Radios: the first radio of each band takes that band's uses, any other is off ---
 [ -s /etc/config/wireless ] || wifi config
+RADIOS=$(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
+# A radio that can do two bands gets the highest one from OpenWrt (seen 2026-11-21 on a Pi 4: 5 GHz,
+# so a 2.4 GHz-only feeder came up with its radio off). A band that has uses but no radio takes a
+# radio whose own band has none.
+for B in 2g 5g; do
+	if [ "$B" = 2g ]; then U=$USE2 TX=$TX2; else U=$USE5 TX=$TX5; fi
+	{ [ -n "$U" ] &amp;&amp; [ "$TX" != '-' ]; } || continue
+	FOUND=''
+	for r in $RADIOS; do [ "$(uci -q get wireless.$r.band)" != "$B" ] || FOUND=$r; done
+	[ -z "$FOUND" ] || continue
+	for r in $RADIOS; do
+		case "$(uci -q get wireless.$r.band)" in
+			2g) RU=$USE2 RT=$TX2 ;;
+			5g) RU=$USE5 RT=$TX5 ;;
+			*)  RU='' RT='-' ;;
+		esac
+		if [ -z "$RU" ] || [ "$RT" = '-' ]; then
+			logger -t sparrows "radio $r: band $(uci -q get wireless.$r.band) has no use here, set to $B"
+			uci set wireless.$r.band="$B"
+			break
+		fi
+	done
+done
 DONE=''
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+for r in $RADIOS; do
 	uci -q delete wireless.default_$r
 	B=$(uci -q get wireless.$r.band)
 	case "$B" in
@@ -3672,6 +3695,7 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
   <li>OpenWrt 25.12 has no <code>wpa_cli</code>: the Wi-Fi config is pushed over ubus. Debug with <code>logread</code>, and raise the radio's <code>log_level</code> to 2 on the AP to see its side.</li>
   <li>Node clocks are not synchronised. Ignore timestamps when comparing logs between nodes.</li>
   <li>EAP225-Outdoor: the OpenWrt wiki says recent TP-Link stock firmware can block installing OpenWrt, and v4 is not supported. Check the revision and the stock firmware first.</li>
+  <li>A single radio that can do both bands, like the Raspberry Pi 4's, is set to 5 GHz by OpenWrt (seen 2026-11-21: the Pi 4 nest + feeder, 2.4 GHz only, came up with no Wi-Fi at all). Since then the first-boot file gives such a radio the band that has a use. On a unit already flashed, write the rebuilt image again (<code>sysupgrade -n</code>, or the SD card).</li>
 </ul>
 <ul lang="fr">
   <li>Le mesh 802.11s ne marche pas sur les canaux DFS. Les deux nœuds passent le test radar, puis ne s'appairent jamais. Utiliser AP + client en 5 GHz. En 2,4 GHz, 802.11s marche : c'est ce qu'utilisent les haies.</li>
@@ -3682,6 +3706,7 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
   <li>OpenWrt 25.12 n'a pas de <code>wpa_cli</code> : la config Wi-Fi passe par ubus. Déboguer avec <code>logread</code>, et monter le <code>log_level</code> de la radio à 2 sur l'AP pour voir son côté.</li>
   <li>Les horloges des nœuds ne sont pas synchronisées. Ignorer les horodatages quand on compare des journaux entre nœuds.</li>
   <li>EAP225-Outdoor : le wiki OpenWrt indique qu'un firmware TP-Link récent peut bloquer l'installation d'OpenWrt, et la v4 n'est pas prise en charge. Vérifier d'abord la révision et le firmware d'origine.</li>
+  <li>Une seule radio qui sait faire les deux bandes, comme celle du Raspberry Pi 4, est mise en 5 GHz par OpenWrt (vu le 2026-11-21 : le nid + mangeoire Pi 4, en 2,4 GHz seulement, a démarré sans aucun Wi-Fi). Depuis, le fichier de premier démarrage donne à une telle radio la bande qui a un usage. Sur un boîtier déjà flashé, réécrire l'image reconstruite (<code>sysupgrade -n</code>, ou la carte SD).</li>
 </ul>
 <ul lang="es">
   <li>La malla 802.11s no funciona en canales DFS. Los dos nodos pasan la comprobación de radar y después no se emparejan nunca. Usar AP + cliente en 5 GHz. En 2,4 GHz, 802.11s va bien: es lo que usan los setos.</li>
@@ -3692,6 +3717,7 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
   <li>OpenWrt 25.12 no tiene <code>wpa_cli</code>: la configuración Wi-Fi se pasa por ubus. Depurar con <code>logread</code>, y subir el <code>log_level</code> de la radio a 2 en el AP para ver su lado.</li>
   <li>Los relojes de las estaciones no están sincronizados. No hacer caso de las horas al comparar registros entre estaciones.</li>
   <li>EAP225-Outdoor: el wiki de OpenWrt dice que el firmware original reciente de TP-Link puede bloquear la instalación de OpenWrt, y la v4 no está soportada. Comprobar primero la revisión y el firmware original.</li>
+  <li>Una sola radio que sabe hacer las dos bandas, como la de la Raspberry Pi 4, queda en 5 GHz por OpenWrt (visto el 2026-11-21: el nido + comedero Pi 4, solo en 2,4 GHz, arrancó sin ningún Wi-Fi). Desde entonces el archivo de primer arranque da a esa radio la banda que tiene un uso. En una unidad ya flasheada, volver a escribir la imagen reconstruida (<code>sysupgrade -n</code>, o la tarjeta SD).</li>
 </ul>
 <h4><span lang="en">Admin access</span><span lang="fr">Accès d'admin</span><span lang="es">Acceso de administración</span></h4>
 <ul lang="en">

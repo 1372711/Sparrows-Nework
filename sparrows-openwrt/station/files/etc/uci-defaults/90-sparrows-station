@@ -61,8 +61,31 @@ uci commit network
 
 # --- Radios: the first radio of each band takes that band's uses, any other is off ---
 [ -s /etc/config/wireless ] || wifi config
+RADIOS=$(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p')
+# A radio that can do two bands gets the highest one from OpenWrt (seen 2026-11-21 on a Pi 4: 5 GHz,
+# so a 2.4 GHz-only feeder came up with its radio off). A band that has uses but no radio takes a
+# radio whose own band has none.
+for B in 2g 5g; do
+	if [ "$B" = 2g ]; then U=$USE2 TX=$TX2; else U=$USE5 TX=$TX5; fi
+	{ [ -n "$U" ] && [ "$TX" != '-' ]; } || continue
+	FOUND=''
+	for r in $RADIOS; do [ "$(uci -q get wireless.$r.band)" != "$B" ] || FOUND=$r; done
+	[ -z "$FOUND" ] || continue
+	for r in $RADIOS; do
+		case "$(uci -q get wireless.$r.band)" in
+			2g) RU=$USE2 RT=$TX2 ;;
+			5g) RU=$USE5 RT=$TX5 ;;
+			*)  RU='' RT='-' ;;
+		esac
+		if [ -z "$RU" ] || [ "$RT" = '-' ]; then
+			logger -t sparrows "radio $r: band $(uci -q get wireless.$r.band) has no use here, set to $B"
+			uci set wireless.$r.band="$B"
+			break
+		fi
+	done
+done
 DONE=''
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+for r in $RADIOS; do
 	uci -q delete wireless.default_$r
 	B=$(uci -q get wireless.$r.band)
 	case "$B" in
