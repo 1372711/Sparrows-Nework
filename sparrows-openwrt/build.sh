@@ -390,7 +390,10 @@ build_one() (
 	if [ "$RNS" = 1 ]; then cp -a "$HERE/tree/files/." "$F/"; fi          # Reticulum + the page
 	if [ "$NEST" = 1 ]; then cp -a "$HERE/nest/files/." "$F/"; fi         # RA, DNS, welcome page, lxmd
 	install -d -m 700 "$F/etc/dropbear"
-	cat "$HERE"/keys/*.pub > "$F/etc/dropbear/authorized_keys"
+	# Type and key only: the comment at the end of a .pub file (often user@laptop) would name the admin
+	# to anyone who reads the card
+	awk 'NF >= 2 && $1 ~ /^(ssh-|ecdsa-|sk-)/ { print $1, $2 }' "$HERE"/keys/*.pub > "$F/etc/dropbear/authorized_keys"
+	[ -s "$F/etc/dropbear/authorized_keys" ] || die "No usable key in keys/*.pub (a line starts with ssh-ed25519, ssh-rsa, ecdsa-... or sk-...)"
 	chmod 600 "$F/etc/dropbear/authorized_keys"
 	install -d -m 755 "$F/etc/sparrows"
 	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
