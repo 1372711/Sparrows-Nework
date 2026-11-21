@@ -82,6 +82,31 @@ FORBIDDEN_NO_UI="luci-base uhttpd"     # ...and no web interface unless it was a
 
 die() { echo "$*" >&2; exit 1; }
 
+# Identity (hard rule: nobody is named). What a machine can catch before anything is built; the rest
+# is in the Sparrows Tao, "Staying unnamed". Warnings only, except the rights on secrets/.
+identity_check() {
+	local GE GN HITS
+	if git -C "$HERE" rev-parse >/dev/null 2>&1; then
+		GE=$(git -C "$HERE" config user.email || true)
+		GN=$(git -C "$HERE" config user.name || true)
+		echo "  Commits made here are signed \"${GN:-?} <${GE:-?}>\": public for good once pushed."
+		case "$GE" in
+			*noreply*|*no-reply*) ;;
+			*) echo "    Safer: a pseudonym and a no-reply address (git config user.name / user.email)." ;;
+		esac
+	fi
+	# An e-mail address in a file that goes into the images (the project's shared contact is fine)
+	HITS=$(grep -rInE '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' \
+		"$HERE/common" "$HERE/station" "$HERE/perch" "$HERE/tree" "$HERE/nest" "$HERE/ui" "$HERE/devices" \
+		2>/dev/null | grep -v -e 'sparrows-network@riseup\.net' || true)
+	if [ -n "$HITS" ]; then
+		echo "  Identity: an e-mail address in a file that goes into the images. Is it someone's?"
+		printf '%s\n' "$HITS" | head -n 5 | sed 's/^/    /'
+	fi
+	# The radio keys and passphrases: readable by you only
+	[ ! -d "$HERE/secrets" ] || chmod -R go-rwx "$HERE/secrets"
+}
+
 # The device lines of profiles.txt: role target profile tx2 tx5 [ui] [uses=...]. A # starts a comment anywhere
 profiles() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/profiles.txt"; }
 
@@ -579,6 +604,7 @@ add_device() {
 	RS=$(ask "Role(s) for this device (several with spaces), or m for manual mode: ")
 	[ -n "$RS" ] || { echo "Nothing added."; return; }
 	if [ "$RS" = m ]; then
+		echo "Every unit of this kind carries the name, and a tree or a nest announces it: never a person's, a house's or a street's."
 		RS=$(ask "A name for this kind of unit (letters, digits, -), e.g. garden: ")
 		[[ "$RS" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "Not a name. Nothing added."; return; }
 		SPEC=$(ask_uses)
@@ -789,6 +815,7 @@ case "$VERSION" in
 esac
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
+identity_check
 if [ "$MENU" = 1 ]; then
 	case "$(ask "Go? [Y/n] ")" in [nN]*) exit 0 ;; esac
 fi
