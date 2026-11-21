@@ -118,8 +118,6 @@ uci get system.@system[0].hostname # perch-xxxx
 # Same on the other perch (::42), then on that one only:
 perch ap
 
-# On the nest: delete the two host-record lines for node1 and node2 in /etc/dnsmasq.d/mesh.conf, then
-sudo dnsmasq --test && sudo systemctl restart dnsmasq
 ### feeder-verify
 # From a nest or a laptop on the mesh: find the feeder by its MAC
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -153,7 +151,7 @@ ps | grep -e dnsmasq -e odhcpd  # nothing
 
 # From a phone on the SSID: it joins, gets an address from the nest, reaches http://sparrows.lan/
 
-# Undo: write the SD card again, with another image or with Raspberry Pi OS
+# Undo: write the SD card again, with another image
 ### hedge-verify
 # Find it like a feeder, from a laptop on its cable
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -241,159 +239,6 @@ scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/
 # On the station
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
 sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
-### pi-packages
-sudo apt update && sudo apt full-upgrade -y
-sudo apt install -y dnsmasq nginx nftables ndisc6
-
-# Name the nest like every station: nest-<last 4 hex digits of the eth0 MAC> (not yet tested)
-sudo hostnamectl set-hostname "nest-$(tr -d : </sys/class/net/eth0/address | tail -c 5)"
-### pi-network
-sudo nmcli con delete mesh 2>/dev/null
-sudo nmcli con delete "Wired connection 1" 2>/dev/null
-sudo nmcli con add type ethernet ifname eth0 con-name mesh \
-  ipv4.method disabled \
-  ipv6.method manual ipv6.addresses fd7e:4c1a:9b20:1::1/64 \
-  ipv6.never-default yes ipv6.ignore-auto-dns yes ipv6.addr-gen-mode eui64 \
-  connection.autoconnect yes
-sudo nmcli con up mesh
-
-# Non-ULA prefix next to the ULA: Android refuses a network with only ULA addresses.
-# Bench only: 2001:db8::/32 is the documentation range. The real prefix is not decided yet.
-sudo nmcli con mod mesh +ipv6.addresses 2001:db8:1::1/64 && sudo nmcli con up mesh
-
-# Routing stays off for both families. eth0.forwarding=1 only sets the router flag in
-# neighbour advertisements (Android drops a gateway without it); all.forwarding=0 keeps
-# IPv6 forwarding off. Keep the eth0 line AFTER the "all" line: writing "all" resets every interface.
-sudo tee /etc/sysctl.d/90-no-forward.conf >/dev/null <<'EOF'
-net.ipv4.ip_forward=0
-net.ipv6.conf.all.forwarding=0
-net.ipv6.conf.eth0.forwarding=1
-EOF
-sudo sysctl --system
-sysctl net.ipv6.conf.eth0.forwarding net.ipv6.conf.all.forwarding net.ipv4.ip_forward   # 1 0 0
-### pi-dnsmasq
-# Mesh only. bind-dynamic = OK even if eth0 comes up after dnsmasq
-interface=eth0
-bind-dynamic
-
-# Isolated network: no upstream DNS for mesh clients
-no-resolv
-domain-needed
-
-# Local domain (AAAA records only)
-domain=sparrows.lan
-local=/sparrows.lan/
-expand-hosts
-host-record=sparrows.lan,dns.sparrows.lan,fd7e:4c1a:9b20:1::1
-cname=www.sparrows.lan,sparrows.lan
-
-# Router advertisements: SLAAC only (no DHCPv6, Android ignores it anyway)
-# constructor:eth0 = one prefix announced per /64 on eth0 (the ULA + the non-ULA one)
-enable-ra
-dhcp-range=::,constructor:eth0,ra-only,64,12h
-# RA every 60 s, router lifetime 1800 s (phones accept the network)
-ra-param=eth0,60,1800
-# DNS + search domain sent inside the RA (RDNSS / DNSSL)
-# Non-ULA address first: some Android versions drop a ULA DNS server. Bench: 2001:db8:1::1
-dhcp-option=option6:dns-server,[2001:db8:1::1],[fd7e:4c1a:9b20:1::1]
-dhcp-option=option6:domain-search,sparrows.lan
-
-# Captive portal: any unknown name -> the Pi (AAAA)
-address=/#/fd7e:4c1a:9b20:1::1
-### pi-nftables
-#!/usr/sbin/nft -f
-flush ruleset
-
-table inet filter {
-  chain input {
-    type filter hook input priority 0; policy drop;
-    iif "lo" accept
-    ct state established,related accept
-    ct state invalid drop
-    # ICMP/ICMPv6: ping, and IPv6 can't work without it (NDP, RS/RA, MLD)
-    meta l4proto { icmp, ipv6-icmp } accept
-
-    # Home side: DHCP / DHCPv6 client replies + admin SSH
-    iifname "wlan0" udp sport 67 udp dport 68 accept
-    iifname "wlan0" udp dport 546 accept
-    iifname "wlan0" tcp dport 22 accept
-
-    # Mesh side: IPv6 only (IPv4 falls to policy drop)
-    iifname "eth0" meta nfproto ipv6 meta l4proto { tcp, udp } th dport 53 accept   # DNS
-    iifname "eth0" meta nfproto ipv6 tcp dport { 22, 80, 443 } accept               # SSH, web
-  }
-  chain forward {
-    type filter hook forward priority 0; policy drop;            # NEVER mesh <-> home
-  }
-  chain output {
-    type filter hook output priority 0; policy accept;
-  }
-}
-
-# Captive portal: catch hard-coded DNS and any web request
-table ip6 nat {
-  chain prerouting {
-    type nat hook prerouting priority dstnat;
-    iifname "eth0" meta l4proto { tcp, udp } th dport 53 redirect to :53
-    iifname "eth0" tcp dport 80 ip6 daddr != fd7e:4c1a:9b20:1::1 redirect to :80
-  }
-}
-### pi-nginx
-server {
-    listen [::]:80;                    # IPv6; wlan0 side blocked by nftables
-    server_name sparrows.lan www.sparrows.lan;
-    root  /var/www/sparrows;
-    index index.html;
-
-    location /files/ {
-        alias /data/files/;
-        autoindex on;                  # goes away in the target model
-    }
-}
-
-# Captive portal catch-all
-server {
-    listen [::]:80 default_server;
-    server_name _;
-    return 302 http://sparrows.lan/;
-}
-### pi-apply
-sudo dnsmasq --test && sudo systemctl enable --now dnsmasq && sudo systemctl restart dnsmasq
-sudo nft -c -f /etc/nftables.conf && sudo systemctl enable --now nftables && sudo systemctl restart nftables
-sudo nginx -t && sudo systemctl reload nginx
-### pi-verify
-# On the Pi
-ip -br a                          # eth0: fd7e:4c1a:9b20:1::1/64 (+ 2001:db8:1::1/64) + fe80::, NO IPv4
-ip route; ip -6 route             # IPv4 default via wlan0 ONLY; no IPv6 default via eth0
-sysctl net.ipv4.ip_forward net.ipv6.conf.all.forwarding net.ipv6.conf.eth0.forwarding   # 0 0 1
-ss -lntup | grep -e dnsmasq -e nginx
-journalctl -fu dnsmasq            # RTR-ADVERT lines on eth0
-sudo nft list table ip6 nat
-
-# From a Linux laptop on the mesh
-rdisc6 <if>                       # both prefixes, Router lifetime 1800, the DNS servers
-ip -6 addr show <if>              # fd7e:4c1a:9b20:1:... and 2001:db8:1:... (SLAAC)
-ip -6 neigh show dev <if>         # the nest's fe80 entry says "router"
-dig AAAA sparrows.lan @fd7e:4c1a:9b20:1::1   # the nest answers
-getent ahosts sparrows.lan        # the laptop's own resolver agrees (see Pitfalls if not)
-ping 192.168.10.254               # must FAIL (no IPv4 at all on the mesh)
-ping -6 2001:4860:4860::8888      # must FAIL (nothing forwarded to the home side)
-
-# Captive portal
-nslookup google.com               # -> fd7e:4c1a:9b20:1::1
-curl -sI http://connectivitycheck.gstatic.com/generate_204   # 302 -> http://sparrows.lan/
-
-# On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, no IPv4
-### welcome
-# On the nest: this file becomes the page every newcomer sees
-sudo cp /var/www/sparrows/index.html /var/www/sparrows/index.html.bak 2>/dev/null
-sudo install -m 644 index.html /var/www/sparrows/index.html
-curl -sI http://sparrows.lan/ | head -n1        # HTTP/1.1 200 OK
-# No logs on the on-ramp: add  access_log off;  inside both server blocks, then
-sudo nginx -t && sudo systemctl reload nginx
-
-# Undo
-sudo mv /var/www/sparrows/index.html.bak /var/www/sparrows/index.html
 ### kit
 # On any computer with Internet and git: the whole project from GitHub. Public: no account needed
 git clone https://github.com/1372711/Sparrows-Nework.git sparrows
@@ -401,198 +246,16 @@ cd sparrows && ls                             # tao/ (this handbook) and sparrow
 git pull                                      # later, from inside sparrows/: get the latest
 git log -1 --format='%h %ad %s'               # which version you have
 
-# On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
-# Public files only: keys/, secrets/ and build/ never go in the kit.
+# A copy for a USB stick, on the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
+# Public files only: keys/, secrets/ and build/ never go in it.
 mkdir -p kit
 rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
 cp <app-install-file> kit/                    # e.g. the Sideband APK, once chosen
 ( cd kit && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
 grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ && echo "STOP: check these files"   # should print nothing
-scp -r kit index.html <user>@[fd7e:4c1a:9b20:1::1]:/tmp/
 
-# On the nest
-sudo rm -rf /var/www/sparrows/kit && sudo cp -r /tmp/kit /var/www/sparrows/kit
-sudo install -m 644 /tmp/index.html /var/www/sparrows/index.html
-# In /etc/nginx/sites-available/sparrows, inside the sparrows.lan server block:
-#     location /kit/ { autoindex on; }
-sudo nginx -t && sudo systemctl reload nginx
-curl -s http://sparrows.lan/kit/ | grep -c href           # the files are listed
-
-# Anyone who downloaded the kit checks it
+# Anyone who gets the copy checks it
 cd kit && sha256sum -c SHA256SUMS
-
-# Undo on the nest: remove the location line, then
-sudo rm -rf /var/www/sparrows/kit && sudo nginx -t && sudo systemctl reload nginx
-### rns-install
-sudo apt install -y python3-venv
-sudo useradd --system --create-home --home-dir /var/lib/reticulum --shell /usr/sbin/nologin rns
-sudo python3 -m venv /opt/reticulum
-sudo /opt/reticulum/bin/pip install rns lxmf
-/opt/reticulum/bin/rnsd --version; /opt/reticulum/bin/lxmd --version
-sudo -u rns mkdir -p /var/lib/lxmd
-### rns-config
-[reticulum]
-  enable_transport = Yes          # the Pi relays for other peers
-  share_instance = Yes            # lxmd and the rn* tools use this rnsd
-  panic_on_interface_error = No
-
-[logging]
-  loglevel = 4
-
-[interfaces]
-  # Mesh side ONLY. Never wlan0 (home LAN).
-  [[Sparrows Mesh]]
-    type = AutoInterface
-    enabled = yes
-    devices = eth0
-### rns-unit-rnsd
-[Unit]
-Description=Reticulum transport node (Sparrows mesh)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=rns
-ExecStart=/opt/reticulum/bin/rnsd --config /var/lib/reticulum -s
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-### rns-unit-lxmd
-[Unit]
-Description=LXMF propagation node (Sparrows mesh)
-After=rnsd.service
-Requires=rnsd.service
-
-[Service]
-User=rns
-ExecStart=/opt/reticulum/bin/lxmd --config /var/lib/lxmd --rnsconfig /var/lib/reticulum -p
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-### rns-firewall
-    iifname "eth0" meta nfproto ipv6 udp dport { 29716, 42671 } accept   # Reticulum AutoInterface
-### rns-start
-sudo nft -c -f /etc/nftables.conf && sudo systemctl restart nftables
-sudo systemctl daemon-reload
-sudo systemctl enable --now rnsd lxmd
-
-# Verify on the Pi
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "Sparrows Mesh" Up; only eth0
-sudo ss -lunp | grep -e rnsd -e python                                # UDP bound on eth0 / fe80, none on wlan0
-journalctl -u rnsd -u lxmd -n 50                                      # lxmd prints its propagation node address
-
-# From a Linux laptop on the village (rns in a venv, devices = <its interface> in ~/.reticulum/config)
-rnstatus                          # the nest shows up as a peer
-rnpath <lxmd address>             # a path to the nest's propagation node
-
-# Once a version is tested: note it, and keep the wheels for installs without Internet
-/opt/reticulum/bin/pip freeze | grep -i -e rns -e lxmf
-/opt/reticulum/bin/pip download rns lxmf -d wheels/
-### rns-undo
-sudo systemctl disable --now lxmd rnsd
-sudo rm /etc/systemd/system/rnsd.service /etc/systemd/system/lxmd.service && sudo systemctl daemon-reload
-# remove the "Reticulum AutoInterface" line from /etc/nftables.conf, then:
-sudo systemctl restart nftables
-sudo rm -rf /opt/reticulum /var/lib/lxmd && sudo userdel -r rns
-### page-node-install
-# 1. While the Pi Zero is still on the home Wi-Fi (Raspberry Pi OS Lite 64-bit, user + SSH set in Imager)
-sudo apt update && sudo apt install -y python3-venv
-python3 -m venv ~/rns
-~/rns/bin/pip install rns lxmf nomadnet
-~/rns/bin/rnsd --version; ~/rns/bin/nomadnet --version
-
-# 2. Move it to the village: open Wi-Fi, IPv6 only. Write the Reticulum config (step 2) FIRST.
-sudo nmcli dev wifi connect Sparrows
-sudo nmcli con mod Sparrows ipv4.method disabled ipv6.method auto
-nmcli con show                                   # name of the home Wi-Fi profile
-sudo nmcli con delete "<home Wi-Fi profile>"     # LOCK-OUT RISK: from now on, admin only from the village
-# From a laptop on the village: ssh <user>@<its SLAAC address>, or fe80::...%<if>
-### page-node-config
-[reticulum]
-  enable_transport = No           # the nests relay; a small host doesn't need to
-  share_instance = Yes            # nomadnet and the rn* tools share this instance
-
-[logging]
-  loglevel = 3
-
-[interfaces]
-  # The village open Wi-Fi only
-  [[Sparrows]]
-    type = AutoInterface
-    enabled = yes
-    devices = wlan0
-### page-node-nomad
-# First run writes ~/.nomadnetwork/config; stop it with Ctrl-C
-~/rns/bin/nomadnet --daemon
-# In ~/.nomadnetwork/config, section [node]:
-#   enable_node = yes
-#   node_name = Bakery
-mkdir -p ~/.nomadnetwork/storage/pages ~/.nomadnetwork/storage/files
-printf '>Bakery\n\nOpen 7:00-13:00. Bread on Saturday.\n' > ~/.nomadnetwork/storage/pages/index.mu
-
-# Run it at boot
-sudo tee /etc/systemd/system/nomadnet.service >/dev/null <<EOF
-[Unit]
-Description=Nomad Network page node (Sparrows)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=$USER
-ExecStart=$HOME/rns/bin/nomadnet --daemon
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-sudo systemctl daemon-reload && sudo systemctl enable --now nomadnet
-### page-node-verify
-# On the Pi Zero
-ip -6 addr show wlan0               # fe80:: + SLAAC addresses from the nests' prefixes, no inet
-~/rns/bin/rnstatus                  # "Sparrows" Up
-journalctl -u nomadnet -n 30        # the node announces itself
-
-# From a laptop on the village: Nomad Network or MeshChat, Network list -> "Bakery"
-
-# Undo
-sudo systemctl disable --now nomadnet && sudo rm /etc/systemd/system/nomadnet.service
-rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/identity first to keep the address
-### rec-nm
-# SD card in a Linux laptop: R=/media/$USER/rootfs  B=/media/$USER/bootfs
-# On the bench, also add under [ipv6]:  address2=2001:db8:1::1/64
-sudo tee $R/etc/NetworkManager/system-connections/mesh.nmconnection >/dev/null <<'EOF'
-[connection]
-id=mesh
-type=ethernet
-interface-name=eth0
-autoconnect=true
-autoconnect-priority=10
-
-[ipv4]
-method=disabled
-
-[ipv6]
-method=manual
-address1=fd7e:4c1a:9b20:1::1/64
-never-default=true
-addr-gen-mode=eui64
-EOF
-sudo chmod 600 $R/etc/NetworkManager/system-connections/mesh.nmconnection
-sudo chown root:root $R/etc/NetworkManager/system-connections/mesh.nmconnection
-### rec-ssh
-ls $R/home; grep ':1000:' $R/etc/passwd            # empty -> update Imager and reflash
-sudo ln -sf /usr/lib/systemd/system/ssh.service \
-  $R/etc/systemd/system/multi-user.target.wants/ssh.service
-sudo rm -f $R/etc/ssh/sshd_not_to_be_run
-ls $R/etc/ssh/ssh_host_* || sudo ssh-keygen -A -f $R
-HASH=$(openssl passwd -6)                          # set or reset the user's password
-sudo sed -i "s|^moonshiner:[^:]*:|moonshiner:$HASH:|" $R/etc/shadow
-sync && sudo umount $R $B
 ### rns-hub
 # ---- On the VPS (Debian family). Same install as on a nest: venv, user rns, rnsd.service ----
 # /var/lib/reticulum/config
@@ -622,7 +285,8 @@ sync && sudo umount $R $B
 
 # VPS firewall: SSH (keys only) and the hub port, nothing else:   tcp dport { 22, 4242 } accept
 
-# ---- On each nest: add under [interfaces] in /var/lib/reticulum/config ----
+# ---- On each nest: add under [interfaces] in /etc/reticulum/config ----
+# The nest needs a way out for this, and an OpenWrt nest has no home side today: to decide
   [[Sparrows Hub]]
     type = TCPClientInterface
     enabled = yes
@@ -632,13 +296,13 @@ sync && sudo umount $R $B
     passphrase = <the same>
     mode = boundary               # a link to a very different segment
 
-# Apply and verify on the nest. The TCP session leaves by wlan0: no forwarding, no firewall change
-sudo systemctl restart rnsd lxmd
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "Sparrows Hub" Up
-ss -tnp | grep 4242                                                   # one TCP session, from the wlan0 address
+# Apply and verify on the nest
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
+rns status                        # "Sparrows Hub" Up
+netstat -tn | grep 4242           # one TCP session
 
 # Undo on the nest: enabled = no on that block (or delete it), then
-sudo systemctl restart rnsd lxmd
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
 ### lora-flyway
 # Not yet tested. ---- On the admin laptop, while it has Internet: flash each board once ----
 python3 -m venv ~/rns && ~/rns/bin/pip install rns
@@ -647,8 +311,8 @@ python3 -m venv ~/rns && ~/rns/bin/pip install rns
 
 # ---- On each nest: the board on USB, readable by the rns user ----
 ls -l /dev/serial/by-id/                     # a stable name for the board
-sudo usermod -aG dialout rns
-# Add under [interfaces] in /var/lib/reticulum/config. The SAME radio values at both ends.
+# The image needs the USB serial driver (kmod-usb-acm), and the rns user must be able to open the board
+# Add under [interfaces] in /etc/reticulum/config. The SAME radio values at both ends.
   [[LoRa flyway]]
     type = RNodeInterface
     enabled = yes
@@ -662,20 +326,20 @@ sudo usermod -aG dialout rns
     airtime_limit_short = 33      # % over the short window: bursts allowed, the long limit still holds
 
 # Apply and verify on the nest
-sudo systemctl restart rnsd lxmd
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "LoRa flyway" Up, its airtime and channel load
-journalctl -u rnsd -n 50                                              # no serial error
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
+rns status                        # "LoRa flyway" Up, its airtime and channel load
+logread -e rnsd | tail -n 50      # no serial error
 # From a laptop in this village: the other village's nest is reachable over LoRa
 rnpath <lxmd address of the other nest>      # a path, 2 or more hops
 rnprobe rnstransport.probe <the other nest's transport hash>   # RSSI and SNR (needs respond_to_probes = Yes there)
 
 # Undo on the nest: enabled = no on that block (or delete it), then
-sudo systemctl restart rnsd lxmd
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
 ### nest-build
 # Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
 #   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
 ./build.sh nest                  # shows what each interface will do, then builds
-./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the Debian card aside)
+./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the previous card aside)
 
 # Its village address comes from the Ethernet MAC (on the Pi:  cat /sys/class/net/eth0/address)
 # e.g. dc:a6:32:12:34:56  ->  fd7e:4c1a:9b20:1:dea6:32ff:fe12:3456   (same rule as names-find)
@@ -693,7 +357,7 @@ netstat -lnu | grep ':53 '; netstat -ltn | grep ':80 '   # dnsmasq on 53, uhttpd
 rns status                                 # "Sparrows" interface Up, on br-lan
 /etc/init.d/lxmd status                    # running: the message store
 
-# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the same checks as the Debian nest ----
+# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the on-ramp checks ----
 rdisc6 <if>                       # both prefixes, Router lifetime 1800, the nest's address as DNS
 ip -6 neigh show dev <if>         # the nest's fe80 entry says "router"
 dig AAAA sparrows.lan @<nest address>        # the nest's address
@@ -701,7 +365,7 @@ curl -sI http://connectivitycheck.gstatic.com/generate_204   # the welcome page,
 ping 192.168.1.1                  # must FAIL (no IPv4)
 # On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, the page opens
 
-# Undo: put the Debian SD card back in the Pi
+# Undo: put the previous card back in the Pi
 ### versions
 # On the admin laptop, in the git checkout: the version the next build will carry
 git describe --tags --always --dirty        # e.g. v2026.11.21-3-g1f59fc3 ; "-dirty" = changes not committed

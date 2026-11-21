@@ -188,13 +188,12 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#talk"><span lang="en">Talking: messages and calls</span><span lang="fr">Se parler : messages et appels</span><span lang="es">Hablarse: mensajes y llamadas</span></a>
     <a href="#ipv6"><span lang="en">IPv6 without DHCP</span><span lang="fr">IPv6 sans DHCP</span><span lang="es">IPv6 sin DHCP</span></a>
     <p class="tg"><span lang="en">III. How to build it</span><span lang="fr">III. Comment le construire</span><span lang="es">III. Cómo construirla</span></p>
+    <a href="#kit"><span lang="en">Get the files</span><span lang="fr">Récupérer les fichiers</span><span lang="es">Conseguir los archivos</span></a>
     <a href="#images"><span lang="en">Station images</span><span lang="fr">Images des stations</span><span lang="es">Imágenes de las estaciones</span></a>
     <a href="#hedge-image"><span lang="en">Hedge: feeder + perch (EAP225)</span><span lang="fr">Haie : mangeoire + perchoir (EAP225)</span><span lang="es">Seto: comedero + percha (EAP225)</span></a>
     <a href="#flash-eap"><span lang="en">Flash an EAP225-Outdoor</span><span lang="fr">Flasher un EAP225-Outdoor</span><span lang="es">Flashear un EAP225-Outdoor</span></a>
-    <a href="#pi"><span lang="en">Nests (Raspberry Pi)</span><span lang="fr">Nids (Raspberry Pi)</span><span lang="es">Nidos (Raspberry Pi)</span></a>
-    <a href="#welcome"><span lang="en">This handbook as welcome page</span><span lang="fr">Ce manuel en page d'accueil</span><span lang="es">Este manual como página de bienvenida</span></a>
+    <a href="#nest-image"><span lang="en">Nest image (Pi 4)</span><span lang="fr">Image de nid (Pi 4)</span><span lang="es">Imagen de nido (Pi 4)</span></a>
     <a href="#reticulum">Reticulum</a>
-    <a href="#page-node"><span lang="en">A neighbour's page node (Pi Zero 2 W)</span><span lang="fr">Le nœud de pages d'un voisin (Pi Zero 2 W)</span><span lang="es">El nodo de páginas de un vecino (Pi Zero 2 W)</span></a>
     <a href="#pitfalls"><span lang="en">Pitfalls</span><span lang="fr">Pièges</span><span lang="es">Trampas</span></a>
     <a href="#recovery"><span lang="en">Recovery</span><span lang="fr">Dépannage</span><span lang="es">Recuperación</span></a>
     <p class="tg"><span lang="en">IV. The open road</span><span lang="fr">IV. La route ouverte</span><span lang="es">IV. El camino abierto</span></p>
@@ -315,9 +314,9 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <p lang="en">A file is fetched by what it is, not by where it is. It can't be silently altered, and any copy is valid.</p>
     <p lang="fr">Un fichier se demande par ce qu'il est, pas par l'endroit où il se trouve. Il ne peut pas être modifié en douce, et toute copie est valable.</p>
     <p lang="es">Un archivo se pide por lo que es, no por dónde está. No se puede alterar a escondidas, y cualquier copia vale.</p>
-    <p lang="en"><span class="k">Today</span>An nginx <code>/files/</code> listing on one Pi.</p>
-    <p lang="fr"><span class="k">Aujourd'hui</span>Une liste nginx <code>/files/</code> sur un seul Pi.</p>
-    <p lang="es"><span class="k">Hoy</span>Un listado nginx <code>/files/</code> en una sola Pi.</p>
+    <p lang="en"><span class="k">Today</span>The handbook as a file on the Sparrows page (Nomad Network), from trees and nests.</p>
+    <p lang="fr"><span class="k">Aujourd'hui</span>Le manuel en fichier sur la page Sparrows (Nomad Network), depuis les arbres et les nids.</p>
+    <p lang="es"><span class="k">Hoy</span>El manual como archivo en la página Sparrows (Nomad Network), desde árboles y nidos.</p>
     <p lang="en"><span class="k">Target</span>Files offered over Reticulum, listed in a hash manifest signed by the village node. Wikipedia as ZIM files, read locally.</p>
     <p lang="fr"><span class="k">Cible</span>Fichiers proposés via Reticulum, listés dans un manifeste de hashs signé par le nœud du village. Wikipédia en fichiers ZIM, lus en local.</p>
     <p lang="es"><span class="k">Meta</span>Archivos ofrecidos por Reticulum, listados en un manifiesto de hashes firmado por el nodo del pueblo. Wikipedia en archivos ZIM, leídos en local.</p>
@@ -454,7 +453,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>Never filter ICMPv6.</strong> IPv6 doesn't work without it.</li>
   <li><strong>DNS and HTTP are the on-ramp and nothing more.</strong> No accounts, no logs, no streaming, no service that depends on a DNS name.</li>
   <li><strong>No user key on a nest.</strong> So no web client hosted on a nest.</li>
-  <li><strong>Mesh and home LAN stay isolated.</strong> Forwarding off for both families (on the mesh side, <code>eth0.forwarding=1</code> only sets the router flag: <code>all.forwarding</code> stays 0), nftables <code>forward</code> drop, and never a bridge between them.</li>
+  <li><strong>No link to a home network.</strong> A nest has only the village network: no home side, no second network to forward to, and never a bridge to a home box.</li>
   <li><strong>Radio, France.</strong> Outdoor 5 GHz on channels 100 to 140 (DFS), never 120 to 128 (weather radar), 30 dBm EIRP at most. Channels 36 to 48 are indoor only. No 802.11s on DFS channels: on 2.4 GHz it is fine.</li>
   <li><strong>Perches, feeders and hedges only bridge.</strong> No dnsmasq, no odhcpd, no firewall, no Reticulum on them. On small ones (8 MB of flash, 64 MB of RAM, like the CPE510), no LuCI either.</li>
   <li><strong>No encrypted traffic on amateur radio bands.</strong> Layer 1 is always encrypted, so it never uses them.</li>
@@ -468,7 +467,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>Ne jamais filtrer ICMPv6.</strong> IPv6 ne marche pas sans lui.</li>
   <li><strong>DNS et HTTP sont la rampe d'accès, rien de plus.</strong> Pas de comptes, pas de journaux, pas de streaming, aucun service qui dépende d'un nom DNS.</li>
   <li><strong>Aucune clé d'usager sur un nid.</strong> Donc pas de client web hébergé sur un nid.</li>
-  <li><strong>Le mesh et le réseau de la maison restent isolés.</strong> Routage coupé pour les deux familles (côté mesh, <code>eth0.forwarding=1</code> ne fait que lever le drapeau routeur : <code>all.forwarding</code> reste à 0), <code>forward</code> en drop dans nftables, et jamais de pont entre les deux.</li>
+  <li><strong>Aucun lien vers un réseau de maison.</strong> Un nid n'a que le réseau du village : pas de côté maison, pas de deuxième réseau vers lequel router, et jamais de pont vers une box.</li>
   <li><strong>Radio, France.</strong> 5 GHz extérieur sur les canaux 100 à 140 (DFS), jamais 120 à 128 (radar météo), 30 dBm de PIRE au plus. Les canaux 36 à 48 sont réservés à l'intérieur. Pas de 802.11s sur les canaux DFS : en 2,4 GHz, il va bien.</li>
   <li><strong>Perchoirs, mangeoires et haies ne font que du pont.</strong> Ni dnsmasq, ni odhcpd, ni pare-feu, ni Reticulum. Sur les petits (8 Mo de flash, 64 Mo de RAM, comme le CPE510), pas de LuCI non plus.</li>
   <li><strong>Aucun trafic chiffré sur les bandes radioamateur.</strong> La couche 1 est toujours chiffrée, donc elle ne les utilise jamais.</li>
@@ -482,7 +481,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>No filtrar nunca ICMPv6.</strong> IPv6 no funciona sin él.</li>
   <li><strong>DNS y HTTP son la rampa de acceso y nada más.</strong> Sin cuentas, sin registros, sin streaming, ningún servicio que dependa de un nombre DNS.</li>
   <li><strong>Ninguna clave de usuario en un nido.</strong> Por tanto, ningún cliente web alojado en un nido.</li>
-  <li><strong>La malla y la red de casa siguen aisladas.</strong> Reenvío apagado para las dos familias (en el lado de la malla, <code>eth0.forwarding=1</code> solo levanta la marca de router: <code>all.forwarding</code> sigue en 0), <code>forward</code> en drop en nftables, y nunca un puente entre las dos.</li>
+  <li><strong>Ningún enlace con una red de casa.</strong> Un nido solo tiene la red del pueblo: sin lado de casa, sin segunda red hacia la que reenviar, y nunca un puente con el router de casa.</li>
   <li><strong>Radio, Francia.</strong> 5 GHz en exterior en los canales 100 a 140 (DFS), nunca del 120 al 128 (radar meteorológico), 30 dBm de PIRE como máximo. Los canales 36 a 48 son solo de interior. Nada de 802.11s en canales DFS: en 2,4 GHz va bien.</li>
   <li><strong>Perchas, comederos y setos solo hacen de puente.</strong> Ni dnsmasq, ni odhcpd, ni cortafuegos, ni Reticulum en ellos. En los pequeños (8 MB de flash, 64 MB de RAM, como el CPE510), tampoco LuCI.</li>
   <li><strong>Ningún tráfico cifrado en las bandas de radioaficionados.</strong> La capa 1 va siempre cifrada, así que nunca las usa.</li>
@@ -579,21 +578,21 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
       <li>any other access point or old home router: a <a class="term" href="#g-feeder">feeder</a></li>
       <li>a directional 5 GHz radio on a mast: a <a class="term" href="#g-perch">perch</a></li>
       <li>a Raspberry Pi, mini PC or old laptop on a cable: a <a class="term" href="#g-nest">nest</a></li>
-      <li>a small Linux box on the Wi-Fi: a <a href="#page-node">page node</a> or a <a class="term" href="#g-tree">tree</a></li>
+      <li>a small Linux box on the Wi-Fi: a <a class="term" href="#g-tree">tree</a></li>
     </ul>
     <ul lang="fr">
       <li>un point d'accès extérieur à deux radios : une <a class="term" href="#g-hedge">haie</a></li>
       <li>tout autre point d'accès ou vieux routeur : une <a class="term" href="#g-feeder">mangeoire</a></li>
       <li>une radio 5 GHz directive sur un mât : un <a class="term" href="#g-perch">perchoir</a></li>
       <li>un Raspberry Pi, un mini PC ou un vieux portable sur câble : un <a class="term" href="#g-nest">nid</a></li>
-      <li>un petit boîtier Linux sur le Wi-Fi : un <a href="#page-node">nœud de pages</a> ou un <a class="term" href="#g-tree">arbre</a></li>
+      <li>un petit boîtier Linux sur le Wi-Fi : un <a class="term" href="#g-tree">arbre</a></li>
     </ul>
     <ul lang="es">
       <li>un punto de acceso exterior con dos radios: un <a class="term" href="#g-hedge">seto</a></li>
       <li>cualquier otro punto de acceso o router viejo: un <a class="term" href="#g-feeder">comedero</a></li>
       <li>una radio direccional de 5 GHz en un mástil: una <a class="term" href="#g-perch">percha</a></li>
       <li>una Raspberry Pi, un mini PC o un portátil viejo con cable: un <a class="term" href="#g-nest">nido</a></li>
-      <li>una cajita Linux en el Wi-Fi: un <a href="#page-node">nodo de páginas</a> o un <a class="term" href="#g-tree">árbol</a></li></ul>
+      <li>una cajita Linux en el Wi-Fi: un <a class="term" href="#g-tree">árbol</a></li></ul>
     <p lang="en">Ask a village admin for the image of your device and role, flash it, plug it in. Nothing to set: the station names itself and builds its own address. Perch and hedge images hold the village's radio key, so they are handed over in person, never published.</p>
     <p lang="fr">Demander à un admin du village l'image pour son appareil et son rôle, la flasher, brancher. Rien à régler : la station se nomme et construit son adresse toute seule. Les images de perchoir et de haie contiennent la clé radio du village : elles se remettent en main propre, jamais en public.</p>
     <p lang="es">Pedir a un administrador del pueblo la imagen para su aparato y su papel, flashearla y enchufar. Nada que ajustar: la estación se pone nombre y construye su dirección ella sola. Las imágenes de percha y de seto contienen la clave de radio del pueblo: se entregan en mano, nunca se publican.</p>
@@ -605,29 +604,29 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <h4><span lang="en">I want to start a village</span><span lang="fr">Je veux démarrer un village</span><span lang="es">Quiero empezar un pueblo</span></h4>
     <ol lang="en">
       <li>Read the <a href="#limits">hard rules</a> and <a href="#law">the law</a>.</li>
-      <li>Download the scripts from the <a href="kit/">kit folder</a>, then build the images with your own SSH key and radio keys (<a href="#images">images</a>).</li>
-      <li>Set up one <a href="#pi">nest</a> on a small switch.</li>
+      <li>Get the scripts (<a href="#kit">git or a USB copy</a>), then build the images with your own SSH key and radio keys (<a href="#images">images</a>).</li>
+      <li>Set up one <a href="#nest-image">nest</a> on a small switch.</li>
       <li>Cable one <a href="#hedge-image">hedge</a> to that switch: phones can join.</li>
       <li>Add hedges by air for the village core, and <a href="#perch-image">perches</a> for far sites.</li>
-      <li>Add <a href="#reticulum">Reticulum</a> on the nest, then serve <a href="#welcome">this handbook</a> as the welcome page.</li>
+      <li>The nest brings <a href="#reticulum">Reticulum</a>, the message store and this handbook as the welcome page: check them (<a href="#nest-image">nest image</a>).</li>
       <li>Print the paper notice: app hash and village key hashes.</li>
     </ol>
     <ol lang="fr">
       <li>Lire les <a href="#limits">règles dures</a> et <a href="#law">la loi</a>.</li>
-      <li>Télécharger les scripts dans le <a href="kit/">dossier kit</a>, puis construire les images avec sa propre clé SSH et ses clés radio (<a href="#images">images</a>).</li>
-      <li>Installer un <a href="#pi">nid</a> sur un petit switch.</li>
+      <li>Récupérer les scripts (<a href="#kit">git ou une copie USB</a>), puis construire les images avec sa propre clé SSH et ses clés radio (<a href="#images">images</a>).</li>
+      <li>Installer un <a href="#nest-image">nid</a> sur un petit switch.</li>
       <li>Câbler une <a href="#hedge-image">haie</a> à ce switch : les téléphones peuvent entrer.</li>
       <li>Ajouter des haies par les airs pour le cœur du village, et des <a href="#perch-image">perchoirs</a> pour les sites éloignés.</li>
-      <li>Ajouter <a href="#reticulum">Reticulum</a> sur le nid, puis servir <a href="#welcome">ce manuel</a> comme page d'accueil.</li>
+      <li>Le nid apporte <a href="#reticulum">Reticulum</a>, la boîte aux lettres et ce manuel comme page d'accueil : les vérifier (<a href="#nest-image">image de nid</a>).</li>
       <li>Imprimer l'affiche papier : hash de l'application et empreintes de clés du village.</li>
     </ol>
     <ol lang="es">
       <li>Leer las <a href="#limits">reglas firmes</a> y <a href="#law">la ley</a>.</li>
-      <li>Descargar los scripts de la <a href="kit/">carpeta kit</a>, y construir las imágenes con su propia clave SSH y sus claves de radio (<a href="#images">imágenes</a>).</li>
-      <li>Montar un <a href="#pi">nido</a> en un switch pequeño.</li>
+      <li>Conseguir los scripts (<a href="#kit">git o una copia USB</a>), y construir las imágenes con su propia clave SSH y sus claves de radio (<a href="#images">imágenes</a>).</li>
+      <li>Montar un <a href="#nest-image">nido</a> en un switch pequeño.</li>
       <li>Cablear un <a href="#hedge-image">seto</a> a ese switch: los teléfonos ya pueden entrar.</li>
       <li>Añadir setos por el aire para el centro del pueblo, y <a href="#perch-image">perchas</a> para los sitios lejanos.</li>
-      <li>Añadir <a href="#reticulum">Reticulum</a> en el nido, y servir <a href="#welcome">este manual</a> como página de bienvenida.</li>
+      <li>El nido trae <a href="#reticulum">Reticulum</a>, el buzón y este manual como página de bienvenida: comprobarlos (<a href="#nest-image">imagen de nido</a>).</li>
       <li>Imprimir el cartel en papel: hash de la aplicación y huellas de claves del pueblo.</li></ol>
     <p lang="en"><span class="k">You need</span>to be at ease in a Linux shell. Using the network needs none of that.</p>
     <p lang="fr"><span class="k">Il faut</span>être à l'aise dans un shell Linux. Utiliser le réseau ne demande rien de tout cela.</p>
@@ -645,11 +644,11 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <p lang="fr"><span class="k">Nœud de propagation</span>pas encore rempli</p>
     <p lang="es"><span class="k">Nodo de propagación</span>aún sin rellenar</p>
     <p lang="en"><span class="k">Village pages</span>not filled in yet</p>
-    <p lang="en"><span class="k">Files and scripts</span><a href="kit/">kit/</a>, next to this page. Check each file against <code>SHA256SUMS</code></p>
+    <p lang="en"><span class="k">Files and scripts</span><code>git clone https://github.com/1372711/Sparrows-Nework.git</code>, or a USB copy checked against <code>SHA256SUMS</code> (<a href="#kit">how</a>)</p>
     <p lang="fr"><span class="k">Pages du village</span>pas encore rempli</p>
-    <p lang="fr"><span class="k">Fichiers et scripts</span><a href="kit/">kit/</a>, à côté de cette page. Vérifier chaque fichier avec <code>SHA256SUMS</code></p>
+    <p lang="fr"><span class="k">Fichiers et scripts</span><code>git clone https://github.com/1372711/Sparrows-Nework.git</code>, ou une copie USB vérifiée avec <code>SHA256SUMS</code> (<a href="#kit">comment</a>)</p>
     <p lang="es"><span class="k">Páginas del pueblo</span>aún sin rellenar</p>
-    <p lang="es"><span class="k">Archivos y scripts</span><a href="kit/">kit/</a>, junto a esta página. Comprobar cada archivo con <code>SHA256SUMS</code></p>
+    <p lang="es"><span class="k">Archivos y scripts</span><code>git clone https://github.com/1372711/Sparrows-Nework.git</code>, o una copia USB comprobada con <code>SHA256SUMS</code> (<a href="#kit">cómo</a>)</p>
     <p lang="en">This page arrives over plain HTTP on an open Wi-Fi, so anyone could alter it on the way. Trust these values only if they match the paper notice.</p>
     <p lang="fr">Cette page arrive en HTTP en clair sur un Wi-Fi ouvert : n'importe qui pourrait la modifier en chemin. Ne se fier à ces valeurs que si elles correspondent à l'affiche papier.</p>
     <p lang="es">Esta página llega por HTTP sin cifrar en un Wi-Fi abierto: cualquiera podría alterarla por el camino. Fiarse de estos valores solo si coinciden con el cartel en papel.</p>
@@ -820,9 +819,9 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
 <div class="cards">
   <div class="card">
     <h4><span lang="en">User device</span><span lang="fr">Appareil d'usager</span><span lang="es">Aparato de usuario</span> <span class="tag"><span lang="en">not a station</span><span lang="fr">pas une station</span><span lang="es">no es una estación</span></span></h4>
-    <p lang="en">Holds its owner's key in an app: Sideband on Android, MeshChat or Nomad Network on a laptop. Builds its own IPv6 address. A laptop left on can also relay for others, and then it is a tree too. A small box left on can also publish its owner's pages (<a href="#page-node">a neighbour's page node</a>).</p>
-    <p lang="fr">Garde la clé de son propriétaire dans une application : Sideband sur Android, MeshChat ou Nomad Network sur un portable. Construit sa propre adresse IPv6. Un portable laissé allumé peut aussi relayer pour les autres : c'est alors aussi un arbre. Un petit boîtier laissé allumé peut aussi publier les pages de son propriétaire (<a href="#page-node">le nœud de pages d'un voisin</a>).</p>
-    <p lang="es">Guarda la clave de su dueño en una aplicación: Sideband en Android, MeshChat o Nomad Network en un portátil. Construye su propia dirección IPv6. Un portátil que se deja encendido también puede retransmitir para otros: entonces es además un árbol. Una cajita que se deja encendida también puede publicar las páginas de su dueño (<a href="#page-node">el nodo de páginas de un vecino</a>).</p>
+    <p lang="en">Holds its owner's key in an app: Sideband on Android, MeshChat or Nomad Network on a laptop. Builds its own IPv6 address. A laptop left on can also relay for others, and then it is a tree too. A small box left on can also publish its owner's pages (<a href="#tree-image">a tree</a>).</p>
+    <p lang="fr">Garde la clé de son propriétaire dans une application : Sideband sur Android, MeshChat ou Nomad Network sur un portable. Construit sa propre adresse IPv6. Un portable laissé allumé peut aussi relayer pour les autres : c'est alors aussi un arbre. Un petit boîtier laissé allumé peut aussi publier les pages de son propriétaire (<a href="#tree-image">un arbre</a>).</p>
+    <p lang="es">Guarda la clave de su dueño en una aplicación: Sideband en Android, MeshChat o Nomad Network en un portátil. Construye su propia dirección IPv6. Un portátil que se deja encendido también puede retransmitir para otros: entonces es además un árbol. Una cajita que se deja encendida también puede publicar las páginas de su dueño (<a href="#tree-image">un árbol</a>).</p>
     <p lang="en"><span class="k">Never</span>sends router advertisements.</p>
     <p lang="fr"><span class="k">Jamais</span>d'annonces de routeur.</p>
     <p lang="es"><span class="k">Nunca</span>envía anuncios de router.</p>
@@ -922,14 +921,14 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <td><span lang="en">EAP225-Outdoor, any OpenWrt device with two radios and 802.11s</span><span lang="fr">EAP225-Outdoor, tout appareil OpenWrt à deux radios avec 802.11s</span><span lang="es">EAP225-Outdoor, cualquier aparato OpenWrt con dos radios y 802.11s</span></td>
     <td><span lang="en">two radios, 16 MB flash</span><span lang="fr">deux radios, 16 Mo de flash</span><span lang="es">dos radios, 16 MB de flash</span></td></tr>
   <tr><th><span lang="en">Nest</span><span lang="fr">Nid</span><span lang="es">Nido</span></th>
-    <td><span lang="en">Moving to OpenWrt with the nest image (decided 2026-11-21, not yet tested). Today: Debian 13 family (Debian, Raspberry Pi OS…) + the nest config; Reticulum, LXMF and a Nomad Network page node with Retipedia, pinned, in a venv. OpenBSD as a second system is an idea (Part IV)</span><span lang="fr">Passe sous OpenWrt avec l'image de nid (décidé le 2026-11-21, pas encore testé). Aujourd'hui : famille Debian 13 (Debian, Raspberry Pi OS…) + la config de nid ; Reticulum, LXMF et un nœud de pages Nomad Network avec Retipedia, figés, dans un venv. OpenBSD comme deuxième système est une idée (partie IV)</span><span lang="es">Pasa a OpenWrt con la imagen de nido (decidido el 2026-11-21, aún sin probar). Hoy: familia Debian 13 (Debian, Raspberry Pi OS…) + la configuración de nido; Reticulum, LXMF y un nodo de páginas Nomad Network con Retipedia, con versiones fijadas, en un venv. OpenBSD como segundo sistema es una idea (parte IV)</span></td>
+    <td><span lang="en">OpenWrt 25.12 + the nest image: RAs, DNS, the welcome page, Reticulum, the message store and the Sparrows page (<a href="#nest-image">Part III</a>; first run on the bench 2026-11-21). OpenBSD as a second system is an idea (Part IV)</span><span lang="fr">OpenWrt 25.12 + l'image de nid : RA, DNS, page d'accueil, Reticulum, boîte aux lettres et page Sparrows (<a href="#nest-image">partie III</a> ; premier essai au banc le 2026-11-21). OpenBSD comme deuxième système est une idée (partie IV)</span><span lang="es">OpenWrt 25.12 + la imagen de nido: RA, DNS, página de bienvenida, Reticulum, buzón y página Sparrows (<a href="#nest-image">parte III</a>; primera prueba en el banco el 2026-11-21). OpenBSD como segundo sistema es una idea (parte IV)</span></td>
     <td><span lang="en">Pi 4 or 5, Pi Zero 2 W, mini PC, old laptop</span><span lang="fr">Pi 4 ou 5, Pi Zero 2 W, mini PC, vieux portable</span><span lang="es">Pi 4 o 5, Pi Zero 2 W, mini PC, portátil viejo</span></td>
     <td><span lang="en">arm64 or x86_64, 512 MB RAM; an SSD for a store nest</span><span lang="fr">arm64 ou x86_64, 512 Mo de RAM ; un SSD pour un nid de stockage</span><span lang="es">arm64 o x86_64, 512 MB de RAM; un SSD para un nido almacén</span></td></tr>
   <tr><th><span lang="en">Tree</span><span lang="fr">Arbre</span><span lang="es">Árbol</span></th>
     <td><span lang="en">Reticulum: <code>rnsd</code> with transport on</span><span lang="fr">Reticulum : <code>rnsd</code> avec transport activé</span><span lang="es">Reticulum: <code>rnsd</code> con el transporte activado</span></td>
     <td><span lang="en">any Linux machine, a laptop</span><span lang="fr">toute machine Linux, un portable</span><span lang="es">cualquier máquina Linux, un portátil</span></td><td>—</td></tr>
   <tr><th><span lang="en">Page node</span><span lang="fr">Nœud de pages</span><span lang="es">Nodo de páginas</span></th>
-    <td><span lang="en">Reticulum + Nomad Network in node mode, in a venv (<a href="#page-node">Part III</a>)</span><span lang="fr">Reticulum + Nomad Network en mode nœud, dans un venv (<a href="#page-node">partie III</a>)</span><span lang="es">Reticulum + Nomad Network en modo nodo, en un venv (<a href="#page-node">parte III</a>)</span></td>
+    <td><span lang="en">the tree image: Reticulum + Nomad Network in node mode (<a href="#tree-image">Part III</a>)</span><span lang="fr">l'image d'arbre : Reticulum + Nomad Network en mode nœud (<a href="#tree-image">partie III</a>)</span><span lang="es">la imagen de árbol: Reticulum + Nomad Network en modo nodo (<a href="#tree-image">parte III</a>)</span></td>
     <td><span lang="en">Pi Zero 2 W, any Linux machine left on</span><span lang="fr">Pi Zero 2 W, toute machine Linux laissée allumée</span><span lang="es">Pi Zero 2 W, cualquier máquina Linux que se deja encendida</span></td>
     <td><span lang="en">512 MB RAM</span><span lang="fr">512 Mo de RAM</span><span lang="es">512 MB de RAM</span></td></tr>
   <tr><th><span lang="en">LoRa radio</span><span lang="fr">Radio LoRa</span><span lang="es">Radio LoRa</span></th>
@@ -1090,7 +1089,7 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
     <td><span class="st idea" data-ui="idea">idea</span></td></tr>
   <tr><th><span lang="en">Village board, forum, pages</span><span lang="fr">Panneau du village, forum, pages</span><span lang="es">Tablón del pueblo, foro, páginas</span></th>
     <td><span lang="en">Nomad Network pages (forum and board programs exist)</span><span lang="fr">pages Nomad Network (des programmes de forum et de panneau existent)</span><span lang="es">páginas Nomad Network (existen programas de foro y de tablón)</span></td>
-    <td><span lang="en">the page node on a nest, or a neighbour's own (<a href="#page-node">Pi Zero 2 W</a>)</span><span lang="fr">le nœud de pages d'un nid, ou celui d'un voisin (<a href="#page-node">Pi Zero 2 W</a>)</span><span lang="es">el nodo de páginas de un nido, o el de un vecino (<a href="#page-node">Pi Zero 2 W</a>)</span></td>
+    <td><span lang="en">the page node on a nest, or a neighbour's own (<a href="#tree-image">a tree, Pi Zero 2 W</a>)</span><span lang="fr">le nœud de pages d'un nid, ou celui d'un voisin (<a href="#tree-image">un arbre, Pi Zero 2 W</a>)</span><span lang="es">el nodo de páginas de un nido, o el de un vecino (<a href="#tree-image">un árbol, Pi Zero 2 W</a>)</span></td>
     <td><span class="st nt" data-ui="nt">not yet tested</span></td></tr>
   <tr><th>Wikipedia</th>
     <td>Retipedia</td>
@@ -1137,17 +1136,17 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
 <p lang="es">Un portátil se conforma con cualquier dirección. Android no: en un Wi-Fi sin IPv4, solo conserva la red si obtiene, todo a la vez, una dirección que considera global, un router por defecto y un servidor DNS. Dos de estas cosas fallaron en el banco el 2026-11-14, cada una con su síntoma.</p>
 <ul lang="en">
   <li><strong>"Obtaining IP address" forever:</strong> Android doesn't count a ULA address (<code>fd…</code>) as global, so a ULA-only network never counts as set up. Some versions also drop a ULA DNS server. Fix: the nest announces a second, non-ULA prefix next to the ULA, and lists its address in that prefix first as DNS server. On the bench that prefix is <code>2001:db8:1::/64</code>, the range reserved for documentation, which belongs to nobody and must never go on a roof.</li>
-  <li><strong>"IP configuration failure" after half a second:</strong> Android checks its default router, and a nest with forwarding off answers that check without the router flag. Android then removes the default route and leaves. Fix: <code>net.ipv6.conf.eth0.forwarding=1</code> on the nest. The kernel then sets the router flag on that interface, while <code>all.forwarding=0</code> and the nftables <code>forward</code> drop still forward nothing.</li>
+  <li><strong>"IP configuration failure" after half a second:</strong> Android checks its default router, and a nest with forwarding off answers that check without the router flag. Android then removes the default route and leaves. Fix: IPv6 forwarding on, on the nest, which is OpenWrt's default. The kernel then sets the router flag. Nothing is forwarded anyway: a nest has only the village network.</li>
   <li><strong>Result:</strong> "connected / no Internet", which is what we want. The phone keeps using 4G for the Internet.</li>
 </ul>
 <ul lang="fr">
   <li><strong>« Obtention de l'adresse IP » sans fin :</strong> Android ne compte pas une adresse ULA (<code>fd…</code>) comme globale, donc un réseau tout en ULA n'est jamais considéré comme prêt. Certaines versions jettent aussi un serveur DNS en ULA. Correction : le nid annonce un deuxième préfixe, non-ULA, à côté de l'ULA, et place son adresse dans ce préfixe en premier comme serveur DNS. Sur le banc, ce préfixe est <code>2001:db8:1::/64</code>, la plage réservée à la documentation, qui n'appartient à personne et ne doit jamais aller sur un toit.</li>
-  <li><strong>« Échec de la configuration IP » au bout d'une demi-seconde :</strong> Android vérifie son routeur par défaut, et un nid avec le routage coupé répond à cette vérification sans le drapeau routeur. Android retire alors la route par défaut et s'en va. Correction : <code>net.ipv6.conf.eth0.forwarding=1</code> sur le nid. Le noyau lève alors le drapeau routeur sur cette interface, tandis que <code>all.forwarding=0</code> et le <code>forward</code> en drop de nftables ne routent toujours rien.</li>
+  <li><strong>« Échec de la configuration IP » au bout d'une demi-seconde :</strong> Android vérifie son routeur par défaut, et un nid avec le routage coupé répond à cette vérification sans le drapeau routeur. Android retire alors la route par défaut et s'en va. Correction : le routage IPv6 activé sur le nid, ce qui est le réglage par défaut d'OpenWrt. Le noyau lève alors le drapeau routeur. Rien n'est routé pour autant : un nid n'a que le réseau du village.</li>
   <li><strong>Résultat :</strong> « connecté / pas d'Internet », ce qu'on veut. Le téléphone continue d'utiliser la 4G pour Internet.</li>
 </ul>
 <ul lang="es">
   <li><strong>«Obteniendo dirección IP» sin fin:</strong> Android no cuenta una dirección ULA (<code>fd…</code>) como global, así que una red solo con ULA nunca se da por configurada. Algunas versiones también descartan un servidor DNS en ULA. Arreglo: el nido anuncia un segundo prefijo, no ULA, junto al ULA, y pone su dirección en ese prefijo la primera como servidor DNS. En el banco ese prefijo es <code>2001:db8:1::/64</code>, el rango reservado para documentación, que no es de nadie y nunca debe subir a un tejado.</li>
-  <li><strong>«Error de configuración IP» al cabo de medio segundo:</strong> Android comprueba su router por defecto, y un nido con el reenvío apagado responde a esa comprobación sin la marca de router. Android quita entonces la ruta por defecto y se va. Arreglo: <code>net.ipv6.conf.eth0.forwarding=1</code> en el nido. El núcleo levanta entonces la marca de router en esa interfaz, mientras <code>all.forwarding=0</code> y el <code>forward</code> en drop de nftables siguen sin reenviar nada.</li>
+  <li><strong>«Error de configuración IP» al cabo de medio segundo:</strong> Android comprueba su router por defecto, y un nido con el reenvío apagado responde a esa comprobación sin la marca de router. Android quita entonces la ruta por defecto y se va. Arreglo: el reenvío IPv6 activado en el nido, que es lo que trae OpenWrt por defecto. El núcleo levanta entonces la marca de router. Aun así no se reenvía nada: un nido solo tiene la red del pueblo.</li>
   <li><strong>Resultado:</strong> «conectado / sin Internet», que es lo que queremos. El teléfono sigue usando el 4G para Internet.</li>
 </ul>
 <p class="note" lang="en">Open: which non-ULA prefix for real villages. A /64 from a VPS would work for village 1, but every phone would then carry an address that points to one person's contract and name (P5), and the village would depend on that contract (line IV). A /48 held by the project, from a LIR or a sponsoring association and never routed to the Internet, fits the address plan: one /64 per village, next to the ULA. Not decided.</p>
@@ -1192,9 +1191,9 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
 <p lang="en">Each section below is a worked example of one role on one piece of hardware. Other hardware takes the same role if it runs the same standard software. Commands and config files are the same in every language, so they appear once. Comments inside them stay in English.</p>
 <p lang="fr">Chaque section ci-dessous est un exemple concret d'un rôle sur un matériel. Un autre matériel prend le même rôle s'il fait tourner le même logiciel standard. Les commandes et les fichiers de configuration sont les mêmes dans toutes les langues : ils n'apparaissent qu'une fois. Leurs commentaires restent en anglais.</p>
 <p lang="es">Cada sección de abajo es un ejemplo concreto de un papel en un hardware. Otro hardware toma el mismo papel si hace funcionar el mismo software estándar. Las órdenes y los archivos de configuración son los mismos en todos los idiomas, así que aparecen una sola vez. Sus comentarios se quedan en inglés.</p>
-<p lang="en">The scripts are separate files that travel with this handbook: <code>sparrows-openwrt/</code> builds the station images (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, one first-boot file for every role) and <code>tao/</code> builds this page (<code>build.py</code>). They are printed here in full, straight from those files, so they can be read before they are run. Download them from the <a href="kit/">kit folder</a> next to this page (<a href="#kit">how it is made</a>).</p>
-<p lang="fr">Les scripts sont des fichiers séparés qui voyagent avec ce manuel : <code>sparrows-openwrt/</code> construit les images des stations (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, un seul fichier de premier démarrage pour tous les rôles) et <code>tao/</code> construit cette page (<code>build.py</code>). Ils sont imprimés ici en entier, directement depuis ces fichiers, pour pouvoir les lire avant de les lancer. Les télécharger dans le <a href="kit/">dossier kit</a> à côté de cette page (<a href="#kit">comment il est fait</a>).</p>
-<p lang="es">Los scripts son archivos aparte que viajan con este manual: <code>sparrows-openwrt/</code> construye las imágenes de las estaciones (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, un solo archivo de primer arranque para todos los papeles) y <code>tao/</code> construye esta página (<code>build.py</code>). Se imprimen aquí enteros, directamente desde esos archivos, para poder leerlos antes de ejecutarlos. Descargarlos de la <a href="kit/">carpeta kit</a> junto a esta página (<a href="#kit">cómo se hace</a>).</p>
+<p lang="en">The scripts are separate files that travel with this handbook: <code>sparrows-openwrt/</code> builds the station images (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, one first-boot file for every role) and <code>tao/</code> builds this page (<code>build.py</code>). They are printed here in full, straight from those files, so they can be read before they are run. Get them with git, or from a copy on a USB stick (<a href="#kit">how</a>).</p>
+<p lang="fr">Les scripts sont des fichiers séparés qui voyagent avec ce manuel : <code>sparrows-openwrt/</code> construit les images des stations (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, un seul fichier de premier démarrage pour tous les rôles) et <code>tao/</code> construit cette page (<code>build.py</code>). Ils sont imprimés ici en entier, directement depuis ces fichiers, pour pouvoir les lire avant de les lancer. Les récupérer avec git, ou depuis une copie sur une clé USB (<a href="#kit">comment</a>).</p>
+<p lang="es">Los scripts son archivos aparte que viajan con este manual: <code>sparrows-openwrt/</code> construye las imágenes de las estaciones (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, un solo archivo de primer arranque para todos los papeles) y <code>tao/</code> construye esta página (<code>build.py</code>). Se imprimen aquí enteros, directamente desde esos archivos, para poder leerlos antes de ejecutarlos. Conseguirlos con git, o de una copia en una memoria USB (<a href="#kit">cómo</a>).</p>
 
 <h3 id="images"><span lang="en">Station images: perch, feeder, hedge, tree, nest</span><span lang="fr">Images des stations : perchoir, mangeoire, haie, arbre, nid</span><span lang="es">Imágenes de las estaciones: percha, comedero, seto, árbol, nido</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
 <p lang="en">One build tree, <code>sparrows-openwrt</code>, makes one image per role and per device with the OpenWrt Image Builder. Every unit of a role gets the same image: nothing to set per unit. Written on 2026-11-13, hedge added on 2026-11-14, tree on 2026-11-19. So far the hedge image has run on one EAP225-Outdoor v3, flashed from stock firmware 5.1.0: it boots, takes SSH keys over link-local, brings up both radios and the mesh interface, passes the radar check, and lets a laptop and a phone into the village (2026-11-14). The perch, feeder and tree images have not run on a device yet.</p>
@@ -1489,6 +1488,27 @@ logger -t sparrows "radios set from the station's uses: 2.4 GHz '${USE2:-off}', 
 [ -f /etc/sparrows/station ] || exit 0
 /usr/lib/sparrows/radios &amp;&amp; [ -f /etc/sparrows/radios.done ] &amp;&amp; wifi reload
 exit 0</code></pre></div>
+
+<h4 id="kit"><span lang="en">Get the files</span><span lang="fr">Récupérer les fichiers</span><span lang="es">Conseguir los archivos</span></h4>
+<p lang="en">On any computer with git and Internet: the whole project from GitHub, public, no account needed. Without Internet, someone who has it copies it on a USB stick, with a <code>SHA256SUMS</code> list to check every file. Only public files travel this way: no SSH key, no radio key, no built perch or hedge image (those carry the village's radio keys and are handed over in person).</p>
+<p lang="fr">Sur n'importe quel ordinateur avec git et Internet : tout le projet depuis GitHub, public, sans compte. Sans Internet, quelqu'un qui l'a le copie sur une clé USB, avec une liste <code>SHA256SUMS</code> pour vérifier chaque fichier. Seuls des fichiers publics voyagent ainsi : aucune clé SSH, aucune clé radio, aucune image de perchoir ou de haie construite (elles portent les clés radio du village et se remettent en main propre).</p>
+<p lang="es">En cualquier ordenador con git e Internet: todo el proyecto desde GitHub, público, sin cuenta. Sin Internet, alguien que lo tiene lo copia en una memoria USB, con una lista <code>SHA256SUMS</code> para comprobar cada archivo. Solo viajan así archivos públicos: ninguna clave SSH, ninguna clave de radio, ninguna imagen de percha o de seto construida (llevan las claves de radio del pueblo y se entregan en mano).</p>
+<div class="code"><div class="hd"><span class="file">any computer, then the admin laptop</span></div><pre><code># On any computer with Internet and git: the whole project from GitHub. Public: no account needed
+git clone https://github.com/1372711/Sparrows-Nework.git sparrows
+cd sparrows &amp;&amp; ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
+git pull                                      # later, from inside sparrows/: get the latest
+git log -1 --format='%h %ad %s'               # which version you have
+
+# A copy for a USB stick, on the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
+# Public files only: keys/, secrets/ and build/ never go in it.
+mkdir -p kit
+rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
+cp &lt;app-install-file&gt; kit/                    # e.g. the Sideband APK, once chosen
+( cd kit &amp;&amp; find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum &gt; SHA256SUMS )
+grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ &amp;&amp; echo "STOP: check these files"   # should print nothing
+
+# Anyone who gets the copy checks it
+cd kit &amp;&amp; sha256sum -c SHA256SUMS</code></pre></div>
 
 <h4><span lang="en">1. Build</span><span lang="fr">1. Construire</span><span lang="es">1. Construir</span></h4>
 <p lang="en">On any x86_64 Linux machine with Internet access.</p>
@@ -2655,10 +2675,7 @@ ssh root@fe80::&lt;from MAC&gt;%eth0
 uci get system.@system[0].hostname # perch-xxxx
 
 # Same on the other perch (::42), then on that one only:
-perch ap
-
-# On the nest: delete the two host-record lines for node1 and node2 in /etc/dnsmasq.d/mesh.conf, then
-sudo dnsmasq --test &amp;&amp; sudo systemctl restart dnsmasq</code></pre></div>
+perch ap</code></pre></div>
 
 <h4 id="eap"><span lang="en">4. Feeder image, example: EAP225-Outdoor</span><span lang="fr">4. Image de mangeoire, exemple : EAP225-Outdoor</span><span lang="es">4. Imagen de comedero, ejemplo: EAP225-Outdoor</span></h4>
 <p lang="en">Open SSID on both bands, clients can reach each other (Reticulum works phone to phone), multicast is sent to each client as unicast so RAs arrive reliably, no per-client log lines.</p>
@@ -2798,7 +2815,7 @@ ps | grep -e dnsmasq -e odhcpd  # nothing
 
 # From a phone on the SSID: it joins, gets an address from the nest, reaches http://sparrows.lan/
 
-# Undo: write the SD card again, with another image or with Raspberry Pi OS</code></pre></div>
+# Undo: write the SD card again, with another image</code></pre></div>
 
 <h4 id="hedge-image"><span lang="en">5. Hedge image: feeder and perch in one box, example: EAP225-Outdoor</span><span lang="fr">5. Image de haie : mangeoire et perchoir dans un boîtier, exemple : EAP225-Outdoor</span><span lang="es">5. Imagen de seto: comedero y percha en una caja, ejemplo: EAP225-Outdoor</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en">The EAP225-Outdoor has two radios, so one box can both let people in and carry the village. The hedge image gives each radio a job:</p>
@@ -3041,52 +3058,52 @@ rnstatus
 # Undo the page only: /etc/init.d/nomadnet disable &amp;&amp; /etc/init.d/nomadnet stop
 # Undo all: write the card with another image</code></pre></div>
 <h4 id="nest-image"><span lang="en">Nest image: a Raspberry Pi 4 as nest + feeder</span><span lang="fr">Image de nid : un Raspberry Pi 4 en nid + mangeoire</span><span lang="es">Imagen de nido: una Raspberry Pi 4 como nido + comedero</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
-<p lang="en">Decided on 2026-11-21: nests run OpenWrt too, so every unit of the village runs one system, is built by one <code>build.sh</code> and updated one way. The nest is a role like the others, so one Pi 4 can be <code>nest+feeder</code>: its cable on the site's switch, its own Wi-Fi as <code>Sparrows</code> Wi-Fi. It has no home side: admin from a laptop on the village with the SSH key, software as images built on the admin laptop. The Debian nest below stays the running one until this image passes the same checks on the bench (RAs, DNS, router flag, Android, the welcome page, Reticulum).</p>
-<p lang="fr">Décidé le 2026-11-21 : les nids passent eux aussi sous OpenWrt, donc chaque boîtier du village fait tourner un seul système, construit par un seul <code>build.sh</code> et mis à jour d'une seule façon. Le nid est un rôle comme les autres, donc un Pi 4 peut être <code>nest+feeder</code> : son câble sur le switch du site, son propre Wi-Fi en Wi-Fi <code>Sparrows</code>. Il n'a pas de côté maison : l'admin se fait depuis un portable sur le village avec la clé SSH, les logiciels arrivent en images construites sur le portable d'admin. Le nid Debian plus bas reste celui qui tourne jusqu'à ce que cette image passe les mêmes vérifications au banc (RA, DNS, drapeau routeur, Android, page d'accueil, Reticulum).</p>
-<p lang="es">Decidido el 2026-11-21: los nidos también pasan a OpenWrt, así que cada unidad del pueblo usa un solo sistema, construido por un solo <code>build.sh</code> y actualizado de una sola forma. El nido es un papel como los demás, así que una Pi 4 puede ser <code>nest+feeder</code>: su cable en el switch del sitio, su propio Wi-Fi como Wi-Fi <code>Sparrows</code>. No tiene lado de casa: la administración se hace desde un portátil en el pueblo con la clave SSH, el software llega como imágenes construidas en el portátil de administración. El nido Debian de más abajo sigue siendo el que funciona hasta que esta imagen pase las mismas comprobaciones en el banco (RA, DNS, marca de router, Android, la página de bienvenida, Reticulum).</p>
+<p lang="en">Decided on 2026-11-21: nests run OpenWrt too, so every unit of the village runs one system, is built by one <code>build.sh</code> and updated one way. The nest is a role like the others, so one Pi 4 can be <code>nest+feeder</code>: its cable on the site's switch, its own Wi-Fi as <code>Sparrows</code> Wi-Fi. It has no home side: admin from a laptop on the village with the SSH key, software as images built on the admin laptop.</p>
+<p lang="fr">Décidé le 2026-11-21 : les nids passent eux aussi sous OpenWrt, donc chaque boîtier du village fait tourner un seul système, construit par un seul <code>build.sh</code> et mis à jour d'une seule façon. Le nid est un rôle comme les autres, donc un Pi 4 peut être <code>nest+feeder</code> : son câble sur le switch du site, son propre Wi-Fi en Wi-Fi <code>Sparrows</code>. Il n'a pas de côté maison : l'admin se fait depuis un portable sur le village avec la clé SSH, les logiciels arrivent en images construites sur le portable d'admin.</p>
+<p lang="es">Decidido el 2026-11-21: los nidos también pasan a OpenWrt, así que cada unidad del pueblo usa un solo sistema, construido por un solo <code>build.sh</code> y actualizado de una sola forma. El nido es un papel como los demás, así que una Pi 4 puede ser <code>nest+feeder</code>: su cable en el switch del sitio, su propio Wi-Fi como Wi-Fi <code>Sparrows</code>. No tiene lado de casa: la administración se hace desde un portátil en el pueblo con la clave SSH, el software llega como imágenes construidas en el portátil de administración.</p>
 <ul lang="en">
   <li><strong>Address:</strong> fixed, from its MAC, as every station builds by SLAAC: <code>fd7e:4c1a:9b20:1:</code> + the interface ID. Two nests never clash, and none is "the" nest at <code>::1</code>.</li>
-  <li><strong>RAs:</strong> <code>odhcpd</code>, SLAAC only, router lifetime 1800 s, the router flag, its own address as DNS server and <code>sparrows.lan</code> as domain inside. The same values as the tested Debian nest.</li>
+  <li><strong>RAs:</strong> <code>odhcpd</code>, SLAAC only, router lifetime 1800 s, the router flag, its own address as DNS server and <code>sparrows.lan</code> as domain inside. The same values as the first nest tested on 2026-11-14.</li>
   <li><strong>DNS:</strong> <code>dnsmasq</code> with DHCP off and no upstream: every name, <code>sparrows.lan</code> included, points to this nest. No query log.</li>
   <li><strong>Welcome page:</strong> <code>uhttpd</code> on the nest's village addresses, serving this handbook; any unknown path gives the page, so a phone's connection check lands on it.</li>
   <li><strong>Reticulum:</strong> <code>rnsd</code> with transport, <code>lxmd</code> as message store, and the Sparrows page, all from the pinned wheels.</li>
   <li><strong>Still never:</strong> IPv4, DHCP, a firewall. The build's rule check lets <code>odhcpd</code>, <code>dnsmasq</code> and <code>uhttpd</code> into a nest image only.</li>
   <li><strong>The Pi 4's Wi-Fi:</strong> access point and client only (no mesh, so no flyway), 2.4 GHz on channel 6 (no automatic channel in its driver). No 5 GHz feeder: its chip can't do the radar check the outdoor channels need. A small access point: fine for a house or a garden.</li>
   <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Seen on 2026-11-21: the card written from the nest image shows a 1 GB root partition. The rest of the card stays unused. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
-  <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
+  <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one. The real non-ULA prefix is still to decide.</li>
 </ul>
 <ul lang="fr">
   <li><strong>Adresse :</strong> fixe, à partir de sa MAC, comme chaque station la construit par SLAAC : <code>fd7e:4c1a:9b20:1:</code> + l'identifiant d'interface. Deux nids ne se gênent jamais, et aucun n'est « le » nid en <code>::1</code>.</li>
-  <li><strong>RA :</strong> <code>odhcpd</code>, SLAAC seulement, durée de routeur 1800 s, le drapeau routeur, sa propre adresse comme serveur DNS et <code>sparrows.lan</code> comme domaine à l'intérieur. Les mêmes valeurs que le nid Debian testé.</li>
+  <li><strong>RA :</strong> <code>odhcpd</code>, SLAAC seulement, durée de routeur 1800 s, le drapeau routeur, sa propre adresse comme serveur DNS et <code>sparrows.lan</code> comme domaine à l'intérieur. Les mêmes valeurs que le premier nid testé le 2026-11-14.</li>
   <li><strong>DNS :</strong> <code>dnsmasq</code> sans DHCP et sans serveur amont : tout nom, <code>sparrows.lan</code> compris, pointe vers ce nid. Pas de journal des requêtes.</li>
   <li><strong>Page d'accueil :</strong> <code>uhttpd</code> sur les adresses du nid dans le village, qui sert ce manuel ; tout chemin inconnu donne la page, donc le test de connexion d'un téléphone tombe dessus.</li>
   <li><strong>Reticulum :</strong> <code>rnsd</code> avec le transport, <code>lxmd</code> comme boîte aux lettres, et la page Sparrows, le tout à partir des wheels figés.</li>
   <li><strong>Toujours jamais :</strong> IPv4, DHCP, pare-feu. Le contrôle des règles du build laisse entrer <code>odhcpd</code>, <code>dnsmasq</code> et <code>uhttpd</code> dans une image de nid seulement.</li>
   <li><strong>Le Wi-Fi du Pi 4 :</strong> point d'accès et client seulement (pas de mesh, donc pas de voie), 2,4 GHz sur le canal 6 (pas de canal automatique dans son pilote). Pas de mangeoire 5 GHz : sa puce ne sait pas faire le contrôle radar que demandent les canaux extérieurs. Un petit point d'accès : bien pour une maison ou un jardin.</li>
   <li><strong>Place :</strong> une partition racine de 1 Go (<code>ROOTFS_MB</code> dans <code>device.conf</code>) au lieu des 104 Mo d'OpenWrt, pour la boîte aux lettres et les petits fichiers. Vu le 2026-11-21 : la carte écrite avec l'image de nid montre une partition racine de 1 Go. Le reste de la carte n'est pas utilisé. Wikipédia et les autres grosses données vont sur un disque USB. La carte prend plus de temps à écrire.</li>
-  <li><strong>Android :</strong> l'image annonce <code>2001:db8:1::/64</code>, le préfixe du banc, à côté de celui du village, comme le fait le nid Debian. Le vrai préfixe non-ULA reste à décider.</li>
+  <li><strong>Android :</strong> l'image annonce <code>2001:db8:1::/64</code>, le préfixe du banc, à côté de celui du village. Le vrai préfixe non-ULA reste à décider.</li>
 </ul>
 <ul lang="es">
   <li><strong>Dirección:</strong> fija, a partir de su MAC, como cada estación la construye por SLAAC: <code>fd7e:4c1a:9b20:1:</code> + el identificador de interfaz. Dos nidos nunca chocan, y ninguno es «el» nido en <code>::1</code>.</li>
-  <li><strong>RA:</strong> <code>odhcpd</code>, solo SLAAC, vida de router 1800 s, la marca de router, su propia dirección como servidor DNS y <code>sparrows.lan</code> como dominio dentro. Los mismos valores que el nido Debian probado.</li>
+  <li><strong>RA:</strong> <code>odhcpd</code>, solo SLAAC, vida de router 1800 s, la marca de router, su propia dirección como servidor DNS y <code>sparrows.lan</code> como dominio dentro. Los mismos valores que el primer nido probado el 2026-11-14.</li>
   <li><strong>DNS:</strong> <code>dnsmasq</code> sin DHCP y sin servidor superior: todo nombre, <code>sparrows.lan</code> incluido, apunta a este nido. Sin registro de consultas.</li>
   <li><strong>Página de bienvenida:</strong> <code>uhttpd</code> en las direcciones del nido en el pueblo, que sirve este manual; toda ruta desconocida da la página, así que la comprobación de conexión de un teléfono cae en ella.</li>
   <li><strong>Reticulum:</strong> <code>rnsd</code> con transporte, <code>lxmd</code> como buzón, y la página Sparrows, todo a partir de los wheels fijados.</li>
   <li><strong>Sigue sin haber:</strong> IPv4, DHCP, cortafuegos. La comprobación de reglas de la construcción deja entrar <code>odhcpd</code>, <code>dnsmasq</code> y <code>uhttpd</code> solo en una imagen de nido.</li>
   <li><strong>El Wi-Fi de la Pi 4:</strong> punto de acceso y cliente solamente (sin malla, así que sin ruta), 2,4 GHz en el canal 6 (sin canal automático en su controlador). Sin comedero de 5 GHz: su chip no sabe hacer la comprobación de radar que piden los canales de exterior. Un punto de acceso pequeño: vale para una casa o un jardín.</li>
   <li><strong>Espacio:</strong> una partición raíz de 1 GB (<code>ROOTFS_MB</code> en <code>device.conf</code>) en lugar de los 104 MB de OpenWrt, para el buzón y los archivos pequeños. Visto el 2026-11-21: la tarjeta escrita con la imagen de nido muestra una partición raíz de 1 GB. El resto de la tarjeta no se usa. Wikipedia y los demás datos grandes van en un disco USB. La tarjeta tarda más en escribirse.</li>
-  <li><strong>Android:</strong> la imagen anuncia <code>2001:db8:1::/64</code>, el prefijo del banco, junto al del pueblo, como hace el nido Debian. El verdadero prefijo no ULA está por decidir.</li>
+  <li><strong>Android:</strong> la imagen anuncia <code>2001:db8:1::/64</code>, el prefijo del banco, junto al del pueblo. El verdadero prefijo no ULA está por decidir.</li>
 </ul>
 <p lang="en"><span class="k">So far</span>first boot on 2026-11-21: the Pi 4 booted, took SSH keys over link-local, and named itself <code>nest-feeder-9b58</code>. Two bugs, both fixed in the build tree the same day: the village interface stayed down because the bench prefix gave an address of 7 groups, which netifd refused; and the Wi-Fi chip showed up after first boot, so it kept OpenWrt's default config (5 GHz, no access point). With both fixed by hand on the unit (2026-11-21), a Linux laptop on the <code>Sparrows</code> Wi-Fi got both addresses by SLAAC, the nest as default router and DNS server, and <code>sparrows.lan</code> as domain; Reticulum's interface came up. A third bug showed then: <code>sparrows.lan</code> itself was unknown to the DNS (a <code>local=</code> rule beat the catch-all), fixed in the build tree the same day. With that fixed by hand too, the whole on-ramp worked from the OpenWrt nest (2026-11-21): the laptop resolved <code>sparrows.lan</code> to the nest and got the welcome page (HTTP 200), and an Android phone joined <code>Sparrows</code>, got its sign-in window and the welcome page. Reticulum too: the nest and a Linux laptop on the <code>Sparrows</code> Wi-Fi found each other as peers (2026-11-21), once the laptop was back in Reticulum's default group. The Sparrows page too: the nest announced it, and Nomad Network on the laptop opened it (2026-11-21). The message store over Reticulum: not yet tested. The rebuilt image, with the three fixes inside, is not yet tested.</p>
 <p lang="fr"><span class="k">Jusqu'ici</span>premier démarrage le 2026-11-21 : le Pi 4 a démarré, accepté les clés SSH en lien-local, et s'est nommé <code>nest-feeder-9b58</code>. Deux bugs, corrigés tous les deux dans l'arbre de build le même jour : l'interface du village restait coupée parce que le préfixe du banc donnait une adresse de 7 groupes, refusée par netifd ; et la puce Wi-Fi est apparue après le premier démarrage, donc elle a gardé la config par défaut d'OpenWrt (5 GHz, pas de point d'accès). Les deux corrigés à la main sur le boîtier (2026-11-21), un portable Linux sur le Wi-Fi <code>Sparrows</code> a reçu ses deux adresses par SLAAC, le nid comme routeur par défaut et serveur DNS, et <code>sparrows.lan</code> comme domaine ; l'interface de Reticulum s'est levée. Un troisième bug est alors apparu : le DNS ne connaissait pas <code>sparrows.lan</code> lui-même (une règle <code>local=</code> passait avant le joker), corrigé dans l'arbre de build le même jour. Celui-là aussi corrigé à la main, toute la rampe d'accès a marché depuis le nid OpenWrt (2026-11-21) : le portable a résolu <code>sparrows.lan</code> vers le nid et reçu la page d'accueil (HTTP 200), et un téléphone Android a rejoint <code>Sparrows</code>, a eu sa fenêtre de connexion et la page d'accueil. Reticulum aussi : le nid et un portable Linux sur le Wi-Fi <code>Sparrows</code> se sont trouvés comme pairs (2026-11-21), une fois le portable remis dans le groupe par défaut de Reticulum. La page Sparrows aussi : le nid l'a annoncée, et Nomad Network sur le portable l'a ouverte (2026-11-21). La boîte aux lettres sur Reticulum : pas encore testée. L'image reconstruite, avec les trois corrections dedans, n'est pas encore testée.</p>
 <p lang="es"><span class="k">Hasta ahora</span>primer arranque el 2026-11-21: la Pi 4 arrancó, aceptó las claves SSH en enlace local, y se llamó <code>nest-feeder-9b58</code>. Dos errores, corregidos los dos en el árbol de construcción el mismo día: la interfaz del pueblo seguía caída porque el prefijo del banco daba una dirección de 7 grupos, que netifd rechazó; y el chip Wi-Fi apareció después del primer arranque, así que se quedó con la configuración por defecto de OpenWrt (5 GHz, sin punto de acceso). Con los dos corregidos a mano en la unidad (2026-11-21), un portátil Linux en el Wi-Fi <code>Sparrows</code> recibió sus dos direcciones por SLAAC, el nido como router por defecto y servidor DNS, y <code>sparrows.lan</code> como dominio; la interfaz de Reticulum se levantó. Apareció entonces un tercer error: el DNS no conocía el propio <code>sparrows.lan</code> (una regla <code>local=</code> pasaba antes que el comodín), corregido en el árbol de construcción el mismo día. Con ese también corregido a mano, toda la rampa de acceso funcionó desde el nido OpenWrt (2026-11-21): el portátil resolvió <code>sparrows.lan</code> hacia el nido y recibió la página de bienvenida (HTTP 200), y un teléfono Android se unió a <code>Sparrows</code>, tuvo su ventana de inicio de sesión y la página de bienvenida. Reticulum también: el nido y un portátil Linux en el Wi-Fi <code>Sparrows</code> se encontraron como pares (2026-11-21), una vez el portátil vuelto al grupo por defecto de Reticulum. La página Sparrows también: el nido la anunció, y Nomad Network en el portátil la abrió (2026-11-21). El buzón sobre Reticulum: aún sin probar. La imagen reconstruida, con las tres correcciones dentro, aún no se ha probado.</p>
-<p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
-<p class="note" lang="fr">Risque de blocage : le Pi n'a alors plus de Wi-Fi maison. Vérifier que la clé est dans <code>keys/</code> avant de construire, et garder de côté la carte SD Debian : la remettre, c'est annuler.</p>
-<p class="note" lang="es">Riesgo de quedarse fuera: la Pi ya no tiene Wi-Fi de casa. Comprobar que la clave está en <code>keys/</code> antes de construir, y guardar aparte la tarjeta SD de Debian: volver a ponerla es deshacer.</p>
+<p class="note" lang="en">Lock-out risk: the nest takes SSH keys only, and has no home side. Check that your key is in <code>keys/</code> before building, and keep the previous card aside: putting it back is the undo.</p>
+<p class="note" lang="fr">Risque de blocage : le nid n'accepte que les clés SSH, et n'a pas de côté maison. Vérifier que la clé est dans <code>keys/</code> avant de construire, et garder de côté la carte précédente : la remettre, c'est annuler.</p>
+<p class="note" lang="es">Riesgo de quedarse fuera: el nido solo acepta claves SSH, y no tiene lado de casa. Comprobar que la clave está en <code>keys/</code> antes de construir, y guardar aparte la tarjeta anterior: volver a ponerla es deshacer.</p>
 <div class="code"><div class="hd"><span class="file">admin laptop, then a laptop on the village</span></div><pre><code># Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
 #   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
 ./build.sh nest                  # shows what each interface will do, then builds
-./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the Debian card aside)
+./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the previous card aside)
 
 # Its village address comes from the Ethernet MAC (on the Pi:  cat /sys/class/net/eth0/address)
 # e.g. dc:a6:32:12:34:56  -&gt;  fd7e:4c1a:9b20:1:dea6:32ff:fe12:3456   (same rule as names-find)
@@ -3104,7 +3121,7 @@ netstat -lnu | grep ':53 '; netstat -ltn | grep ':80 '   # dnsmasq on 53, uhttpd
 rns status                                 # "Sparrows" interface Up, on br-lan
 /etc/init.d/lxmd status                    # running: the message store
 
-# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the same checks as the Debian nest ----
+# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the on-ramp checks ----
 rdisc6 &lt;if&gt;                       # both prefixes, Router lifetime 1800, the nest's address as DNS
 ip -6 neigh show dev &lt;if&gt;         # the nest's fe80 entry says "router"
 dig AAAA sparrows.lan @&lt;nest address&gt;        # the nest's address
@@ -3112,7 +3129,7 @@ curl -sI http://connectivitycheck.gstatic.com/generate_204   # the welcome page,
 ping 192.168.1.1                  # must FAIL (no IPv4)
 # On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, the page opens
 
-# Undo: put the Debian SD card back in the Pi</code></pre></div>
+# Undo: put the previous card back in the Pi</code></pre></div>
 <div class="code"><div class="hd"><span class="file">nest/files/etc/uci-defaults/91-sparrows-nest</span></div><pre><code>#!/bin/sh
 # Sparrows-Network: nest services, on OpenWrt (decided 2026-11-21: one system on every unit).
 # The same on-ramp as the Debian nest, with OpenWrt's own tools:
@@ -3322,259 +3339,10 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 <p class="note" lang="fr">Coûts. Antennes omni, donc quelques centaines de mètres entre haies. Le mesh 2,4 GHz partage son canal avec le Wi-Fi ouvert 2,4 GHz du même boîtier, et le débit est à peu près divisé par deux à chaque saut : bien pour le cœur d'un village, pas pour les liens entre villages. La clé des haies se trouve dans chaque image de haie, comme la clé de la voie dans les images de perchoir : les garder privées. Une haie est plus basse et plus facile à atteindre qu'un perchoir en haut d'un mât : c'est pour ça qu'elle a sa propre clé plutôt que celle de la voie. Le problème des faux RA de la mangeoire vaut ici aussi.</p>
 <p class="note" lang="es">Costes. Antenas omnidireccionales, así que unos cientos de metros entre setos. La malla de 2,4 GHz comparte canal con el Wi-Fi abierto de 2,4 GHz de la misma caja, y el caudal se reduce más o menos a la mitad en cada salto: bien para el centro de un pueblo, no para enlaces entre pueblos. La clave de los setos está dentro de cada imagen de seto, como la clave de la ruta en las imágenes de percha: mantenerlas privadas. Un seto está más bajo y es más fácil de alcanzar que una percha en un mástil: por eso tiene su propia clave en vez de la de la ruta. El problema del RA falso del comedero vale aquí también.</p>
 
-<h3 id="pi"><span lang="en">Nests, example: Raspberry Pi</span><span lang="fr">Nids, exemple : Raspberry Pi</span><span lang="es">Nidos, ejemplo: Raspberry Pi</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
-<p class="note" lang="en">Since 2026-11-21 nests move to OpenWrt (<a href="#nest-image">Nest image</a>). This Debian nest is the one running today and stays the reference until the OpenWrt nest passes the same checks.</p>
-<p class="note" lang="fr">Depuis le 2026-11-21, les nids passent sous OpenWrt (<a href="#nest-image">Image de nid</a>). Ce nid Debian est celui qui tourne aujourd'hui et reste la référence jusqu'à ce que le nid OpenWrt passe les mêmes vérifications.</p>
-<p class="note" lang="es">Desde el 2026-11-21, los nidos pasan a OpenWrt (<a href="#nest-image">Imagen de nido</a>). Este nido Debian es el que funciona hoy y sigue siendo la referencia hasta que el nido OpenWrt pase las mismas comprobaciones.</p>
-<p lang="en">This is the configuration as it stands today, one Pi 4 at <code>::1</code>. It still carries things the target model removes; they stay until their replacement is tested (see the end of this section). Tested on 2026-11-14: the router advertisements, the DNS answers, the router flag and the non-ULA bench prefix, with a laptop and an Android phone. The local domain is now <code>sparrows.lan</code>.</p>
-<p lang="fr">Voici la configuration telle qu'elle est aujourd'hui, un Pi 4 en <code>::1</code>. Elle porte encore des choses que le modèle cible retire ; elles restent tant que leur remplaçant n'est pas testé (voir la fin de cette section). Testé le 2026-11-14 : les annonces de routeur, les réponses DNS, le drapeau routeur et le préfixe non-ULA du banc, avec un portable et un téléphone Android. Le domaine local est maintenant <code>sparrows.lan</code>.</p>
-<p lang="es">Esta es la configuración tal como está hoy, una Pi 4 en <code>::1</code>. Todavía lleva cosas que el modelo final quita; se quedan hasta que su sustituto esté probado (ver el final de esta sección). Probado el 2026-11-14: los anuncios de router, las respuestas DNS, la marca de router y el prefijo no ULA del banco, con un portátil y un teléfono Android. El dominio local es ahora <code>sparrows.lan</code>.</p>
-
-<h4><span lang="en">1. Flash</span><span lang="fr">1. Flasher</span><span lang="es">1. Flashear</span></h4>
-<p lang="en">Raspberry Pi OS Lite 64-bit (Trixie) with an up-to-date Raspberry Pi Imager. Customisation: any hostname (the nest renames itself just below), a user, SSH enabled, the home box Wi-Fi, country FR. Admin goes through the home Wi-Fi side.</p>
-<p lang="fr">Raspberry Pi OS Lite 64 bits (Trixie) avec un Raspberry Pi Imager à jour. Personnalisation : n'importe quel nom d'hôte (le nid se renomme juste en dessous), un utilisateur, SSH activé, le Wi-Fi de la box, pays FR. L'admin passe par le côté Wi-Fi de la maison.</p>
-<p lang="es">Raspberry Pi OS Lite de 64 bits (Trixie) con un Raspberry Pi Imager actualizado. Personalización: cualquier nombre de host (el nido se cambia el nombre justo debajo), un usuario, SSH activado, el Wi-Fi del router de casa, país FR. La administración pasa por el lado del Wi-Fi de casa.</p>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code>sudo apt update &amp;&amp; sudo apt full-upgrade -y
-sudo apt install -y dnsmasq nginx nftables ndisc6
-
-# Name the nest like every station: nest-&lt;last 4 hex digits of the eth0 MAC&gt; (not yet tested)
-sudo hostnamectl set-hostname "nest-$(tr -d : &lt;/sys/class/net/eth0/address | tail -c 5)"</code></pre></div>
-
-<h4><span lang="en">2. Network: mesh side IPv6 only, routing off</span><span lang="fr">2. Réseau : côté mesh en IPv6 seul, routage coupé</span><span lang="es">2. Red: lado de la malla solo IPv6, enrutamiento apagado</span></h4>
-<p lang="en">The second address and the <code>eth0.forwarding</code> line are what Android needs (<a href="#android">see why</a>). Undo: <code>-ipv6.addresses</code> for the address; delete the <code>eth0</code> line, then <code>sysctl -w net.ipv6.conf.eth0.forwarding=0</code>.</p>
-<p lang="fr">La deuxième adresse et la ligne <code>eth0.forwarding</code> sont ce dont Android a besoin (<a href="#android">voir pourquoi</a>). Pour défaire : <code>-ipv6.addresses</code> pour l'adresse ; supprimer la ligne <code>eth0</code>, puis <code>sysctl -w net.ipv6.conf.eth0.forwarding=0</code>.</p>
-<p lang="es">La segunda dirección y la línea <code>eth0.forwarding</code> son lo que Android necesita (<a href="#android">ver por qué</a>). Deshacer: <code>-ipv6.addresses</code> para la dirección; borrar la línea <code>eth0</code>, y después <code>sysctl -w net.ipv6.conf.eth0.forwarding=0</code>.</p>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code>sudo nmcli con delete mesh 2&gt;/dev/null
-sudo nmcli con delete "Wired connection 1" 2&gt;/dev/null
-sudo nmcli con add type ethernet ifname eth0 con-name mesh \
-  ipv4.method disabled \
-  ipv6.method manual ipv6.addresses fd7e:4c1a:9b20:1::1/64 \
-  ipv6.never-default yes ipv6.ignore-auto-dns yes ipv6.addr-gen-mode eui64 \
-  connection.autoconnect yes
-sudo nmcli con up mesh
-
-# Non-ULA prefix next to the ULA: Android refuses a network with only ULA addresses.
-# Bench only: 2001:db8::/32 is the documentation range. The real prefix is not decided yet.
-sudo nmcli con mod mesh +ipv6.addresses 2001:db8:1::1/64 &amp;&amp; sudo nmcli con up mesh
-
-# Routing stays off for both families. eth0.forwarding=1 only sets the router flag in
-# neighbour advertisements (Android drops a gateway without it); all.forwarding=0 keeps
-# IPv6 forwarding off. Keep the eth0 line AFTER the "all" line: writing "all" resets every interface.
-sudo tee /etc/sysctl.d/90-no-forward.conf &gt;/dev/null &lt;&lt;'EOF'
-net.ipv4.ip_forward=0
-net.ipv6.conf.all.forwarding=0
-net.ipv6.conf.eth0.forwarding=1
-EOF
-sudo sysctl --system
-sysctl net.ipv6.conf.eth0.forwarding net.ipv6.conf.all.forwarding net.ipv4.ip_forward   # 1 0 0</code></pre></div>
-
-<h4><span lang="en">3. Router advertisements and DNS</span><span lang="fr">3. Annonces de routeur et DNS</span><span lang="es">3. Anuncios de router y DNS</span></h4>
-<p lang="en">No DHCP at all. To keep the Pi's own DNS on the home box, set <code>DNSMASQ_EXCEPT="lo"</code> in <code>/etc/default/dnsmasq</code>. Never add <code>log-queries</code>.</p>
-<p lang="fr">Aucun DHCP. Pour que le Pi garde son propre DNS sur la box, mettre <code>DNSMASQ_EXCEPT="lo"</code> dans <code>/etc/default/dnsmasq</code>. Ne jamais ajouter <code>log-queries</code>.</p>
-<p lang="es">Nada de DHCP. Para que la Pi conserve su propio DNS en el router de casa, poner <code>DNSMASQ_EXCEPT="lo"</code> en <code>/etc/default/dnsmasq</code>. No añadir nunca <code>log-queries</code>.</p>
-<div class="code"><div class="hd"><span class="file">/etc/dnsmasq.d/mesh.conf</span></div><pre><code># Mesh only. bind-dynamic = OK even if eth0 comes up after dnsmasq
-interface=eth0
-bind-dynamic
-
-# Isolated network: no upstream DNS for mesh clients
-no-resolv
-domain-needed
-
-# Local domain (AAAA records only)
-domain=sparrows.lan
-local=/sparrows.lan/
-expand-hosts
-host-record=sparrows.lan,dns.sparrows.lan,fd7e:4c1a:9b20:1::1
-cname=www.sparrows.lan,sparrows.lan
-
-# Router advertisements: SLAAC only (no DHCPv6, Android ignores it anyway)
-# constructor:eth0 = one prefix announced per /64 on eth0 (the ULA + the non-ULA one)
-enable-ra
-dhcp-range=::,constructor:eth0,ra-only,64,12h
-# RA every 60 s, router lifetime 1800 s (phones accept the network)
-ra-param=eth0,60,1800
-# DNS + search domain sent inside the RA (RDNSS / DNSSL)
-# Non-ULA address first: some Android versions drop a ULA DNS server. Bench: 2001:db8:1::1
-dhcp-option=option6:dns-server,[2001:db8:1::1],[fd7e:4c1a:9b20:1::1]
-dhcp-option=option6:domain-search,sparrows.lan
-
-# Captive portal: any unknown name -&gt; the Pi (AAAA)
-address=/#/fd7e:4c1a:9b20:1::1</code></pre></div>
-
-<h4><span lang="en">4. Firewall and isolation</span><span lang="fr">4. Pare-feu et isolation</span><span lang="es">4. Cortafuegos y aislamiento</span></h4>
-<div class="code"><div class="hd"><span class="file">/etc/nftables.conf</span></div><pre><code>#!/usr/sbin/nft -f
-flush ruleset
-
-table inet filter {
-  chain input {
-    type filter hook input priority 0; policy drop;
-    iif "lo" accept
-    ct state established,related accept
-    ct state invalid drop
-    # ICMP/ICMPv6: ping, and IPv6 can't work without it (NDP, RS/RA, MLD)
-    meta l4proto { icmp, ipv6-icmp } accept
-
-    # Home side: DHCP / DHCPv6 client replies + admin SSH
-    iifname "wlan0" udp sport 67 udp dport 68 accept
-    iifname "wlan0" udp dport 546 accept
-    iifname "wlan0" tcp dport 22 accept
-
-    # Mesh side: IPv6 only (IPv4 falls to policy drop)
-    iifname "eth0" meta nfproto ipv6 meta l4proto { tcp, udp } th dport 53 accept   # DNS
-    iifname "eth0" meta nfproto ipv6 tcp dport { 22, 80, 443 } accept               # SSH, web
-  }
-  chain forward {
-    type filter hook forward priority 0; policy drop;            # NEVER mesh &lt;-&gt; home
-  }
-  chain output {
-    type filter hook output priority 0; policy accept;
-  }
-}
-
-# Captive portal: catch hard-coded DNS and any web request
-table ip6 nat {
-  chain prerouting {
-    type nat hook prerouting priority dstnat;
-    iifname "eth0" meta l4proto { tcp, udp } th dport 53 redirect to :53
-    iifname "eth0" tcp dport 80 ip6 daddr != fd7e:4c1a:9b20:1::1 redirect to :80
-  }
-}</code></pre></div>
-
-<h4><span lang="en">5. Web server</span><span lang="fr">5. Serveur web</span><span lang="es">5. Servidor web</span></h4>
-<div class="code"><div class="hd"><span class="file">/etc/nginx/sites-available/sparrows</span></div><pre><code>server {
-    listen [::]:80;                    # IPv6; wlan0 side blocked by nftables
-    server_name sparrows.lan www.sparrows.lan;
-    root  /var/www/sparrows;
-    index index.html;
-
-    location /files/ {
-        alias /data/files/;
-        autoindex on;                  # goes away in the target model
-    }
-}
-
-# Captive portal catch-all
-server {
-    listen [::]:80 default_server;
-    server_name _;
-    return 302 http://sparrows.lan/;
-}</code></pre></div>
-<div class="code"><div class="hd"><span class="file">apply</span></div><pre><code>sudo dnsmasq --test &amp;&amp; sudo systemctl enable --now dnsmasq &amp;&amp; sudo systemctl restart dnsmasq
-sudo nft -c -f /etc/nftables.conf &amp;&amp; sudo systemctl enable --now nftables &amp;&amp; sudo systemctl restart nftables
-sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code></pre></div>
-
-<h4><span lang="en">6. Captive portal</span><span lang="fr">6. Portail captif</span><span lang="es">6. Portal cautivo</span></h4>
-<p lang="en">Every name resolves to the Pi, hard-coded DNS is redirected, and any unknown web request is sent to the welcome page. A phone's connectivity check gets a redirect instead of its expected answer, so the phone opens the page by itself. The network keeps showing "no Internet" on purpose: a phone that believes the Wi-Fi has Internet would send everything over it and break its own 4G use.</p>
-<p lang="fr">Tout nom se résout vers le Pi, le DNS codé en dur est redirigé, et toute requête web inconnue est envoyée vers la page d'accueil. Le test de connectivité d'un téléphone reçoit une redirection au lieu de la réponse attendue, donc le téléphone ouvre la page tout seul. Le réseau continue d'afficher « pas d'Internet », exprès : un téléphone qui croit que le Wi-Fi a Internet y enverrait tout et casserait son propre usage de la 4G.</p>
-<p lang="es">Todo nombre se resuelve hacia la Pi, el DNS fijado a mano se redirige, y toda petición web desconocida se envía a la página de bienvenida. La comprobación de conectividad de un teléfono recibe una redirección en vez de la respuesta esperada, así que el teléfono abre la página él solo. La red sigue mostrando «sin Internet» a propósito: un teléfono que cree que el Wi-Fi tiene Internet lo enviaría todo por él y rompería su propio uso del 4G.</p>
-<p lang="en">Seen on 2026-11-14: the phone shows "connected / no Internet", and on a laptop a request for <code>deb.debian.org</code> came back as the redirect to <code>http://sparrows.lan/</code>. The "sign in to network" window itself is <span class="st nt" data-ui="nt">not yet tested</span>.</p>
-<p lang="fr">Vu le 2026-11-14 : le téléphone affiche « connecté / pas d'Internet », et sur un portable une requête vers <code>deb.debian.org</code> est revenue sous forme de redirection vers <code>http://sparrows.lan/</code>. La fenêtre « se connecter au réseau » elle-même : <span class="st nt" data-ui="nt">not yet tested</span>.</p>
-<p lang="es">Visto el 2026-11-14: el teléfono muestra «conectado / sin Internet», y en un portátil una petición a <code>deb.debian.org</code> volvió como la redirección a <code>http://sparrows.lan/</code>. La ventana «iniciar sesión en la red» en sí: <span class="st nt" data-ui="nt">not yet tested</span>.</p>
-
-<h4><span lang="en">7. Verify</span><span lang="fr">7. Vérifier</span><span lang="es">7. Comprobar</span></h4>
-<div class="code"><div class="hd"><span class="file">Pi, then a laptop</span></div><pre><code># On the Pi
-ip -br a                          # eth0: fd7e:4c1a:9b20:1::1/64 (+ 2001:db8:1::1/64) + fe80::, NO IPv4
-ip route; ip -6 route             # IPv4 default via wlan0 ONLY; no IPv6 default via eth0
-sysctl net.ipv4.ip_forward net.ipv6.conf.all.forwarding net.ipv6.conf.eth0.forwarding   # 0 0 1
-ss -lntup | grep -e dnsmasq -e nginx
-journalctl -fu dnsmasq            # RTR-ADVERT lines on eth0
-sudo nft list table ip6 nat
-
-# From a Linux laptop on the mesh
-rdisc6 &lt;if&gt;                       # both prefixes, Router lifetime 1800, the DNS servers
-ip -6 addr show &lt;if&gt;              # fd7e:4c1a:9b20:1:... and 2001:db8:1:... (SLAAC)
-ip -6 neigh show dev &lt;if&gt;         # the nest's fe80 entry says "router"
-dig AAAA sparrows.lan @fd7e:4c1a:9b20:1::1   # the nest answers
-getent ahosts sparrows.lan        # the laptop's own resolver agrees (see Pitfalls if not)
-ping 192.168.10.254               # must FAIL (no IPv4 at all on the mesh)
-ping -6 2001:4860:4860::8888      # must FAIL (nothing forwarded to the home side)
-
-# Captive portal
-nslookup google.com               # -&gt; fd7e:4c1a:9b20:1::1
-curl -sI http://connectivitycheck.gstatic.com/generate_204   # 302 -&gt; http://sparrows.lan/
-
-# On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, no IPv4</code></pre></div>
-
-<h4 id="welcome"><span lang="en">8. This handbook as the welcome page</span><span lang="fr">8. Ce manuel comme page d'accueil</span><span lang="es">8. Este manual como página de bienvenida</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
-<p lang="en">This file needs nothing from outside: no font, no script, no image. So the nest can serve it as it is, and a newcomer's phone opens it on joining the Wi-Fi. It starts with <a href="#start">Start here</a>, which is what a newcomer needs. It lives in Layer 0 because nothing else can reach a phone that has no app yet.</p>
-<p lang="fr">Ce fichier n'a besoin de rien d'extérieur : ni police, ni script, ni image. Le nid peut donc le servir tel quel, et le téléphone d'un nouveau venu l'ouvre en rejoignant le Wi-Fi. Il commence par <a href="#start">Commencer ici</a>, ce dont un nouveau venu a besoin. Il vit dans la couche 0 parce que rien d'autre ne peut atteindre un téléphone qui n'a pas encore d'application.</p>
-<p lang="es">Este archivo no necesita nada de fuera: ni fuente, ni script, ni imagen. Así que el nido puede servirlo tal cual, y el teléfono de un recién llegado lo abre al unirse al Wi-Fi. Empieza por <a href="#start">Empezar aquí</a>, que es lo que necesita un recién llegado. Vive en la capa 0 porque ninguna otra cosa puede llegar a un teléfono que aún no tiene aplicación.</p>
-<div class="code"><div class="hd"><span class="file">nest</span></div><pre><code># On the nest: this file becomes the page every newcomer sees
-sudo cp /var/www/sparrows/index.html /var/www/sparrows/index.html.bak 2&gt;/dev/null
-sudo install -m 644 index.html /var/www/sparrows/index.html
-curl -sI http://sparrows.lan/ | head -n1        # HTTP/1.1 200 OK
-# No logs on the on-ramp: add  access_log off;  inside both server blocks, then
-sudo nginx -t &amp;&amp; sudo systemctl reload nginx
-
-# Undo
-sudo mv /var/www/sparrows/index.html.bak /var/www/sparrows/index.html</code></pre></div>
-<ul lang="en">
-  <li><strong>Fill in the "This village" card first:</strong> the app file with its SHA-256 and the village key hashes. The same values go on the paper notice.</li>
-  <li><strong>The "sign in to network" window is a small, limited browser.</strong> Downloads often fail in it. Tell people to open <code>http://sparrows.lan</code> in their normal browser and to add it to their home screen.</li>
-  <li><strong>The links to outside sites don't work in the village.</strong> That is expected: there is no Internet here.</li>
-  <li><strong>Same file on every nest.</strong> Compare with <code>sha256sum</code>.</li>
-</ul>
-<ul lang="fr">
-  <li><strong>Remplir d'abord la carte « Ce village » :</strong> le fichier de l'application avec son SHA-256 et les empreintes de clés du village. Les mêmes valeurs vont sur l'affiche papier.</li>
-  <li><strong>La fenêtre « se connecter au réseau » est un petit navigateur limité.</strong> Les téléchargements y échouent souvent. Dire aux gens d'ouvrir <code>http://sparrows.lan</code> dans leur navigateur habituel et de l'ajouter à leur écran d'accueil.</li>
-  <li><strong>Les liens vers des sites extérieurs ne marchent pas au village.</strong> C'est normal : il n'y a pas d'Internet ici.</li>
-  <li><strong>Le même fichier sur chaque nid.</strong> Comparer avec <code>sha256sum</code>.</li>
-</ul>
-<ul lang="es">
-  <li><strong>Rellenar primero la tarjeta «Este pueblo»:</strong> el archivo de la aplicación con su SHA-256 y las huellas de claves del pueblo. Los mismos valores van en el cartel en papel.</li>
-  <li><strong>La ventana «iniciar sesión en la red» es un navegador pequeño y limitado.</strong> Las descargas fallan a menudo en ella. Decir a la gente que abra <code>http://sparrows.lan</code> en su navegador normal y que lo añada a su pantalla de inicio.</li>
-  <li><strong>Los enlaces a sitios de fuera no funcionan en el pueblo.</strong> Es lo esperado: aquí no hay Internet.</li>
-  <li><strong>El mismo archivo en cada nido.</strong> Comparar con <code>sha256sum</code>.</li>
-</ul>
-
-<h4 id="kit"><span lang="en">9. The kit folder: files and scripts to download</span><span lang="fr">9. Le dossier kit : fichiers et scripts à télécharger</span><span lang="es">9. La carpeta kit: archivos y scripts para descargar</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
-<p lang="en">Next to this page, the nest serves a <code>kit/</code> folder: the build scripts, this handbook's sources, and the app install file, with a <code>SHA256SUMS</code> list. It belongs to the on-ramp (Layer 0) for the same reason as this page: someone with no app yet, or about to build a first station, can't reach anything on Layer 1. It holds only public files: no radio key, no SSH key, no built perch or hedge image (those carry the village's radio keys and are handed over in person). An admin with Internet access can also take everything straight from the project's git repository on GitHub, and update it with <code>git pull</code>. The repository is public since 2026-11-21: no account is needed to read it. Its front page shows this handbook in English.</p>
-<p lang="fr">À côté de cette page, le nid sert un dossier <code>kit/</code> : les scripts de build, les sources de ce manuel, et le fichier d'installation de l'application, avec une liste <code>SHA256SUMS</code>. Il fait partie de la rampe d'accès (couche 0) pour la même raison que cette page : quelqu'un qui n'a pas encore l'application, ou qui va construire sa première station, ne peut rien atteindre sur la couche 1. Il ne contient que des fichiers publics : aucune clé radio, aucune clé SSH, aucune image de perchoir ou de haie construite (elles portent les clés radio du village et se remettent en main propre). Un admin qui a Internet peut aussi tout prendre directement dans le dépôt git du projet sur GitHub, et le mettre à jour avec <code>git pull</code>. Le dépôt est public depuis le 2026-11-21 : pas besoin de compte pour le lire. Sa page d'accueil montre ce manuel en anglais.</p>
-<p lang="es">Junto a esta página, el nido sirve una carpeta <code>kit/</code>: los scripts de construcción, las fuentes de este manual y el archivo de instalación de la aplicación, con una lista <code>SHA256SUMS</code>. Pertenece a la rampa de acceso (capa 0) por la misma razón que esta página: alguien que aún no tiene la aplicación, o que va a construir su primera estación, no puede llegar a nada en la capa 1. Solo contiene archivos públicos: ninguna clave de radio, ninguna clave SSH, ninguna imagen de percha o de seto ya construida (llevan las claves de radio del pueblo y se entregan en mano). Un administrador con Internet también puede tomarlo todo directamente del repositorio git del proyecto en GitHub, y ponerlo al día con <code>git pull</code>. El repositorio es público desde el 2026-11-21: no hace falta cuenta para leerlo. Su página principal muestra este manual en inglés.</p>
-<div class="code"><div class="hd"><span class="file">admin laptop, then nest</span></div><pre><code># On any computer with Internet and git: the whole project from GitHub. Public: no account needed
-git clone https://github.com/1372711/Sparrows-Nework.git sparrows
-cd sparrows &amp;&amp; ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
-git pull                                      # later, from inside sparrows/: get the latest
-git log -1 --format='%h %ad %s'               # which version you have
-
-# On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
-# Public files only: keys/, secrets/ and build/ never go in the kit.
-mkdir -p kit
-rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
-cp &lt;app-install-file&gt; kit/                    # e.g. the Sideband APK, once chosen
-( cd kit &amp;&amp; find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum &gt; SHA256SUMS )
-grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ &amp;&amp; echo "STOP: check these files"   # should print nothing
-scp -r kit index.html &lt;user&gt;@[fd7e:4c1a:9b20:1::1]:/tmp/
-
-# On the nest
-sudo rm -rf /var/www/sparrows/kit &amp;&amp; sudo cp -r /tmp/kit /var/www/sparrows/kit
-sudo install -m 644 /tmp/index.html /var/www/sparrows/index.html
-# In /etc/nginx/sites-available/sparrows, inside the sparrows.lan server block:
-#     location /kit/ { autoindex on; }
-sudo nginx -t &amp;&amp; sudo systemctl reload nginx
-curl -s http://sparrows.lan/kit/ | grep -c href           # the files are listed
-
-# Anyone who downloaded the kit checks it
-cd kit &amp;&amp; sha256sum -c SHA256SUMS
-
-# Undo on the nest: remove the location line, then
-sudo rm -rf /var/www/sparrows/kit &amp;&amp; sudo nginx -t &amp;&amp; sudo systemctl reload nginx</code></pre></div>
-<p lang="en">Anyone who copies the handbook with its <code>kit/</code> folder, on a USB stick or by mail, carries the whole project. On the Internet, the address to download it from is not chosen yet. A git repository carried by Reticulum is the next step (<a href="#ideas">Part IV</a>).</p>
-<p lang="fr">Quiconque copie le manuel avec son dossier <code>kit/</code>, sur une clé USB ou par courriel, emporte tout le projet. Sur Internet, l'adresse où le télécharger n'est pas encore choisie. Un dépôt git porté par Reticulum est la prochaine étape (<a href="#ideas">partie IV</a>).</p>
-<p lang="es">Quien copia el manual con su carpeta <code>kit/</code>, en una memoria USB o por correo, se lleva todo el proyecto. En Internet, la dirección desde donde descargarlo aún no está elegida. Un repositorio git llevado por Reticulum es el siguiente paso (<a href="#ideas">parte IV</a>).</p>
-
-<h4><span lang="en">Towards the target model</span><span lang="fr">Vers le modèle cible</span><span lang="es">Hacia el modelo final</span></h4>
-<p lang="en">Once Reticulum and the file store are tested, the Pi is stripped down to the on-ramp: remove <code>/files/</code> and the <code>www</code> name from nginx, port 443 from nftables, and add <code>access_log off;</code>. The welcome page then holds four things: what Sparrows is, how to install the app with its SHA-256, the key hashes of the village, and the charter.</p>
-<p lang="fr">Une fois Reticulum et le dépôt de fichiers testés, le Pi est réduit à la rampe d'accès : retirer <code>/files/</code> et le nom <code>www</code> de nginx, le port 443 de nftables, et ajouter <code>access_log off;</code>. La page d'accueil contient alors quatre choses : ce qu'est Sparrows, comment installer l'application avec son SHA-256, les empreintes de clés du village, et la charte.</p>
-<p lang="es">Cuando Reticulum y el almacén de archivos estén probados, la Pi se reduce a la rampa de acceso: quitar <code>/files/</code> y el nombre <code>www</code> de nginx, el puerto 443 de nftables, y añadir <code>access_log off;</code>. La página de bienvenida contiene entonces cuatro cosas: qué es Sparrows, cómo instalar la aplicación con su SHA-256, las huellas de claves del pueblo y la carta.</p>
-
 <h3 id="reticulum">Reticulum <span class="st nt" data-ui="nt">not yet tested</span></h3>
-<p lang="en">Two daemons on the nest and nothing on perches, feeders or hedges. <code>rnsd</code> is the relay: peers find each other by IPv6 link-local multicast, with no address, DNS or RA needed. <code>lxmd -p</code> keeps encrypted messages for people who are offline and syncs with the other nests.</p>
-<p lang="fr">Deux démons sur le nid et rien sur les perchoirs, les mangeoires ni les haies. <code>rnsd</code> est le relais : les pairs se trouvent par multicast IPv6 lien-local, sans adresse, sans DNS, sans RA. <code>lxmd -p</code> garde les messages chiffrés des personnes hors ligne et se synchronise avec les autres nids.</p>
-<p lang="es">Dos demonios en el nido y nada en perchas, comederos ni setos. <code>rnsd</code> es el relevo: los pares se encuentran por multidifusión IPv6 de enlace local, sin dirección, sin DNS, sin RA. <code>lxmd -p</code> guarda los mensajes cifrados de quien está desconectado y se sincroniza con los demás nidos.</p>
-<p class="note" lang="en">Write the config before the first start. With no config, <code>rnsd</code> opens on every interface, the home Wi-Fi included, and would announce on the home LAN.</p>
-<p class="note" lang="fr">Écrire la configuration avant le premier démarrage. Sans configuration, <code>rnsd</code> s'ouvre sur toutes les interfaces, Wi-Fi de la maison compris, et s'annoncerait sur le réseau de la maison.</p>
-<p class="note" lang="es">Escribir la configuración antes del primer arranque. Sin configuración, <code>rnsd</code> se abre en todas las interfaces, incluido el Wi-Fi de casa, y se anunciaría en la red de casa.</p>
+<p lang="en">It runs on trees and nests only, and comes ready in their images (<a href="#tree-image">tree</a>, <a href="#nest-image">nest</a>): <code>rnsd</code>, the relay; on a nest also <code>lxmd</code>, which keeps encrypted messages for people who are offline; and Nomad Network, which serves the Sparrows page. Nothing to install by hand. A nest and a laptop on the <code>Sparrows</code> Wi-Fi found each other as peers on 2026-11-21; the message store is not yet tested.</p>
+<p lang="fr">Il tourne seulement sur les arbres et les nids, et arrive prêt dans leurs images (<a href="#tree-image">arbre</a>, <a href="#nest-image">nid</a>) : <code>rnsd</code>, le relais ; sur un nid aussi <code>lxmd</code>, qui garde les messages chiffrés des personnes hors ligne ; et Nomad Network, qui sert la page Sparrows. Rien à installer à la main. Un nid et un portable sur le Wi-Fi <code>Sparrows</code> se sont trouvés comme pairs le 2026-11-21 ; la boîte aux lettres n'est pas encore testée.</p>
+<p lang="es">Solo funciona en árboles y nidos, y viene listo en sus imágenes (<a href="#tree-image">árbol</a>, <a href="#nest-image">nido</a>): <code>rnsd</code>, el relevo; en un nido también <code>lxmd</code>, que guarda los mensajes cifrados de quien está desconectado; y Nomad Network, que sirve la página Sparrows. Nada que instalar a mano. Un nido y un portátil en el Wi-Fi <code>Sparrows</code> se encontraron como pares el 2026-11-21; el buzón aún no se ha probado.</p>
 
 <h4><span lang="en">How it uses the village segment</span><span lang="fr">Comment il utilise le segment du village</span><span lang="es">Cómo usa el segmento del pueblo</span></h4>
 <ul lang="en">
@@ -3597,172 +3365,13 @@ sudo rm -rf /var/www/sparrows/kit &amp;&amp; sudo nginx -t &amp;&amp; sudo syste
 </ul>
 
 <h4><span lang="en">1. Install, while the Pi has Internet through the home Wi-Fi</span><span lang="fr">1. Installer, tant que le Pi a Internet par le Wi-Fi de la maison</span><span lang="es">1. Instalar, mientras la Pi tiene Internet por el Wi-Fi de casa</span></h4>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code>sudo apt install -y python3-venv
-sudo useradd --system --create-home --home-dir /var/lib/reticulum --shell /usr/sbin/nologin rns
-sudo python3 -m venv /opt/reticulum
-sudo /opt/reticulum/bin/pip install rns lxmf
-/opt/reticulum/bin/rnsd --version; /opt/reticulum/bin/lxmd --version
-sudo -u rns mkdir -p /var/lib/lxmd</code></pre></div>
-<h4><span lang="en">2. Config, owned by the <code>rns</code> user</span><span lang="fr">2. Configuration, appartenant à l'utilisateur <code>rns</code></span><span lang="es">2. Configuración, propiedad del usuario <code>rns</code></span></h4>
-<div class="code"><div class="hd"><span class="file">/var/lib/reticulum/config</span></div><pre><code>[reticulum]
-  enable_transport = Yes          # the Pi relays for other peers
-  share_instance = Yes            # lxmd and the rn* tools use this rnsd
-  panic_on_interface_error = No
 
-[logging]
-  loglevel = 4
-
-[interfaces]
-  # Mesh side ONLY. Never wlan0 (home LAN).
-  [[Sparrows Mesh]]
-    type = AutoInterface
-    enabled = yes
-    devices = eth0</code></pre></div>
-<h4><span lang="en">3. Services</span><span lang="fr">3. Services</span><span lang="es">3. Servicios</span></h4>
-<div class="code"><div class="hd"><span class="file">/etc/systemd/system/rnsd.service</span></div><pre><code>[Unit]
-Description=Reticulum transport node (Sparrows mesh)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=rns
-ExecStart=/opt/reticulum/bin/rnsd --config /var/lib/reticulum -s
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target</code></pre></div>
-<div class="code"><div class="hd"><span class="file">/etc/systemd/system/lxmd.service</span></div><pre><code>[Unit]
-Description=LXMF propagation node (Sparrows mesh)
-After=rnsd.service
-Requires=rnsd.service
-
-[Service]
-User=rns
-ExecStart=/opt/reticulum/bin/lxmd --config /var/lib/lxmd --rnsconfig /var/lib/reticulum -p
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target</code></pre></div>
-<h4><span lang="en">4. Firewall: one line in the <code>input</code> chain, under the mesh-side lines</span><span lang="fr">4. Pare-feu : une ligne dans la chaîne <code>input</code>, sous les lignes côté mesh</span><span lang="es">4. Cortafuegos: una línea en la cadena <code>input</code>, debajo de las líneas del lado de la malla</span></h4>
-<p lang="en">The ports are the AutoInterface defaults. Check them against <code>rnsd --exampleconfig</code> and fix the rule if they differ.</p>
-<p lang="fr">Les ports sont les valeurs par défaut d'AutoInterface. Les comparer à <code>rnsd --exampleconfig</code> et corriger la règle s'ils diffèrent.</p>
-<p lang="es">Los puertos son los valores por defecto de AutoInterface. Compararlos con <code>rnsd --exampleconfig</code> y corregir la regla si difieren.</p>
-<div class="code"><div class="hd"><span class="file">/etc/nftables.conf</span></div><pre><code>    iifname "eth0" meta nfproto ipv6 udp dport { 29716, 42671 } accept   # Reticulum AutoInterface</code></pre></div>
-<h4><span lang="en">5. Start and verify</span><span lang="fr">5. Démarrer et vérifier</span><span lang="es">5. Arrancar y comprobar</span></h4>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code>sudo nft -c -f /etc/nftables.conf &amp;&amp; sudo systemctl restart nftables
-sudo systemctl daemon-reload
-sudo systemctl enable --now rnsd lxmd
-
-# Verify on the Pi
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "Sparrows Mesh" Up; only eth0
-sudo ss -lunp | grep -e rnsd -e python                                # UDP bound on eth0 / fe80, none on wlan0
-journalctl -u rnsd -u lxmd -n 50                                      # lxmd prints its propagation node address
-
-# From a Linux laptop on the village (rns in a venv, devices = &lt;its interface&gt; in ~/.reticulum/config)
-rnstatus                          # the nest shows up as a peer
-rnpath &lt;lxmd address&gt;             # a path to the nest's propagation node
-
-# Once a version is tested: note it, and keep the wheels for installs without Internet
-/opt/reticulum/bin/pip freeze | grep -i -e rns -e lxmf
-/opt/reticulum/bin/pip download rns lxmf -d wheels/</code></pre></div>
-<p lang="en">On Android: install Sideband, connect through local Wi-Fi (AutoInterface), restart the app, then pick the Pi as propagation node. The test that matters: two phones swap addresses, phone B is switched off, A sends a message, B comes back on the mesh. The message must arrive through the Pi.</p>
-<p lang="fr">Sur Android : installer Sideband, se connecter par le Wi-Fi local (AutoInterface), relancer l'application, puis choisir le Pi comme nœud de propagation. Le test qui compte : deux téléphones échangent leurs adresses, on éteint le téléphone B, A envoie un message, B revient sur le mesh. Le message doit arriver par le Pi.</p>
-<p lang="es">En Android: instalar Sideband, conectar por el Wi-Fi local (AutoInterface), reiniciar la aplicación y elegir la Pi como nodo de propagación. La prueba que importa: dos teléfonos intercambian direcciones, se apaga el teléfono B, A envía un mensaje, B vuelve a la malla. El mensaje debe llegar a través de la Pi.</p>
-<h4><span lang="en">Undo, and what to back up</span><span lang="fr">Défaire, et quoi sauvegarder</span><span lang="es">Deshacer, y qué guardar en copia</span></h4>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code>sudo systemctl disable --now lxmd rnsd
-sudo rm /etc/systemd/system/rnsd.service /etc/systemd/system/lxmd.service &amp;&amp; sudo systemctl daemon-reload
-# remove the "Reticulum AutoInterface" line from /etc/nftables.conf, then:
-sudo systemctl restart nftables
-sudo rm -rf /opt/reticulum /var/lib/lxmd &amp;&amp; sudo userdel -r rns</code></pre></div>
-<p lang="en">Back up <code>/var/lib/reticulum/storage/</code> and <code>/var/lib/lxmd/</code>. They hold the Pi's identity keys, and the identity <em>is</em> the address: losing them changes the address every phone has stored.</p>
-<p lang="fr">Sauvegarder <code>/var/lib/reticulum/storage/</code> et <code>/var/lib/lxmd/</code>. Ils contiennent les clés d'identité du Pi, et l'identité <em>est</em> l'adresse : les perdre change l'adresse que chaque téléphone a enregistrée.</p>
-<p lang="es">Hacer copia de <code>/var/lib/reticulum/storage/</code> y de <code>/var/lib/lxmd/</code>. Contienen las claves de identidad de la Pi, y la identidad <em>es</em> la dirección: perderlas cambia la dirección que cada teléfono tiene guardada.</p>
-
-<h3 id="page-node"><span lang="en">A neighbour's page node, example: Pi Zero 2 W</span><span lang="fr">Le nœud de pages d'un voisin, exemple : Pi Zero 2 W</span><span lang="es">El nodo de páginas de un vecino, ejemplo: Pi Zero 2 W</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
-<p lang="en">Anyone can publish pages and files on Layer 1 from their own small box: a bakery's opening hours, a club's board, a family's photos. It serves P3 (every user is a relay, nothing sits on a nest) and P1 (the node's address is its own key hash, held by its owner, not a name an admin grants). It is not a station: no RA, no on-ramp, and it joins the open Wi-Fi like a phone.</p>
-<p lang="fr">Chacun peut publier des pages et des fichiers sur la couche 1 depuis son propre petit boîtier : les horaires d'une boulangerie, le panneau d'un club, les photos d'une famille. Cela sert P3 (chaque usager est un relais, rien ne vit sur un nid) et P1 (l'adresse du nœud est sa propre empreinte de clé, détenue par son propriétaire, pas un nom accordé par un admin). Ce n'est pas une station : pas de RA, pas de rampe d'accès, et il rejoint le Wi-Fi ouvert comme un téléphone.</p>
-<p lang="es">Cualquiera puede publicar páginas y archivos en la capa 1 desde su propia cajita: el horario de una panadería, el tablón de un club, las fotos de una familia. Sirve a P3 (cada usuario es un relevo, nada vive en un nido) y a P1 (la dirección del nodo es su propia huella de clave, en manos de su dueño, no un nombre que concede un administrador). No es una estación: sin RA, sin rampa de acceso, y se une al Wi-Fi abierto como un teléfono.</p>
-<p lang="en">Example: a Pi Zero 2 W (512 MB of RAM, one 2.4 GHz radio) on the <code>Sparrows</code> Wi-Fi, running Nomad Network in node mode. Fine for pages, slow for big files. Install it while it is still on the home Wi-Fi, then move it to the village.</p>
-<p lang="fr">Exemple : un Pi Zero 2 W (512 Mo de RAM, une radio 2,4 GHz) sur le Wi-Fi <code>Sparrows</code>, avec Nomad Network en mode nœud. Bien pour des pages, lent pour de gros fichiers. L'installer tant qu'il est encore sur le Wi-Fi de la maison, puis le passer au village.</p>
-<p lang="es">Ejemplo: una Pi Zero 2 W (512 MB de RAM, una radio de 2,4 GHz) en el Wi-Fi <code>Sparrows</code>, con Nomad Network en modo nodo. Bien para páginas, lenta para archivos grandes. Instalarla mientras sigue en el Wi-Fi de casa, y después pasarla al pueblo.</p>
-<p class="note" lang="en">Lock-out risk at step 1: once the home Wi-Fi profile is deleted, the Pi Zero is only reachable from the village, by SSH to its SLAAC or link-local address. Write the Reticulum config (step 2) before that, and keep a keyboard and screen at hand the first time.</p>
-<p class="note" lang="fr">Risque de se retrouver dehors à l'étape 1 : une fois le profil Wi-Fi de la maison supprimé, le Pi Zero n'est joignable que depuis le village, en SSH vers son adresse SLAAC ou lien-local. Écrire la configuration Reticulum (étape 2) avant, et garder un clavier et un écran sous la main la première fois.</p>
-<p class="note" lang="es">Riesgo de quedarse fuera en el paso 1: una vez borrado el perfil del Wi-Fi de casa, la Pi Zero solo es alcanzable desde el pueblo, por SSH a su dirección SLAAC o de enlace local. Escribir antes la configuración de Reticulum (paso 2), y tener a mano un teclado y una pantalla la primera vez.</p>
-<h4><span lang="en">1. Install, then join the village</span><span lang="fr">1. Installer, puis rejoindre le village</span><span lang="es">1. Instalar, y unirse al pueblo</span></h4>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code># 1. While the Pi Zero is still on the home Wi-Fi (Raspberry Pi OS Lite 64-bit, user + SSH set in Imager)
-sudo apt update &amp;&amp; sudo apt install -y python3-venv
-python3 -m venv ~/rns
-~/rns/bin/pip install rns lxmf nomadnet
-~/rns/bin/rnsd --version; ~/rns/bin/nomadnet --version
-
-# 2. Move it to the village: open Wi-Fi, IPv6 only. Write the Reticulum config (step 2) FIRST.
-sudo nmcli dev wifi connect Sparrows
-sudo nmcli con mod Sparrows ipv4.method disabled ipv6.method auto
-nmcli con show                                   # name of the home Wi-Fi profile
-sudo nmcli con delete "&lt;home Wi-Fi profile&gt;"     # LOCK-OUT RISK: from now on, admin only from the village
-# From a laptop on the village: ssh &lt;user&gt;@&lt;its SLAAC address&gt;, or fe80::...%&lt;if&gt;</code></pre></div>
-<h4><span lang="en">2. Reticulum config, before the first start</span><span lang="fr">2. Configuration Reticulum, avant le premier démarrage</span><span lang="es">2. Configuración de Reticulum, antes del primer arranque</span></h4>
-<p lang="en">With no config, Reticulum opens a default interface on every network the box is on. Transport stays off: the nests relay, a small host doesn't need to.</p>
-<p lang="fr">Sans configuration, Reticulum ouvre une interface par défaut sur chaque réseau où se trouve le boîtier. Le transport reste coupé : les nids relaient, un petit hôte n'en a pas besoin.</p>
-<p lang="es">Sin configuración, Reticulum abre una interfaz por defecto en cada red donde está la caja. El transporte se queda apagado: los nidos retransmiten, un host pequeño no lo necesita.</p>
-<div class="code"><div class="hd"><span class="file">~/.reticulum/config</span></div><pre><code>[reticulum]
-  enable_transport = No           # the nests relay; a small host doesn't need to
-  share_instance = Yes            # nomadnet and the rn* tools share this instance
-
-[logging]
-  loglevel = 3
-
-[interfaces]
-  # The village open Wi-Fi only
-  [[Sparrows]]
-    type = AutoInterface
-    enabled = yes
-    devices = wlan0</code></pre></div>
-<h4><span lang="en">3. Nomad Network in node mode</span><span lang="fr">3. Nomad Network en mode nœud</span><span lang="es">3. Nomad Network en modo nodo</span></h4>
-<p lang="en">Pages are micron files (<code>.mu</code>) in <code>storage/pages</code>, starting with <code>index.mu</code>. Files to offer go in <code>storage/files</code>.</p>
-<p lang="fr">Les pages sont des fichiers micron (<code>.mu</code>) dans <code>storage/pages</code>, à commencer par <code>index.mu</code>. Les fichiers à proposer vont dans <code>storage/files</code>.</p>
-<p lang="es">Las páginas son archivos micron (<code>.mu</code>) en <code>storage/pages</code>, empezando por <code>index.mu</code>. Los archivos que ofrecer van en <code>storage/files</code>.</p>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code># First run writes ~/.nomadnetwork/config; stop it with Ctrl-C
-~/rns/bin/nomadnet --daemon
-# In ~/.nomadnetwork/config, section [node]:
-#   enable_node = yes
-#   node_name = Bakery
-mkdir -p ~/.nomadnetwork/storage/pages ~/.nomadnetwork/storage/files
-printf '&gt;Bakery\n\nOpen 7:00-13:00. Bread on Saturday.\n' &gt; ~/.nomadnetwork/storage/pages/index.mu
-
-# Run it at boot
-sudo tee /etc/systemd/system/nomadnet.service &gt;/dev/null &lt;&lt;EOF
-[Unit]
-Description=Nomad Network page node (Sparrows)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=$USER
-ExecStart=$HOME/rns/bin/nomadnet --daemon
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-sudo systemctl daemon-reload &amp;&amp; sudo systemctl enable --now nomadnet</code></pre></div>
-<h4><span lang="en">4. Verify, undo, back up</span><span lang="fr">4. Vérifier, défaire, sauvegarder</span><span lang="es">4. Comprobar, deshacer, guardar en copia</span></h4>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code># On the Pi Zero
-ip -6 addr show wlan0               # fe80:: + SLAAC addresses from the nests' prefixes, no inet
-~/rns/bin/rnstatus                  # "Sparrows" Up
-journalctl -u nomadnet -n 30        # the node announces itself
-
-# From a laptop on the village: Nomad Network or MeshChat, Network list -&gt; "Bakery"
-
-# Undo
-sudo systemctl disable --now nomadnet &amp;&amp; sudo rm /etc/systemd/system/nomadnet.service
-rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/identity first to keep the address</code></pre></div>
-<p lang="en">Back up <code>~/.nomadnetwork/storage/identity</code>: it is the node's key, so it is its address. Lose it and every link to the node breaks. Reading the pages: Nomad Network in a terminal, or MeshChat on a laptop. Whether Sideband on Android shows Nomad pages is still to check.</p>
-<p lang="fr">Sauvegarder <code>~/.nomadnetwork/storage/identity</code> : c'est la clé du nœud, donc son adresse. La perdre casse tous les liens vers le nœud. Lire les pages : Nomad Network en terminal, ou MeshChat sur un portable. Reste à vérifier si Sideband sur Android affiche les pages Nomad.</p>
-<p lang="es">Hacer copia de <code>~/.nomadnetwork/storage/identity</code>: es la clave del nodo, y por tanto su dirección. Si se pierde, se rompen todos los enlaces al nodo. Leer las páginas: Nomad Network en una terminal, o MeshChat en un portátil. Queda por comprobar si Sideband en Android muestra las páginas Nomad.</p>
+<p lang="en">On Android: install Sideband, connect through local Wi-Fi (AutoInterface), restart the app, then pick the nest as propagation node. The test that matters: two phones swap addresses, phone B is switched off, A sends a message, B comes back on the village. The message must arrive through the nest.</p>
+<p lang="fr">Sur Android : installer Sideband, se connecter par le Wi-Fi local (AutoInterface), redémarrer l'appli, puis choisir le nid comme nœud de propagation. Le test qui compte : deux téléphones échangent leurs adresses, le téléphone B est éteint, A envoie un message, B revient sur le village. Le message doit arriver par le nid.</p>
+<p lang="es">En Android: instalar Sideband, conectarse por el Wi-Fi local (AutoInterface), reiniciar la app, y elegir el nido como nodo de propagación. La prueba que importa: dos teléfonos se intercambian las direcciones, el teléfono B se apaga, A envía un mensaje, B vuelve al pueblo. El mensaje debe llegar a través del nido.</p>
+<p lang="en">The identities are the addresses: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> and, on a nest, <code>/etc/lxmd/</code>. <code>sysupgrade</code> keeps them (they are listed in <code>/lib/upgrade/keep.d/</code>), but writing a card again erases them: copy them to the admin laptop first. Later they live on the locked <code>/home</code> (<a href="#home">Part IV</a>).</p>
+<p lang="fr">Les identités sont les adresses : <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> et, sur un nid, <code>/etc/lxmd/</code>. <code>sysupgrade</code> les garde (elles sont listées dans <code>/lib/upgrade/keep.d/</code>), mais réécrire une carte les efface : les copier d'abord sur le portable d'admin. Plus tard elles vivront sur le <code>/home</code> verrouillé (<a href="#home">partie IV</a>).</p>
+<p lang="es">Las identidades son las direcciones: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> y, en un nido, <code>/etc/lxmd/</code>. <code>sysupgrade</code> las conserva (están en <code>/lib/upgrade/keep.d/</code>), pero volver a escribir una tarjeta las borra: copiarlas antes en el portátil de administración. Más adelante vivirán en el <code>/home</code> cerrado (<a href="#home">parte IV</a>).</p>
 
 <h3 id="pitfalls"><span lang="en">Pitfalls</span><span lang="fr">Pièges</span><span lang="es">Trampas</span></h3>
 <h4><span lang="en">Building images</span><span lang="fr">Construire les images</span><span lang="es">Construir las imágenes</span></h4>
@@ -3845,68 +3454,50 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
 </ul>
 <h4><span lang="en">Network and IPv6</span><span lang="fr">Réseau et IPv6</span><span lang="es">Red e IPv6</span></h4>
 <ul lang="en">
-  <li>Never plug a perch, a feeder or a hedge into the home box: loop risk, and the Pi's RAs and DNS would reach home devices.</li>
-  <li>Docker and some VPN tools silently turn forwarding on. The nftables <code>forward</code> drop still holds.</li>
+  <li>Never plug a perch, a feeder or a hedge into the home box: loop risk, and the nest's RAs and DNS would reach home devices.</li>
   <li>An Android phone stuck on "Obtaining IP address" on a network with only ULA addresses: it needs a non-ULA prefix next to the ULA (seen 2026-11-14, <a href="#android">see why</a>). A Linux laptop on the same Wi-Fi works fine, so test with a phone.</li>
-  <li>An Android phone that joins for half a second, then says "IP configuration failure" and goes back to another Wi-Fi: the nest answers without the router flag. <code>net.ipv6.conf.eth0.forwarding=1</code> on the nest (seen 2026-11-14). Check from a laptop: <code>ip -6 neigh show dev wlan0</code> must show <code>router</code> on the nest's entry.</li>
+  <li>An Android phone that joins for half a second, then says "IP configuration failure" and goes back to another Wi-Fi: the nest answers without the router flag. The nest needs IPv6 forwarding on, which is OpenWrt's default (seen 2026-11-14). Check from a laptop: <code>ip -6 neigh show dev wlan0</code> must show <code>router</code> on the nest's entry.</li>
   <li>Android takes DNS only from the RA (RDNSS). DHCPv6 is ignored.</li>
   <li>A router lifetime of 0 in the RA makes phones refuse or rank the network badly. Check <code>Router lifetime: 1800</code> with <code>rdisc6</code>.</li>
   <li>Android "Private DNS" set to a fixed provider bypasses the DNS redirect. In automatic mode it falls back fine.</li>
 </ul>
 <ul lang="fr">
-  <li>Ne jamais brancher un perchoir, une mangeoire ou une haie sur la box : risque de boucle, et les RA et le DNS du Pi atteindraient les appareils de la maison.</li>
-  <li>Docker et certains outils VPN activent le routage en silence. Le <code>forward</code> en drop de nftables tient quand même.</li>
+  <li>Ne jamais brancher un perchoir, une mangeoire ou une haie sur la box : risque de boucle, et les RA et le DNS du nid atteindraient les appareils de la maison.</li>
   <li>Un téléphone Android bloqué sur « Obtention de l'adresse IP » sur un réseau qui n'a que des adresses ULA : il lui faut un préfixe non-ULA à côté de l'ULA (vu le 2026-11-14, <a href="#android">voir pourquoi</a>). Un portable Linux sur le même Wi-Fi marche très bien : tester avec un téléphone.</li>
-  <li>Un téléphone Android qui se connecte une demi-seconde, puis affiche « Échec de la configuration IP » et repart sur un autre Wi-Fi : le nid répond sans le drapeau routeur. <code>net.ipv6.conf.eth0.forwarding=1</code> sur le nid (vu le 2026-11-14). Vérifier depuis un portable : <code>ip -6 neigh show dev wlan0</code> doit montrer <code>router</code> sur l'entrée du nid.</li>
+  <li>Un téléphone Android qui se connecte une demi-seconde, puis affiche « Échec de la configuration IP » et repart sur un autre Wi-Fi : le nid répond sans le drapeau routeur. Le nid a besoin du routage IPv6 activé, ce qui est le réglage par défaut d'OpenWrt (vu le 2026-11-14). Vérifier depuis un portable : <code>ip -6 neigh show dev wlan0</code> doit montrer <code>router</code> sur l'entrée du nid.</li>
   <li>Android ne prend son DNS que dans le RA (RDNSS). DHCPv6 est ignoré.</li>
   <li>Une durée de vie de routeur à 0 dans le RA fait que les téléphones refusent le réseau ou le classent mal. Vérifier <code>Router lifetime: 1800</code> avec <code>rdisc6</code>.</li>
   <li>Le « DNS privé » d'Android réglé sur un fournisseur fixe contourne la redirection DNS. En mode automatique, il se rabat correctement.</li>
 </ul>
 <ul lang="es">
-  <li>No enchufar nunca una percha, un comedero o un seto al router de casa: riesgo de bucle, y los RA y el DNS de la Pi llegarían a los aparatos de casa.</li>
-  <li>Docker y algunas herramientas VPN activan el reenvío en silencio. El <code>forward</code> en drop de nftables aguanta igualmente.</li>
+  <li>No enchufar nunca una percha, un comedero o un seto al router de casa: riesgo de bucle, y los RA y el DNS del nido llegarían a los aparatos de casa.</li>
   <li>Un teléfono Android atascado en «Obteniendo dirección IP» en una red que solo tiene direcciones ULA: necesita un prefijo no ULA junto al ULA (visto el 2026-11-14, <a href="#android">ver por qué</a>). Un portátil Linux en el mismo Wi-Fi funciona bien, así que hay que probar con un teléfono.</li>
-  <li>Un teléfono Android que se une medio segundo, dice «Error de configuración IP» y vuelve a otro Wi-Fi: el nido responde sin la marca de router. <code>net.ipv6.conf.eth0.forwarding=1</code> en el nido (visto el 2026-11-14). Comprobar desde un portátil: <code>ip -6 neigh show dev wlan0</code> debe mostrar <code>router</code> en la entrada del nido.</li>
+  <li>Un teléfono Android que se une medio segundo, dice «Error de configuración IP» y vuelve a otro Wi-Fi: el nido responde sin la marca de router. El nido necesita el reenvío IPv6 activado, que es lo que trae OpenWrt por defecto (visto el 2026-11-14). Comprobar desde un portátil: <code>ip -6 neigh show dev wlan0</code> debe mostrar <code>router</code> en la entrada del nido.</li>
   <li>Android solo toma el DNS del RA (RDNSS). DHCPv6 se ignora.</li>
   <li>Un tiempo de vida de router de 0 en el RA hace que los teléfonos rechacen la red o la valoren mal. Comprobar <code>Router lifetime: 1800</code> con <code>rdisc6</code>.</li>
   <li>El «DNS privado» de Android puesto en un proveedor fijo se salta la redirección DNS. En modo automático recurre bien al DNS normal.</li>
 </ul>
-<h4>Raspberry Pi, Reticulum</h4>
+<h4><span lang="en">Reticulum and laptops</span><span lang="fr">Reticulum et portables</span><span lang="es">Reticulum y portátiles</span></h4>
 <ul lang="en">
-  <li>With an old Raspberry Pi Imager the customisation can silently fail on Trixie: no user, no SSH, no Wi-Fi.</li>
-  <li>Two nginx servers with <code>default_server</code> on port 80 make <code>nginx -t</code> fail.</li>
-  <li><code>curl</code> to the nest says "Connection refused": nginx isn't listening on <code>[::]:80</code>. A firewall drop would time out instead. Check <code>ss -lntp | grep :80</code>.</li>
   <li>The nest answers <code>dig</code> but the laptop can't resolve any name: the laptop sends its queries to its own resolver on <code>127.0.0.1</code> and ignores the RA's DNS server (seen 2026-11-14 with resolvconf and a stopped dnsmasq). Start that resolver and give it <code>server=/sparrows.lan/fd7e:4c1a:9b20:1::1</code> and <code>rebind-domain-ok=/sparrows.lan/</code>.</li>
-  <li>Peers never show up in <code>rnstatus</code>: first suspect the nftables <code>input</code> drop.</li>
   <li>Reticulum's founder stepped back in December 2025. Pin the versions that were tested, keep the wheels for offline installs, and keep the design portable to another implementation.</li>
   <li>The protocol is public domain, but the reference implementation's licence carries conditions. Read it before selling a kit.</li>
   <li>No Reticulum on perches, feeders or hedges (decided 2026-11-12). They bridge, so every phone already reaches the nest's <code>rnsd</code> directly. A relay on them would add announce traffic, not reach. Extra relays go where two media meet.</li>
   <li><code>apt</code> on a laptop joined to the village fails with "Could not resolve": the catch-all DNS sends every name to the nest. Expected. Update from another network.</li>
-  <li>Wi-Fi power saving can drop the nest's home link: <code>sudo nmcli con mod preconfigured 802-11-wireless.powersave 2</code>.</li>
 </ul>
 <ul lang="fr">
-  <li>Avec un vieux Raspberry Pi Imager, la personnalisation peut échouer en silence sur Trixie : pas d'utilisateur, pas de SSH, pas de Wi-Fi.</li>
-  <li>Deux serveurs nginx avec <code>default_server</code> sur le port 80 font échouer <code>nginx -t</code>.</li>
-  <li><code>curl</code> vers le nid répond « Connection refused » : nginx n'écoute pas sur <code>[::]:80</code>. Un drop du pare-feu donnerait plutôt une attente sans fin. Vérifier <code>ss -lntp | grep :80</code>.</li>
   <li>Le nid répond à <code>dig</code> mais le portable ne résout aucun nom : le portable envoie ses requêtes à son propre résolveur sur <code>127.0.0.1</code> et ignore le serveur DNS du RA (vu le 2026-11-14 avec resolvconf et un dnsmasq arrêté). Démarrer ce résolveur et lui donner <code>server=/sparrows.lan/fd7e:4c1a:9b20:1::1</code> et <code>rebind-domain-ok=/sparrows.lan/</code>.</li>
-  <li>Les pairs n'apparaissent jamais dans <code>rnstatus</code> : soupçonner d'abord le drop de la chaîne <code>input</code> de nftables.</li>
   <li>Le fondateur de Reticulum s'est mis en retrait en décembre 2025. Figer les versions testées, garder les wheels pour les installations hors ligne, et garder une conception portable vers une autre implémentation.</li>
   <li>Le protocole est dans le domaine public, mais la licence de l'implémentation de référence pose des conditions. La lire avant de vendre un kit.</li>
   <li>Pas de Reticulum sur les perchoirs, les mangeoires ni les haies (décidé le 2026-11-12). Ce sont des ponts : chaque téléphone joint déjà directement le <code>rnsd</code> du nid. Un relais sur eux ajouterait du trafic d'annonces, pas de la portée. Les relais en plus vont là où deux supports se rencontrent.</li>
   <li><code>apt</code> sur un portable connecté au village échoue avec « Could not resolve » : le DNS attrape-tout envoie tous les noms vers le nid. C'est normal. Mettre à jour depuis un autre réseau.</li>
-  <li>L'économie d'énergie Wi-Fi peut faire tomber le lien du nid vers la maison : <code>sudo nmcli con mod preconfigured 802-11-wireless.powersave 2</code>.</li>
 </ul>
 <ul lang="es">
-  <li>Con un Raspberry Pi Imager antiguo, la personalización puede fallar en silencio en Trixie: sin usuario, sin SSH, sin Wi-Fi.</li>
-  <li>Dos servidores nginx con <code>default_server</code> en el puerto 80 hacen fallar <code>nginx -t</code>.</li>
-  <li><code>curl</code> al nido dice «Connection refused»: nginx no está escuchando en <code>[::]:80</code>. Un drop del cortafuegos daría más bien un tiempo de espera agotado. Comprobar <code>ss -lntp | grep :80</code>.</li>
   <li>El nido responde a <code>dig</code> pero el portátil no resuelve ningún nombre: el portátil envía sus consultas a su propio resolvedor en <code>127.0.0.1</code> e ignora el servidor DNS del RA (visto el 2026-11-14 con resolvconf y un dnsmasq parado). Arrancar ese resolvedor y darle <code>server=/sparrows.lan/fd7e:4c1a:9b20:1::1</code> y <code>rebind-domain-ok=/sparrows.lan/</code>.</li>
-  <li>Los pares no aparecen nunca en <code>rnstatus</code>: sospechar primero del drop de la cadena <code>input</code> de nftables.</li>
   <li>El fundador de Reticulum dio un paso atrás en diciembre de 2025. Fijar las versiones probadas, guardar los wheels para instalar sin Internet, y mantener el diseño portable a otra implementación.</li>
   <li>El protocolo es de dominio público, pero la licencia de la implementación de referencia pone condiciones. Leerla antes de vender un kit.</li>
   <li>Nada de Reticulum en perchas, comederos ni setos (decidido el 2026-11-12). Son puentes: cada teléfono ya alcanza directamente el <code>rnsd</code> del nido. Un relevo en ellos añadiría tráfico de anuncios, no alcance. Los relevos de más van donde se encuentran dos medios.</li>
   <li><code>apt</code> en un portátil unido al pueblo falla con «Could not resolve»: el DNS que lo atrapa todo envía todos los nombres al nido. Es lo esperado. Actualizar desde otra red.</li>
-  <li>El ahorro de energía del Wi-Fi puede cortar el enlace del nido con la casa: <code>sudo nmcli con mod preconfigured 802-11-wireless.powersave 2</code>.</li>
 </ul>
 
 <h3 id="recovery"><span lang="en">Recovery</span><span lang="fr">Dépannage</span><span lang="es">Recuperación</span></h3>
@@ -3916,44 +3507,11 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
 <p lang="en"><strong>CPE510:</strong> TFTP recovery, described on the device's OpenWrt wiki page. The file name and the PC address depend on the hardware version.</p>
 <p lang="fr"><strong>CPE510 :</strong> récupération par TFTP, décrite sur la page du wiki OpenWrt de l'appareil. Le nom du fichier et l'adresse du PC dépendent de la version matérielle.</p>
 <p lang="es"><strong>CPE510:</strong> recuperación por TFTP, descrita en la página del aparato en el wiki de OpenWrt. El nombre del archivo y la dirección del PC dependen de la versión del hardware.</p>
-<p lang="en"><strong>Pi with no network:</strong> fix it from the SD card. NetworkManager ignores a profile that isn't <code>600</code> and owned by root.</p>
-<p lang="fr"><strong>Pi sans réseau :</strong> réparer depuis la carte SD. NetworkManager ignore un profil qui n'est pas en <code>600</code> et propriété de root.</p>
-<p lang="es"><strong>Pi sin red:</strong> arreglarla desde la tarjeta SD. NetworkManager ignora un perfil que no esté en <code>600</code> y sea de root.</p>
-<div class="code"><div class="hd"><span class="file">mesh profile</span></div><pre><code># SD card in a Linux laptop: R=/media/$USER/rootfs  B=/media/$USER/bootfs
-# On the bench, also add under [ipv6]:  address2=2001:db8:1::1/64
-sudo tee $R/etc/NetworkManager/system-connections/mesh.nmconnection &gt;/dev/null &lt;&lt;'EOF'
-[connection]
-id=mesh
-type=ethernet
-interface-name=eth0
-autoconnect=true
-autoconnect-priority=10
 
-[ipv4]
-method=disabled
-
-[ipv6]
-method=manual
-address1=fd7e:4c1a:9b20:1::1/64
-never-default=true
-addr-gen-mode=eui64
-EOF
-sudo chmod 600 $R/etc/NetworkManager/system-connections/mesh.nmconnection
-sudo chown root:root $R/etc/NetworkManager/system-connections/mesh.nmconnection</code></pre></div>
-<p lang="en"><strong>Ping works but SSH is refused:</strong> sshd was never enabled.</p>
-<p lang="fr"><strong>Le ping marche mais SSH est refusé :</strong> sshd n'a jamais été activé.</p>
-<p lang="es"><strong>El ping funciona pero SSH se rechaza:</strong> sshd nunca se activó.</p>
-<div class="code"><div class="hd"><span class="file">enable sshd from the SD card</span></div><pre><code>ls $R/home; grep ':1000:' $R/etc/passwd            # empty -&gt; update Imager and reflash
-sudo ln -sf /usr/lib/systemd/system/ssh.service \
-  $R/etc/systemd/system/multi-user.target.wants/ssh.service
-sudo rm -f $R/etc/ssh/sshd_not_to_be_run
-ls $R/etc/ssh/ssh_host_* || sudo ssh-keygen -A -f $R
-HASH=$(openssl passwd -6)                          # set or reset the user's password
-sudo sed -i "s|^moonshiner:[^:]*:|moonshiner:$HASH:|" $R/etc/shadow
-sync &amp;&amp; sudo umount $R $B</code></pre></div>
-<p lang="en"><strong>The Pi's home Wi-Fi doesn't connect:</strong> check <code>ssid=</code> and <code>psk=</code> in <code>$R/etc/NetworkManager/system-connections/</code>, and <code>cfg80211.ieee80211_regdom=FR</code> in <code>$B/cmdline.txt</code>. The home box must not be WPA3-only.</p>
-<p lang="fr"><strong>Le Wi-Fi maison du Pi ne se connecte pas :</strong> vérifier <code>ssid=</code> et <code>psk=</code> dans <code>$R/etc/NetworkManager/system-connections/</code>, et <code>cfg80211.ieee80211_regdom=FR</code> dans <code>$B/cmdline.txt</code>. La box ne doit pas être en WPA3 seul.</p>
-<p lang="es"><strong>El Wi-Fi de casa de la Pi no conecta:</strong> comprobar <code>ssid=</code> y <code>psk=</code> en <code>$R/etc/NetworkManager/system-connections/</code>, y <code>cfg80211.ieee80211_regdom=FR</code> en <code>$B/cmdline.txt</code>. El router de casa no debe estar solo en WPA3.</p>
+<!-- ============================ PART IV ============================ -->
+<p lang="en"><strong>Raspberry Pi:</strong> take the card out and write it again with <code>./build.sh sd</code>, with the same version or the one before (<code>build/images/</code>). Copy its identities first if it still boots (<a href="#reticulum">which files</a>).</p>
+<p lang="fr"><strong>Raspberry Pi :</strong> sortir la carte et la réécrire avec <code>./build.sh sd</code>, avec la même version ou celle d'avant (<code>build/images/</code>). Copier d'abord ses identités s'il démarre encore (<a href="#reticulum">quels fichiers</a>).</p>
+<p lang="es"><strong>Raspberry Pi:</strong> sacar la tarjeta y volver a escribirla con <code>./build.sh sd</code>, con la misma versión o la anterior (<code>build/images/</code>). Copiar antes sus identidades si todavía arranca (<a href="#reticulum">qué archivos</a>).</p>
 
 <!-- ============================ PART IV ============================ -->
 <h2 id="part-road"><span lang="en">IV. The open road</span><span lang="fr">IV. La route ouverte</span><span lang="es">IV. El camino abierto</span></h2>
@@ -4148,9 +3706,9 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
     <p lang="en"><span class="k">Updates</span>every OpenBSD file set, binary patch and package is signed with <code>signify</code>, and <code>syspatch</code>, <code>pkg_add</code> and <code>sysupgrade</code> check the signature themselves. So any copy is valid, from any nest (P2), and nobody needs to rule. A nest with a home uplink mirrors what nests need; the mirror travels over Layer 1 or on a disk; the other nests point <code>/etc/installurl</code> at their local copy, then run <code>syspatch</code> and <code>pkg_add -u</code>, and <code>sysupgrade</code> at each release. Only the pinned Reticulum wheels need a village signature. A local <code>file://</code> installurl is still to check on the bench.</p>
     <p lang="fr"><span class="k">Mises à jour</span>chaque lot de fichiers, chaque correctif binaire et chaque paquet d'OpenBSD est signé avec <code>signify</code>, et <code>syspatch</code>, <code>pkg_add</code> et <code>sysupgrade</code> vérifient eux-mêmes la signature. Toute copie est donc valable, quel que soit le nid (P2), et personne n'a besoin de diriger. Un nid qui a un accès par la maison garde un miroir de ce dont les nids ont besoin ; le miroir voyage par la couche 1 ou sur un disque ; les autres nids pointent <code>/etc/installurl</code> vers leur copie locale, puis lancent <code>syspatch</code> et <code>pkg_add -u</code>, et <code>sysupgrade</code> à chaque version. Seules les wheels Reticulum figées ont besoin d'une signature du village. Un installurl local en <code>file://</code> reste à vérifier sur le banc.</p>
     <p lang="es"><span class="k">Actualizaciones</span>cada conjunto de archivos, parche binario y paquete de OpenBSD va firmado con <code>signify</code>, y <code>syspatch</code>, <code>pkg_add</code> y <code>sysupgrade</code> comprueban la firma ellos mismos. Así que cualquier copia vale, venga del nido que venga (P2), y nadie tiene que mandar. Un nido con salida por la casa hace de espejo de lo que los nidos necesitan; el espejo viaja por la capa 1 o en un disco; los demás nidos apuntan <code>/etc/installurl</code> a su copia local, y ejecutan <code>syspatch</code> y <code>pkg_add -u</code>, y <code>sysupgrade</code> en cada versión. Solo los wheels fijados de Reticulum necesitan una firma del pueblo. Un installurl local en <code>file://</code> queda por comprobar en el banco.</p>
-    <p lang="en"><span class="k">Cost</span>Reticulum on OpenBSD is untested (an AutoInterface fix for OpenBSD landed in 2023). Only the last two releases are supported, about a year each, and <code>sysupgrade</code> goes one release at a time, so a village cut off for long must keep the old sets in its mirror. And it is a second nest image to document and test: only after the Debian nest works.</p>
-    <p lang="fr"><span class="k">Coût</span>Reticulum sur OpenBSD n'est pas testé (un correctif d'AutoInterface pour OpenBSD date de 2023). Seules les deux dernières versions sont maintenues, environ un an chacune, et <code>sysupgrade</code> avance d'une version à la fois : un village coupé longtemps doit garder les anciens lots dans son miroir. Et c'est une deuxième image de nid à documenter et à tester : seulement après que le nid Debian fonctionne.</p>
-    <p lang="es"><span class="k">Coste</span>Reticulum en OpenBSD está sin probar (un arreglo de AutoInterface para OpenBSD llegó en 2023). Solo se mantienen las dos últimas versiones, alrededor de un año cada una, y <code>sysupgrade</code> avanza una versión cada vez: un pueblo aislado mucho tiempo debe guardar los conjuntos antiguos en su espejo. Y es una segunda imagen de nido que documentar y probar: solo después de que funcione el nido Debian.</p>
+    <p lang="en"><span class="k">Cost</span>Reticulum on OpenBSD is untested (an AutoInterface fix for OpenBSD landed in 2023). Only the last two releases are supported, about a year each, and <code>sysupgrade</code> goes one release at a time, so a village cut off for long must keep the old sets in its mirror. And it is a second nest image to document and test: only after the OpenWrt nest works.</p>
+    <p lang="fr"><span class="k">Coût</span>Reticulum sur OpenBSD n'est pas testé (un correctif d'AutoInterface pour OpenBSD date de 2023). Seules les deux dernières versions sont maintenues, environ un an chacune, et <code>sysupgrade</code> avance d'une version à la fois : un village coupé longtemps doit garder les anciens lots dans son miroir. Et c'est une deuxième image de nid à documenter et à tester : seulement après que le nid OpenWrt fonctionne.</p>
+    <p lang="es"><span class="k">Coste</span>Reticulum en OpenBSD está sin probar (un arreglo de AutoInterface para OpenBSD llegó en 2023). Solo se mantienen las dos últimas versiones, alrededor de un año cada una, y <code>sysupgrade</code> avanza una versión cada vez: un pueblo aislado mucho tiempo debe guardar los conjuntos antiguos en su espejo. Y es una segunda imagen de nido que documentar y probar: solo después de que funcione el nido OpenWrt.</p>
   </div>
   <div class="card">
     <h4><span lang="en">The project in git, carried by Reticulum</span><span lang="fr">Le projet dans git, porté par Reticulum</span><span lang="es">El proyecto en git, llevado por Reticulum</span></h4>
@@ -4181,24 +3739,21 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
     <p lang="en"><span class="k">Stations</span>update with <code>sysupgrade -n</code> instead of <code>-v</code> (<a href="#upgrade">Part III, 7</a>), so nothing survives but what the image makes from the MAC. Today <code>-v</code> keeps hand edits, and stations slowly drift apart. The kit keeps the last two images of each role; going back means flashing the previous one. A CPE510 has one firmware slot, so failsafe mode stays the last resort.</p>
     <p lang="fr"><span class="k">Stations</span>mettre à jour avec <code>sysupgrade -n</code> au lieu de <code>-v</code> (<a href="#upgrade">partie III, 7</a>), pour que rien ne survive sauf ce que l'image tire de la MAC. Aujourd'hui <code>-v</code> garde les retouches à la main, et les stations s'éloignent peu à peu les unes des autres. Le kit garde les deux dernières images de chaque rôle ; revenir en arrière, c'est flasher la précédente. Un CPE510 n'a qu'un emplacement de firmware : le mode failsafe reste le dernier recours.</p>
     <p lang="es"><span class="k">Estaciones</span>actualizar con <code>sysupgrade -n</code> en vez de <code>-v</code> (<a href="#upgrade">parte III, 7</a>), para que no sobreviva nada salvo lo que la imagen saca de la MAC. Hoy <code>-v</code> conserva los retoques a mano, y las estaciones se van separando poco a poco. El kit guarda las dos últimas imágenes de cada papel; volver atrás es flashear la anterior. Una CPE510 solo tiene un hueco de firmware, así que el modo failsafe sigue siendo el último recurso.</p>
-    <p lang="en"><span class="k">Nests</span>build the whole nest image on the admin laptop (<code>mkosi</code> or <code>debos</code>) from a pinned local copy of the Debian packages (an <code>aptly</code> snapshot). Install it with RAUC: two system slots, a signature check on every update bundle, and a switch back to the old slot if the new one doesn't boot. What belongs to one nest (its Reticulum identity, its keys) lives on a separate data partition. A bundle travels over the village or on a USB stick, and is what the card "Updates carried by the mesh itself" would carry. If nests run OpenWrt (next card), this part goes away: the same <code>build.sh</code> and <code>sysupgrade</code> serve every unit.</p>
-    <p lang="fr"><span class="k">Nids</span>construire toute l'image de nid sur le portable d'admin (<code>mkosi</code> ou <code>debos</code>) depuis une copie locale figée des paquets Debian (un instantané <code>aptly</code>). L'installer avec RAUC : deux emplacements système, une vérification de signature sur chaque paquet de mise à jour, et un retour à l'ancien emplacement si le nouveau ne démarre pas. Ce qui appartient à un seul nid (son identité Reticulum, ses clés) vit sur une partition de données à part. Un paquet voyage par le village ou sur une clé USB, et c'est ce que porterait la carte « Des mises à jour portées par le mesh lui-même ». Si les nids passent sous OpenWrt (carte suivante), cette partie disparaît : le même <code>build.sh</code> et le même <code>sysupgrade</code> servent pour chaque boîtier.</p>
-    <p lang="es"><span class="k">Nidos</span>construir toda la imagen de nido en el portátil de administración (<code>mkosi</code> o <code>debos</code>) a partir de una copia local fijada de los paquetes Debian (una instantánea de <code>aptly</code>). Instalarla con RAUC: dos huecos de sistema, una comprobación de firma en cada paquete de actualización, y la vuelta al hueco antiguo si el nuevo no arranca. Lo que pertenece a un solo nido (su identidad Reticulum, sus claves) vive en una partición de datos aparte. Un paquete viaja por el pueblo o en una memoria USB, y es lo que llevaría la tarjeta «Actualizaciones llevadas por la propia malla». Si los nidos pasan a OpenWrt (tarjeta siguiente), esta parte desaparece: el mismo <code>build.sh</code> y el mismo <code>sysupgrade</code> sirven para cada unidad.</p>
-    <p lang="en"><span class="k">Cost</span>with <code>-n</code>, the one choice made on a unit today, <code>perch ap</code>, is lost at each update: either the <code>perch</code> tool keeps it in one small file that comes back after the update, or it is redone by hand. The SSH host key also changes at each update; host certificates signed by a village key would fix that. On the nest, two slots double the system space on the card, and RAUC's switch back on a failed boot depends on the Pi's boot loader: still to check on the bench, on the Pi model we use.</p>
-    <p lang="fr"><span class="k">Coût</span>avec <code>-n</code>, le seul choix fait aujourd'hui sur un boîtier, <code>perch ap</code>, se perd à chaque mise à jour : soit l'outil <code>perch</code> le garde dans un petit fichier qui revient après la mise à jour, soit on le refait à la main. La clé d'hôte SSH change aussi à chaque mise à jour ; des certificats d'hôte signés par une clé du village régleraient ça. Sur le nid, deux emplacements doublent la place du système sur la carte, et le retour en arrière de RAUC sur un démarrage raté dépend du chargeur de démarrage du Pi : à vérifier sur le banc, avec le modèle de Pi qu'on utilise.</p>
-    <p lang="es"><span class="k">Coste</span>con <code>-n</code>, la única elección que se hace hoy en una unidad, <code>perch ap</code>, se pierde en cada actualización: o la herramienta <code>perch</code> la guarda en un archivo pequeño que vuelve tras la actualización, o se rehace a mano. La clave de host SSH también cambia en cada actualización; unos certificados de host firmados por una clave del pueblo lo arreglarían. En el nido, dos huecos doblan el espacio del sistema en la tarjeta, y la vuelta atrás de RAUC tras un arranque fallido depende del cargador de arranque de la Pi: queda por comprobar en el banco, con el modelo de Pi que usamos.</p>
+    <p lang="en"><span class="k">Cost</span>with <code>-n</code>, the one choice made on a unit today, <code>perch ap</code>, is lost at each update: either the <code>perch</code> tool keeps it in one small file that comes back after the update, or it is redone by hand. The SSH host key also changes at each update; host certificates signed by a village key would fix that. On a Pi, the identities must survive <code>-n</code>: that is the locked <code>/home</code> (<a href="#home">below</a>).</p>
+    <p lang="fr"><span class="k">Coût</span>avec <code>-n</code>, le seul choix fait aujourd'hui sur un boîtier, <code>perch ap</code>, se perd à chaque mise à jour : soit l'outil <code>perch</code> le garde dans un petit fichier qui revient après la mise à jour, soit on le refait à la main. La clé d'hôte SSH change aussi à chaque mise à jour ; des certificats d'hôte signés par une clé du village régleraient ça. Sur un Pi, les identités doivent survivre à <code>-n</code> : c'est le <code>/home</code> verrouillé (<a href="#home">plus bas</a>).</p>
+    <p lang="es"><span class="k">Coste</span>con <code>-n</code>, la única elección que se hace hoy en una unidad, <code>perch ap</code>, se pierde en cada actualización: o la herramienta <code>perch</code> la guarda en un archivo pequeño que vuelve tras la actualización, o se rehace a mano. La clave de host SSH también cambia en cada actualización; unos certificados de host firmados por una clave del pueblo lo arreglarían. En una Pi, las identidades deben sobrevivir a <code>-n</code>: es el <code>/home</code> cerrado (<a href="#home">más abajo</a>).</p>
   </div>
   <div class="card">
     <h4><span lang="en">The role chosen on the unit</span><span lang="fr">Le rôle choisi sur le boîtier</span><span lang="es">El papel elegido en la unidad</span></h4>
-    <p lang="en">Discussed on 2026-11-18. Today stations run OpenWrt and nests run Debian: two systems to build, update and learn. Debian can't run on a CPE510 or an EAP225, but OpenWrt runs on a Raspberry Pi, so OpenWrt is the only way to have one system everywhere. A nest's on-ramp is already in OpenWrt: <code>odhcpd</code> sends RAs with the DNS server inside, <code>dnsmasq</code> answers the catch-all DNS, <code>uhttpd</code> serves the page, <code>fw4</code> (nftables) does the redirect and the isolation. <strong>Decided on 2026-11-21:</strong> one system, OpenWrt, nests included (<a href="#nest-image">Nest image</a>), with what each port and radio does chosen at build time (<a href="#uses">uses</a>). What stays an idea is below: choosing the role on the unit after flashing.</p>
-    <p lang="fr">Discuté le 2026-11-18. Aujourd'hui les stations tournent sous OpenWrt et les nids sous Debian : deux systèmes à construire, à mettre à jour et à apprendre. Debian ne tourne pas sur un CPE510 ou un EAP225, mais OpenWrt tourne sur un Raspberry Pi : OpenWrt est donc le seul moyen d'avoir un seul système partout. La rampe d'accès d'un nid est déjà dans OpenWrt : <code>odhcpd</code> envoie les RA avec le serveur DNS dedans, <code>dnsmasq</code> répond au DNS attrape-tout, <code>uhttpd</code> sert la page, <code>fw4</code> (nftables) fait la redirection et l'isolation. <strong>Décidé le 2026-11-21 :</strong> un seul système, OpenWrt, nids compris (<a href="#nest-image">Image de nid</a>), avec ce que fait chaque port et chaque radio choisi au build (<a href="#uses">usages</a>). Ce qui reste une idée est plus bas : choisir le rôle sur le boîtier après le flash.</p>
-    <p lang="es">Hablado el 2026-11-18. Hoy las estaciones funcionan con OpenWrt y los nidos con Debian: dos sistemas que construir, actualizar y aprender. Debian no funciona en una CPE510 ni en un EAP225, pero OpenWrt sí funciona en una Raspberry Pi, así que OpenWrt es la única manera de tener un solo sistema en todas partes. La rampa de acceso de un nido ya está en OpenWrt: <code>odhcpd</code> envía los RA con el servidor DNS dentro, <code>dnsmasq</code> responde al DNS que lo atrapa todo, <code>uhttpd</code> sirve la página, <code>fw4</code> (nftables) hace la redirección y el aislamiento. <strong>Decidido el 2026-11-21:</strong> un solo sistema, OpenWrt, nidos incluidos (<a href="#nest-image">Imagen de nido</a>), con lo que hace cada puerto y cada radio elegido al construir (<a href="#uses">usos</a>). Lo que sigue siendo una idea está abajo: elegir el papel en la unidad tras flashearla.</p>
+    <p lang="en">Discussed on 2026-11-18. <strong>Decided on 2026-11-21:</strong> one system, OpenWrt, nests included (<a href="#nest-image">Nest image</a>), with what each port and radio does chosen at build time (<a href="#uses">uses</a>). What stays an idea is below: choosing the role on the unit after flashing.</p>
+    <p lang="fr">Discuté le 2026-11-18. <strong>Décidé le 2026-11-21 :</strong> un seul système, OpenWrt, nids compris (<a href="#nest-image">Image de nid</a>), avec ce que fait chaque port et chaque radio choisi au build (<a href="#uses">usages</a>). Ce qui reste une idée est plus bas : choisir le rôle sur le boîtier après le flash.</p>
+    <p lang="es">Hablado el 2026-11-18. <strong>Decidido el 2026-11-21:</strong> un solo sistema, OpenWrt, nidos incluidos (<a href="#nest-image">Imagen de nido</a>), con lo que hace cada puerto y cada radio elegido al construir (<a href="#uses">usos</a>). Lo que sigue siendo una idea está abajo: elegir el papel en la unidad tras flashearla.</p>
     <p lang="en"><span class="k">How</span>one image per hardware model, holding every role that model can take (<code>profiles.txt</code> already lists them; a CPE510 has no room for Python, so it can never be a nest). After flashing, one command picks the role, for example <code>sparrows role hedge</code>, and writes it to <code>/etc/sparrows/role</code>. At every boot, not only the first, the config is rebuilt from that file: a hand edit is gone at the next reboot. Only the role file and the keys survive an update. <code>perch ap</code> becomes a role of its own, so it is no longer lost.</p>
     <p lang="fr"><span class="k">Comment</span>une image par modèle de matériel, qui contient tous les rôles que ce modèle peut prendre (<code>profiles.txt</code> les liste déjà ; un CPE510 n'a pas la place pour Python, il ne peut donc jamais être un nid). Après le flash, une commande choisit le rôle, par exemple <code>sparrows role hedge</code>, et l'écrit dans <code>/etc/sparrows/role</code>. À chaque démarrage, pas seulement au premier, la configuration est refaite à partir de ce fichier : une retouche à la main disparaît au redémarrage suivant. Seuls le fichier de rôle et les clés survivent à une mise à jour. <code>perch ap</code> devient un rôle à part entière, donc il ne se perd plus.</p>
     <p lang="es"><span class="k">Cómo</span>una imagen por modelo de hardware, con todos los papeles que ese modelo puede tomar (<code>profiles.txt</code> ya los enumera; una CPE510 no tiene sitio para Python, así que nunca puede ser un nido). Después del flasheo, un comando elige el papel, por ejemplo <code>sparrows role hedge</code>, y lo escribe en <code>/etc/sparrows/role</code>. En cada arranque, no solo en el primero, la configuración se rehace a partir de ese archivo: un retoque a mano desaparece en el siguiente reinicio. Solo el archivo de papel y las claves sobreviven a una actualización. <code>perch ap</code> pasa a ser un papel propio, así que ya no se pierde.</p>
-    <p lang="en"><span class="k">Cost</span>Reticulum supports OpenWrt packaging since version 0.8.7 (2024), but its OpenWrt package feed was still being stabilized, and LXMF, Nomad Network and Retipedia must each be tested on it. A Pi update rewrites the SD card, so Wikipedia and other big data go on a USB disk. Fewer people know OpenWrt as a server, though everyone who builds stations learns it anyway. The Debian nest stays the reference until an OpenWrt nest on a second Pi passes the same checks.</p>
-    <p lang="fr"><span class="k">Coût</span>Reticulum accepte d'être empaqueté pour OpenWrt depuis la version 0.8.7 (2024), mais son dépôt de paquets OpenWrt était encore en cours de stabilisation, et LXMF, Nomad Network et Retipedia sont à tester un par un dessus. Une mise à jour du Pi réécrit la carte SD : Wikipédia et les autres grosses données vont donc sur un disque USB. Moins de gens connaissent OpenWrt comme serveur, mais tous ceux qui construisent des stations l'apprennent de toute façon. Le nid Debian reste la référence tant qu'un nid OpenWrt sur un deuxième Pi ne passe pas les mêmes vérifications.</p>
-    <p lang="es"><span class="k">Coste</span>Reticulum admite empaquetarse para OpenWrt desde la versión 0.8.7 (2024), pero su repositorio de paquetes OpenWrt aún se estaba estabilizando, y LXMF, Nomad Network y Retipedia hay que probarlos uno a uno encima. Una actualización de la Pi reescribe la tarjeta SD, así que Wikipedia y los demás datos grandes van en un disco USB. Menos gente conoce OpenWrt como servidor, aunque todo el que construye estaciones lo aprende de todos modos. El nido Debian sigue siendo la referencia hasta que un nido OpenWrt en una segunda Pi pase las mismas comprobaciones.</p>
+    <p lang="en"><span class="k">Cost</span>Reticulum supports OpenWrt packaging since version 0.8.7 (2024), but its OpenWrt package feed was still being stabilized, and LXMF, Nomad Network and Retipedia must each be tested on it. A Pi update rewrites the SD card, so Wikipedia and other big data go on a USB disk. Fewer people know OpenWrt as a server, though everyone who builds stations learns it anyway.</p>
+    <p lang="fr"><span class="k">Coût</span>Reticulum accepte d'être empaqueté pour OpenWrt depuis la version 0.8.7 (2024), mais son dépôt de paquets OpenWrt était encore en cours de stabilisation, et LXMF, Nomad Network et Retipedia sont à tester un par un dessus. Une mise à jour du Pi réécrit la carte SD : Wikipédia et les autres grosses données vont donc sur un disque USB. Moins de gens connaissent OpenWrt comme serveur, mais tous ceux qui construisent des stations l'apprennent de toute façon.</p>
+    <p lang="es"><span class="k">Coste</span>Reticulum admite empaquetarse para OpenWrt desde la versión 0.8.7 (2024), pero su repositorio de paquetes OpenWrt aún se estaba estabilizando, y LXMF, Nomad Network y Retipedia hay que probarlos uno a uno encima. Una actualización de la Pi reescribe la tarjeta SD, así que Wikipedia y los demás datos grandes van en un disco USB. Menos gente conoce OpenWrt como servidor, aunque todo el que construye estaciones lo aprende de todos modos.</p>
   </div>
 </div>
 
@@ -4211,21 +3766,21 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
   <li><strong>The home address stays out of sight.</strong> Public relays would see the VPS, never the house. Only the VPS provider sees the house connect.</li>
   <li><strong>We hold the door.</strong> An interface access code (<code>network_name</code> + <code>passphrase</code>) drops every packet that doesn't carry it, so only our nests join. Peering with the public network is one block on the hub, off by default.</li>
   <li><strong>It is the Phase 3 link between villages</strong> for places no flyway reaches.</li>
-  <li><strong>Nothing opens at home.</strong> The nest only connects outwards. Forwarding stays off and the nftables <code>forward</code> drop stays: the mesh still can't reach the Internet. Only Reticulum packets cross, through <code>rnsd</code>.</li>
+  <li><strong>Nothing opens at home.</strong> The nest only connects outwards. Forwarding stays off: the mesh still can't reach the Internet. Only Reticulum packets cross, through <code>rnsd</code>.</li>
   <li><strong>The village keeps working</strong> if the hub is down: the link only adds, it replaces nothing.</li>
 </ul>
 <ul lang="fr">
   <li><strong>L'adresse de la maison reste hors de vue.</strong> Les relais publics verraient le VPS, jamais la maison. Seul l'hébergeur du VPS voit la maison se connecter.</li>
   <li><strong>On tient la porte.</strong> Un code d'accès d'interface (<code>network_name</code> + <code>passphrase</code>) fait jeter tout paquet qui ne le porte pas : seuls nos nids entrent. L'appairage avec le réseau public est un seul bloc sur le hub, coupé par défaut.</li>
   <li><strong>C'est le lien entre villages de la phase 3</strong> pour les lieux qu'aucune voie n'atteint.</li>
-  <li><strong>Rien ne s'ouvre à la maison.</strong> Le nid ne fait que se connecter vers l'extérieur. Le routage reste coupé et le <code>forward</code> en drop de nftables reste : le mesh ne peut toujours pas joindre Internet. Seuls des paquets Reticulum passent, par <code>rnsd</code>.</li>
+  <li><strong>Rien ne s'ouvre à la maison.</strong> Le nid ne fait que se connecter vers l'extérieur. Le routage reste coupé : le mesh ne peut toujours pas joindre Internet. Seuls des paquets Reticulum passent, par <code>rnsd</code>.</li>
   <li><strong>Le village continue de marcher</strong> si le hub tombe : le lien ne fait qu'ajouter, il ne remplace rien.</li>
 </ul>
 <ul lang="es">
   <li><strong>La dirección de casa queda fuera de la vista.</strong> Los relevos públicos verían el VPS, nunca la casa. Solo el proveedor del VPS ve conectarse a la casa.</li>
   <li><strong>La puerta la tenemos nosotros.</strong> Un código de acceso de interfaz (<code>network_name</code> + <code>passphrase</code>) descarta todo paquete que no lo lleve, así que solo entran nuestros nidos. El emparejamiento con la red pública es un solo bloque en el hub, apagado por defecto.</li>
   <li><strong>Es el enlace entre pueblos de la fase 3</strong> para los lugares a los que no llega ninguna ruta.</li>
-  <li><strong>Nada se abre en casa.</strong> El nido solo conecta hacia fuera. El reenvío sigue apagado y el <code>forward</code> en drop de nftables sigue: la malla sigue sin poder llegar a Internet. Solo cruzan paquetes Reticulum, a través de <code>rnsd</code>.</li>
+  <li><strong>Nada se abre en casa.</strong> El nido solo conecta hacia fuera. El reenvío sigue apagado: la malla sigue sin poder llegar a Internet. Solo cruzan paquetes Reticulum, a través de <code>rnsd</code>.</li>
   <li><strong>El pueblo sigue funcionando</strong> si el hub cae: el enlace solo añade, no sustituye nada.</li>
 </ul>
 <h4><span lang="en">What it costs: security and anonymity</span><span lang="fr">Ce que ça coûte : sécurité et anonymat</span><span lang="es">Lo que cuesta: seguridad y anonimato</span></h4>
@@ -4306,7 +3861,8 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
 
 # VPS firewall: SSH (keys only) and the hub port, nothing else:   tcp dport { 22, 4242 } accept
 
-# ---- On each nest: add under [interfaces] in /var/lib/reticulum/config ----
+# ---- On each nest: add under [interfaces] in /etc/reticulum/config ----
+# The nest needs a way out for this, and an OpenWrt nest has no home side today: to decide
   [[Sparrows Hub]]
     type = TCPClientInterface
     enabled = yes
@@ -4316,13 +3872,13 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
     passphrase = &lt;the same&gt;
     mode = boundary               # a link to a very different segment
 
-# Apply and verify on the nest. The TCP session leaves by wlan0: no forwarding, no firewall change
-sudo systemctl restart rnsd lxmd
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "Sparrows Hub" Up
-ss -tnp | grep 4242                                                   # one TCP session, from the wlan0 address
+# Apply and verify on the nest
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart
+rns status                        # "Sparrows Hub" Up
+netstat -tn | grep 4242           # one TCP session
 
 # Undo on the nest: enabled = no on that block (or delete it), then
-sudo systemctl restart rnsd lxmd</code></pre></div>
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart</code></pre></div>
 
 <h3 id="lora"><span lang="en">A LoRa flyway to a town 15 km away</span><span lang="fr">Une voie LoRa vers une ville à 15 km</span><span lang="es">Una ruta LoRa hacia una ciudad a 15 km</span> <span class="st idea" data-ui="idea">idea</span></h3>
 <p lang="en">Discussed on 2026-11-20. Not decided, not tested. Two LoRa boards running RNode firmware, one at each end, each plugged by USB into a nest. Reticulum on the nests relays between the village and the LoRa link. It carries messages and small pages, slowly, with no Internet and no operator in between.</p>
@@ -4402,8 +3958,8 @@ python3 -m venv ~/rns &amp;&amp; ~/rns/bin/pip install rns
 
 # ---- On each nest: the board on USB, readable by the rns user ----
 ls -l /dev/serial/by-id/                     # a stable name for the board
-sudo usermod -aG dialout rns
-# Add under [interfaces] in /var/lib/reticulum/config. The SAME radio values at both ends.
+# The image needs the USB serial driver (kmod-usb-acm), and the rns user must be able to open the board
+# Add under [interfaces] in /etc/reticulum/config. The SAME radio values at both ends.
   [[LoRa flyway]]
     type = RNodeInterface
     enabled = yes
@@ -4417,15 +3973,15 @@ sudo usermod -aG dialout rns
     airtime_limit_short = 33      # % over the short window: bursts allowed, the long limit still holds
 
 # Apply and verify on the nest
-sudo systemctl restart rnsd lxmd
-sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "LoRa flyway" Up, its airtime and channel load
-journalctl -u rnsd -n 50                                              # no serial error
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart
+rns status                        # "LoRa flyway" Up, its airtime and channel load
+logread -e rnsd | tail -n 50      # no serial error
 # From a laptop in this village: the other village's nest is reachable over LoRa
 rnpath &lt;lxmd address of the other nest&gt;      # a path, 2 or more hops
 rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and SNR (needs respond_to_probes = Yes there)
 
 # Undo on the nest: enabled = no on that block (or delete it), then
-sudo systemctl restart rnsd lxmd</code></pre></div>
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart</code></pre></div>
 <p class="note" lang="en">It keeps the hard rule "Standalone": no Internet and no company on the link. LoRa itself is not encrypted, but Reticulum encrypts every packet. The board and the antenna on a public building need the owner's agreement.</p>
 <p class="note" lang="fr">Cela respecte la règle dure « Autonome » : ni Internet ni entreprise sur le lien. Le LoRa lui-même n'est pas chiffré, mais Reticulum chiffre chaque paquet. La carte et l'antenne sur un bâtiment public demandent l'accord du propriétaire.</p>
 <p class="note" lang="es">Respeta la regla firme «Autónoma»: ni Internet ni empresa en el enlace. LoRa en sí no va cifrado, pero Reticulum cifra cada paquete. La placa y la antena en un edificio público necesitan el permiso del dueño.</p>
@@ -4684,10 +4240,6 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
   <dd lang="en">The OpenWrt command that writes a new image to a running station. <code>-v</code> keeps the config; <code>-n</code> keeps nothing, so the image's first-boot defaults run again.</dd>
   <dd lang="fr">La commande OpenWrt qui écrit une nouvelle image sur une station en service. <code>-v</code> garde la configuration ; <code>-n</code> ne garde rien, donc les réglages de premier démarrage de l'image repassent.</dd>
   <dd lang="es">El comando de OpenWrt que escribe una imagen nueva en una estación en servicio. <code>-v</code> conserva la configuración; <code>-n</code> no conserva nada, así que los ajustes de primer arranque de la imagen vuelven a ejecutarse.</dd>
-  <dt>RAUC</dt>
-  <dd lang="en">An update tool for Linux devices. It keeps two system slots, writes a signed update bundle to the unused one, and switches to it; if it doesn't boot, the device goes back to the old slot.</dd>
-  <dd lang="fr">Un outil de mise à jour pour appareils Linux. Il garde deux emplacements système, écrit un paquet de mise à jour signé dans celui qui ne sert pas, puis bascule dessus ; s'il ne démarre pas, l'appareil revient à l'ancien emplacement.</dd>
-  <dd lang="es">Una herramienta de actualización para aparatos Linux. Guarda dos huecos de sistema, escribe un paquete de actualización firmado en el que no se usa y cambia a él; si no arranca, el aparato vuelve al hueco antiguo.</dd>
   <dt id="g-luks">LUKS</dt>
   <dd lang="en">The standard way to lock a disk partition on Linux. Its header holds several key slots: any one of them opens the partition.</dd>
   <dd lang="fr">La façon standard de verrouiller une partition de disque sous Linux. Son en-tête a plusieurs emplacements de clé : n'importe lequel ouvre la partition.</dd>
