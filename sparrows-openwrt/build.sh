@@ -22,6 +22,10 @@
 #                                 https://openwrt.org/docs/guide-user/security/signatures, add it there)
 #   CHECK_RULES=0 ./build.sh   -> don't check the image's package list against the hard rules
 #
+# Downloads are kept and checked by their sha256, so each is fetched once: build/dl (OpenWrt's Image
+# Builders and their signed checksums), build/firmware, build/wheels. Nothing there is deleted; remove a
+# file by hand to fetch it again. An Image Builder that stops working is unpacked again from build/dl.
+#
 # The menu lists the devices already in profiles.txt with what their interfaces do (several can be
 # picked at once), can change the release, can turn the web interface on or off, and can add a new
 # device: it searches the Image Builder for the model, asks the role (or the uses of each interface,
@@ -265,29 +269,48 @@ for name in sys.argv[2:]:
 	return 1
 }
 
-# Image Builder for a target: downloaded once, checked against sha256sums. Runs in a subshell.
+# A file checked by its sha256 and kept: fetched only when it is missing or doesn't match. A download
+# goes to .part first, so a cut-off one never passes for the real file. A progress bar in a terminal
+fetch() {
+	local URL=$1 FILE=$2 SUM=$3 PROGRESS=''
+	if echo "$SUM  $FILE" | sha256sum -c --status - 2>/dev/null; then return 0; fi
+	mkdir -p "$(dirname "$FILE")"
+	echo "Fetching ${FILE##*/}..." >&2
+	[ ! -t 2 ] || PROGRESS='--show-progress'
+	wget -q $PROGRESS -O "$FILE.part" "$URL" || { rm -f "$FILE.part"; echo "Download failed: $URL" >&2; return 1; }
+	echo "$SUM  $FILE.part" | sha256sum -c --status - || { rm -f "$FILE.part"; echo "${FILE##*/}: checksum FAILED" >&2; return 1; }
+	mv "$FILE.part" "$FILE"
+}
+
+# Image Builder for a target. What OpenWrt publishes is kept in build/dl: its signed checksums and the
+# Image Builder itself. Unpacked again from there when needed (FRESH=1, or the folder is gone);
+# downloaded again only when the kept file is missing or doesn't match the checksums. Runs in a subshell.
 get_ib() (
-	TARGET=$1
+	TARGET=$1 FRESH=${2:-0}
 	IB=$(ib_name "$TARGET")
 	URL="https://downloads.openwrt.org/releases/${VER}/targets/${TARGET}"
-	mkdir -p "$BUILD" && cd "$BUILD" || exit 1
+	D="$BUILD/dl"
+	mkdir -p "$D" && cd "$BUILD" || exit 1
+	[ "$FRESH" = 0 ] || rm -rf "$IB"
 	[ -d "$IB" ] && exit 0
-	echo "Downloading the Image Builder for $TARGET ($VER)..." >&2
-	wget -q -O "$IB.sha256sums" "$URL/sha256sums" || { echo "No $VER release for $TARGET" >&2; exit 1; }
-	if [ "$CHECK_SIG" = 1 ]; then
-		wget -q -O "$IB.sha256sums.asc" "$URL/sha256sums.asc" || \
-			{ echo "No signature at $URL/sha256sums.asc (CHECK_SIG=0 skips this check)" >&2; exit 1; }
-		check_sig "$IB.sha256sums" "$IB.sha256sums.asc" || exit 1
+	# OpenWrt's checksums for this release and target, with their signature: fetched once, checked every time
+	if [ ! -s "$D/$IB.sha256sums" ]; then
+		wget -q -O "$D/$IB.sha256sums.part" "$URL/sha256sums" && mv "$D/$IB.sha256sums.part" "$D/$IB.sha256sums" || \
+			{ rm -f "$D/$IB.sha256sums.part"; echo "No $VER release for $TARGET" >&2; exit 1; }
+		rm -f "$D/$IB.sha256sums.asc"
 	fi
-	# -O: the same file name every time (without it, a second try lands in .tar.zst.1 and never checks).
-	# A progress bar only in a terminal: the download is big
-	PROGRESS=''; [ -t 2 ] && PROGRESS='--show-progress'
-	wget -q $PROGRESS -O "$IB.tar.zst" "$URL/$IB.tar.zst" || { echo "Download failed: $URL/$IB.tar.zst" >&2; exit 1; }
-	grep " \*\?$IB.tar.zst\$" "$IB.sha256sums" | sha256sum -c - >&2 || { rm -f "$IB.tar.zst"; echo "Checksum FAILED" >&2; exit 1; }
+	if [ "$CHECK_SIG" = 1 ]; then
+		[ -s "$D/$IB.sha256sums.asc" ] || wget -q -O "$D/$IB.sha256sums.asc" "$URL/sha256sums.asc" || \
+			{ rm -f "$D/$IB.sha256sums.asc"; echo "No signature at $URL/sha256sums.asc (CHECK_SIG=0 skips this check)" >&2; exit 1; }
+		check_sig "$D/$IB.sha256sums" "$D/$IB.sha256sums.asc" || exit 1
+	fi
+	SUM=$(awk -v f="$IB.tar.zst" '$2 == f || $2 == "*" f { print $1 }' "$D/$IB.sha256sums")
+	[ -n "$SUM" ] || { echo "$IB.tar.zst is not in OpenWrt's checksums for $TARGET" >&2; exit 1; }
+	fetch "$URL/$IB.tar.zst" "$D/$IB.tar.zst" "$SUM" || exit 1
 	# Unpacked aside, then moved: a cut-off unpack is never taken for a complete Image Builder
+	echo "Unpacking the Image Builder for $TARGET ($VER)..." >&2
 	rm -rf "$IB.part" && mkdir "$IB.part"
-	tar -C "$IB.part" --zstd -xf "$IB.tar.zst" && mv "$IB.part/$IB" "$IB" && rmdir "$IB.part" || exit 1
-	rm -f "$IB.tar.zst"
+	tar -C "$IB.part" --zstd -xf "$D/$IB.tar.zst" && mv "$IB.part/$IB" "$IB" && rmdir "$IB.part" || exit 1
 )
 
 # A device left out of this build: said now, and again in the summary at the end
@@ -357,11 +380,7 @@ build_one() (
 		mkdir -p "$C" "$F/$FW_DIR"
 		while read -r SUM FILE; do
 			[ -n "$FILE" ] || continue
-			if ! echo "$SUM  $C/$FILE" | sha256sum -c --status - 2>/dev/null; then
-				echo "Fetching $FILE..." >&2
-				wget -q -O "$C/$FILE" "$FW_URL/$FILE" || die "Download failed: $FW_URL/$FILE"
-				echo "$SUM  $C/$FILE" | sha256sum -c --status - || { rm -f "$C/$FILE"; die "$FILE: checksum FAILED"; }
-			fi
+			fetch "$FW_URL/$FILE" "$C/$FILE" "$SUM" || die "$ROLE $PROFILE: firmware $FILE"
 			install -m 644 "$C/$FILE" "$F/$FW_DIR/$FILE"
 		done <<<"$FW_FILES"
 	fi
@@ -392,11 +411,7 @@ build_one() (
 		while read -r SUM URL; do
 			[ -n "$URL" ] || continue
 			W="$C/${URL##*/}"
-			if ! echo "$SUM  $W" | sha256sum -c --status - 2>/dev/null; then
-				echo "Fetching ${URL##*/}..." >&2
-				wget -q -O "$W" "$URL" || die "Download failed: $URL"
-				echo "$SUM  $W" | sha256sum -c --status - || { rm -f "$W"; die "${URL##*/}: checksum FAILED"; }
-			fi
+			fetch "$URL" "$W" "$SUM" || die "$ROLE $PROFILE: Python wheel ${URL##*/}"
 			python3 -I -m zipfile -e "$W" "$F/usr/lib/sparrows/python/"
 		done <<<"$WHEELS"
 	fi
@@ -411,8 +426,13 @@ build_one() (
 
 	get_ib "$TARGET" || die "No Image Builder for $TARGET"
 	cd "$BUILD/$(ib_name "$TARGET")"
-	# The profile list. A failing Image Builder is said as such, not taken for a missing profile
-	INFO=$(make info 2>&1) || die "$ROLE $PROFILE: the Image Builder doesn't run (make info):"$'\n'"$(printf '%s\n' "$INFO" | tail -n 4)"
+	# The profile list. An Image Builder that doesn't run (a cut-off unpack, a moved folder) is unpacked
+	# once more from the kept download, then said as such: never taken for a missing profile
+	if ! INFO=$(make info 2>&1); then
+		echo "$ROLE $PROFILE: the Image Builder doesn't run, unpacking it again from build/dl..." >&2
+		cd "$BUILD" && get_ib "$TARGET" 1 && cd "$BUILD/$(ib_name "$TARGET")" || die "No Image Builder for $TARGET"
+		INFO=$(make info 2>&1) || die "$ROLE $PROFILE: the Image Builder doesn't run (make info):"$'\n'"$(printf '%s\n' "$INFO" | tail -n 4)"
+	fi
 	printf '%s\n' "$INFO" | grep -q "^$IB_PROFILE:" || skip "$ROLE $PROFILE: no profile $IB_PROFILE in OpenWrt $VER $TARGET"
 	# The packages: the base, then what the uses need, each package once
 	PACKAGES="$BASE"
@@ -446,12 +466,10 @@ build_one() (
 	# ask for more with ROOTFS_MB. The rest of the card stays unused either way
 	SIZE=()
 	[ -z "$ROOTFS_MB" ] || SIZE=(ROOTFS_PARTSIZE="$ROOTFS_MB")
-	if [ "$WITH_UI" = 1 ]; then
-		# Too big for the flash is the usual reason: skip this one, build the others
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}" || \
-			skip "$ROLE $PROFILE: no image with the web interface (too big?): build it without, or set ui to - in profiles.txt"
-	else
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}"
+	if ! make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}"; then
+		# With the web interface, too big for the flash is the usual reason: skip it, build the others
+		[ "$WITH_UI" = 0 ] || skip "$ROLE $PROFILE: no image with the web interface (too big?): build it without, or set ui to - in profiles.txt"
+		die "$ROLE $PROFILE: make image failed (its messages are above)"
 	fi
 	# .bin for most routers, .img.gz for SD-card devices such as the Raspberry Pi. squashfs only: a Pi
 	# build also makes ext4 images, but going back to the image's defaults (firstboot) needs squashfs.
@@ -625,7 +643,7 @@ for d in json.load(sys.stdin)["blockdevices"]:
 
 # Write an SD-card image (.img.gz) to a card. Asks for the image, the reader, then the disk name.
 write_sd() {
-	local IMGS DISKS N IMG DEV SIZE MODEL RAW BYTES P i
+	local IMGS DISKS N IMG DEV SIZE MODEL BYTES P i
 	[ -t 0 ] || die "Writing an SD card needs a terminal: it asks before erasing anything."
 	if [ -n "${1:-}" ]; then
 		IMGS=("$1")
@@ -663,12 +681,10 @@ write_sd() {
 	echo "and replaced by: $(basename "$IMG")"
 	[ "$(ask "To go on, type the disk name (${DEV#/dev/}): ")" = "${DEV#/dev/}" ] || { echo "Cancelled, nothing written."; return 0; }
 
-	# OpenWrt puts its metadata after the gzip data: gzip warns "trailing garbage" and exits 2
-	RAW="$BUILD/sd-card.img"
-	mkdir -p "$BUILD"           # absent in a fresh copy of the kit, with an image from elsewhere
-	echo "Unpacking..."
-	gzip -dc "$IMG" > "$RAW" 2>/dev/null || [ $? -eq 2 ] || die "Cannot unpack $IMG"
-	BYTES=$(stat -c %s "$RAW")
+	# Unpacked on the fly, never to a file (a nest image is 1 GB). OpenWrt puts its metadata after the
+	# gzip data: gzip warns "trailing garbage" and exits 2, which is fine
+	unpack() { gzip -dc "$IMG" 2>/dev/null || [ $? -eq 2 ]; }
+	BYTES=$(unpack | wc -c) || die "Cannot unpack $IMG"
 	[ "$BYTES" -gt 0 ] || die "Empty image: $IMG"
 
 	for P in $(lsblk -lnpo NAME "$DEV"); do
@@ -676,17 +692,12 @@ write_sd() {
 	done
 	echo "Erasing the old partition table, then writing $((BYTES / 1048576)) MiB (sudo asks for your password)..."
 	sudo wipefs -a -q "$DEV"
-	sudo dd if="$RAW" of="$DEV" bs=4M conv=fsync status=progress
+	unpack | sudo dd of="$DEV" bs=4M iflag=fullblock conv=fsync status=progress
 	sync
 	echo "Reading the card back..."
 	sudo blockdev --flushbufs "$DEV"
-	if sudo cmp -n "$BYTES" "$RAW" "$DEV"; then
-		rm -f "$RAW"
-		echo "OK: the card matches the image. You can take it out."
-	else
-		rm -f "$RAW"
-		die "The card does NOT match the image: write it again, or use another card."
-	fi
+	unpack | sudo cmp -n "$BYTES" - "$DEV" || die "The card does NOT match the image: write it again, or use another card."
+	echo "OK: the card matches the image. You can take it out."
 }
 
 # ---------------------------------------------------------------- main
