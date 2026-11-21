@@ -716,7 +716,7 @@ exit 0</code></pre></div>
 <p lang="en">On any x86_64 Linux machine with Internet access.</p>
 <p lang="en">First an admin SSH key, if there is none yet: the images accept nothing else. Then the radio keys, then the build. OpenWrt 25.12 uses <code>apk</code>, not <code>opkg</code>.</p>
 <p lang="en">In a terminal, <code>./build.sh</code> opens a menu: the devices already in <code>profiles.txt</code>, numbered. Pick several by number or by role (<code>1 3</code>, <code>hedge</code>), or press Enter for all. <code>v</code> changes the OpenWrt release, <code>w</code> turns the web interface on or off, <code>s</code> writes a Raspberry Pi image to an SD card, <code>n</code> adds a device. It shows the list and asks before building. From a script, <code>./build.sh all</code> or a role name builds with no questions. Menu added on 2026-11-18 and tried against a stand-in Image Builder; not yet run with the real one. Checks added on 2026-11-20, tried the same way: before downloading anything it checks each chosen line of <code>profiles.txt</code> (a known role, a power from 0 to 30 dBm, the bands the role needs); a build replaces the images of the devices it builds and keeps the others in <code>build/images</code>; at the end it lists what it built and what it skipped. Since 2026-11-21 each line of the menu shows what its ports and radios do, and the build lists it for every chosen device before asking to go on; in <code>n</code>, <code>m</code> asks the use of each interface instead of a role.</p>
-<p lang="en">Two checks run on every build, added on 2026-11-20. The signature check ran on the real Image Builder on 2026-11-21; the rule check has only been tried against a stand-in. First, OpenWrt's signature. The checksums only prove that a download isn't broken, so the build also checks OpenWrt's signature on them, with OpenWrt's public keys kept in <code>trust/</code>, and prints the key that signed. A tampered server or mirror is then caught too. <code>trust/</code> holds OpenWrt's two build keys, the 2016 one and the 2023 Nitrokey one (fingerprints on openwrt.org); on 2026-11-21, 25.12.6 was signed by the 2023 Nitrokey key (<code>8A8BC12F46B836C0F9CDB36F1D53D1877742E911</code>) and the check passed. The tool is <code>gpgv</code>, already there on Debian and Ubuntu. Second, the hard rules. Before building, the Image Builder lists every package the image would hold, and the build stops if it finds a DHCP or RA server, a firewall, PPP, or a web interface nobody asked for. Either check can be skipped when needed: <code>CHECK_SIG=0</code> or <code>CHECK_RULES=0</code> in front of <code>./build.sh</code>, and the build says it skipped it. When OpenWrt signs with a new key, better check its fingerprint on openwrt.org's key page and add it to <code>trust/</code> than skip the check.</p>
+<p lang="en">Two checks run on every build, added on 2026-11-20. The signature check ran on the real Image Builder on 2026-11-21; the rule check too, on the Pi Zero 2 W feeder image: nothing forbidden in it. First, OpenWrt's signature. The checksums only prove that a download isn't broken, so the build also checks OpenWrt's signature on them, with OpenWrt's public keys kept in <code>trust/</code>, and prints the key that signed. A tampered server or mirror is then caught too. <code>trust/</code> holds OpenWrt's two build keys, the 2016 one and the 2023 Nitrokey one (fingerprints on openwrt.org); on 2026-11-21, 25.12.6 was signed by the 2023 Nitrokey key (<code>8A8BC12F46B836C0F9CDB36F1D53D1877742E911</code>) and the check passed. The tool is <code>gpgv</code>, already there on Debian and Ubuntu. Second, the hard rules. Before building, the Image Builder lists every package the image would hold, and the build stops if it finds a DHCP or RA server, a firewall, PPP, or a web interface nobody asked for. Either check can be skipped when needed: <code>CHECK_SIG=0</code> or <code>CHECK_RULES=0</code> in front of <code>./build.sh</code>, and the build says it skipped it. When OpenWrt signs with a new key, better check its fingerprint on openwrt.org's key page and add it to <code>trust/</code> than skip the check.</p>
 <p class="note" lang="en">Back up <code>secrets/</code> offline, with your SSH key, for example on a USB stick kept away from the laptop. It holds the village's radio keys, and nothing else keeps a copy: not git, not the kit, not this handbook. If it is lost, a running perch or hedge still holds its key: <code>cat /etc/sparrows/flyway.key</code> (or <code>hedge.key</code>) over SSH. If every copy is lost, make a new key and reflash every perch, or every hedge.</p>
 <div class="code"><div class="hd"><span class="file">admin key</span></div><pre><code># Once per admin, on the admin laptop
 ssh-keygen -t ed25519 -C "sparrows-admin"     # Enter = default path ~/.ssh/id_ed25519; set a passphrase
@@ -1087,7 +1087,7 @@ build_one() (
 	WITH_UI=0 NAME="sparrows-$NAMEROLE"
 &#32;
 	# --- A device that needs more than a line: devices/&lt;name&gt;/device.conf (see profiles.txt) ---
-	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES=''
+	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES='' ROOTFS_MB=''
 	DEV="$HERE/devices/$PROFILE"
 	if [ -f "$DEV/device.conf" ]; then
 		# shellcheck source=/dev/null
@@ -1224,12 +1224,17 @@ build_one() (
 			($1 in f) { printf "%s ", $1 }')
 		[ -z "$BAD" ] || die "$ROLE $PROFILE: the image would hold ${BAD}against the hard rules (no DHCP, RA, firewall or PPP on a station; no web interface unless asked). Fix the package lists in build.sh, or CHECK_RULES=0 to build it anyway"
 	fi
+	# SD-card devices: the root partition's size, which holds the system and, after it, the space where
+	# the unit keeps its changes and data. OpenWrt's default is small (104 MB on a Pi): device.conf can
+	# ask for more with ROOTFS_MB. The rest of the card stays unused either way
+	SIZE=()
+	[ -z "$ROOTFS_MB" ] || SIZE=(ROOTFS_PARTSIZE="$ROOTFS_MB")
 	if [ "$WITH_UI" = 1 ]; then
 		# Too big for the flash is the usual reason: skip this one, build the others
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" || \
+		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}" || \
 			skip "$ROLE $PROFILE: no image with the web interface (too big?): build it without, or set ui to - in profiles.txt"
 	else
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME"
+		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}"
 	fi
 	# .bin for most routers, .img.gz for SD-card devices such as the Raspberry Pi. squashfs only: a Pi
 	# build also makes ext4 images, but going back to the image's defaults (firstboot) needs squashfs.
@@ -1798,6 +1803,7 @@ rdisc6 wlan0</code></pre></div>
 # Back to stock firmware: procedure on the OpenWrt wiki page of the device</code></pre></div>
 <p class="note" lang="en">Two open points. Any phone on the open SSID can send a rogue RA, and the bridge would spread it. Dropping RAs that arrive from the Wi-Fi side would fix it, but that is an exception to "never filter ICMPv6": not decided, not in the image. And TP-Link's CE figure for this unit is 27 dBm EIRP on 5 GHz, because it has no transmit power control (TPC), hence 23 dBm at the radio in <code>profiles.txt</code>. If the CPE510 has no TPC either, the same rule gives 14 dBm at its radio, not 17. To check against the French rules before perches go on masts: it is one number in <code>profiles.txt</code>.</p>
 <h4 id="zero"><span lang="en">Feeder on a Raspberry Pi Zero 2 W</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en"><span class="k">So far</span>on 2026-11-21 the feeder image (with the web interface) was built with the real Image Builder: Wi-Fi firmware fetched and checked, package rules passed, a 78 MB factory image. <code>./build.sh sd</code> wrote it to a card and read it back identical. Not yet booted on the Pi.</p>
 <p lang="en">Added on 2026-11-19. The Zero 2 W is not a standard OpenWrt device, so it has a folder of its own, <code>devices/rpi-zero-2-w/</code>, and <code>profiles.txt</code> names that folder instead of an OpenWrt profile. What differs:</p>
 <ul lang="en">
   <li><strong>Image:</strong> OpenWrt has none of its own. The Pi 3 image (<code>rpi-3</code>) boots it: same chip.</li>
@@ -2098,6 +2104,7 @@ rnstatus
   <li><strong>Reticulum:</strong> <code>rnsd</code> with transport, <code>lxmd</code> as message store, and the Sparrows page, all from the pinned wheels.</li>
   <li><strong>Still never:</strong> IPv4, DHCP, a firewall. The build's rule check lets <code>odhcpd</code>, <code>dnsmasq</code> and <code>uhttpd</code> into a nest image only.</li>
   <li><strong>The Pi 4's Wi-Fi:</strong> access point and client only (no mesh, so no flyway), 2.4 GHz on channel 6 (no automatic channel in its driver). No 5 GHz feeder: its chip can't do the radar check the outdoor channels need. A small access point: fine for a house or a garden.</li>
+  <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
   <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
 </ul>
 <p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
@@ -2258,7 +2265,11 @@ CAN5='join'
 CH2='6'
 &#32;
 # The name and the village address come from the Ethernet MAC (eth0), as on most units
-MACDEV='eth0'</code></pre></div>
+MACDEV='eth0'
+&#32;
+# A nest keeps messages (lxmd) and files: a 1 GB root partition instead of OpenWrt's 104 MB. Big data
+# (Wikipedia, films) still goes on a USB disk. Writing the card takes longer: the image is 1 GB
+ROOTFS_MB='1024'</code></pre></div>
 <h4 id="flash-eap"><span lang="en">6. Flash an EAP225-Outdoor from TP-Link stock firmware</span> <span class="st ok" data-ui="ok">tested</span></h4>
 <p lang="en">Tested on 2026-11-14 on a v3 (hardware 3.0, stock firmware 5.1.0) with the hedge image. The v1 is not yet tested; the OpenWrt wiki gives the same method. The same steps serve the feeder image.</p>
 <p class="note" lang="en">Do not update the stock firmware before flashing. The OpenWrt wiki reports bricked units when flashing from stock 5.1.1, and says v3.20 hardware with 5.2.x firmware can't be flashed at all. The v4 is not supported.</p>
@@ -2665,6 +2676,7 @@ rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/id
 <ul lang="en">
   <li>A space anywhere in the build tree's path (<code>~/00 - sparrows-network/...</code>) breaks the OpenWrt Image Builder: its Makefiles cut the path at the space, <code>make info</code> fails, and an older <code>build.sh</code> reported it as "no profile rpi-3" (seen 2026-11-21). Since then <code>build.sh</code> runs the Image Builder in <code>~/.cache/sparrows-build</code> when the path has a space, and still puts the images in <code>build/images</code>. Another folder: <code>SPARROWS_BUILD=/some/path ./build.sh</code>. A failing <code>make info</code> is now shown as such.</li>
   <li>The Image Builder needs <code>rsync</code>, missing on a fresh Debian 12: <code>sudo apt install rsync</code>. <code>build.sh</code> lists what is missing before downloading anything.</li>
+  <li>A Pi card written with an OpenWrt image looks almost empty from a laptop (seen 2026-11-21): a 64 MB boot partition and a 104 MB root partition whose system part is a few MB and shows 100% used. That is normal: the system is read-only (squashfs), and at first boot the rest of that partition becomes the space for changes. The rest of the card stays unused. A device can ask for a bigger root partition with <code>ROOTFS_MB</code> in its <code>device.conf</code>, as the Pi 4 nest does (1 GB).</li>
 </ul>
 <h4>Radio</h4>
 <ul lang="en">

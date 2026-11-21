@@ -304,7 +304,7 @@ build_one() (
 	WITH_UI=0 NAME="sparrows-$NAMEROLE"
 
 	# --- A device that needs more than a line: devices/<name>/device.conf (see profiles.txt) ---
-	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES=''
+	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES='' ROOTFS_MB=''
 	DEV="$HERE/devices/$PROFILE"
 	if [ -f "$DEV/device.conf" ]; then
 		# shellcheck source=/dev/null
@@ -441,12 +441,17 @@ build_one() (
 			($1 in f) { printf "%s ", $1 }')
 		[ -z "$BAD" ] || die "$ROLE $PROFILE: the image would hold ${BAD}against the hard rules (no DHCP, RA, firewall or PPP on a station; no web interface unless asked). Fix the package lists in build.sh, or CHECK_RULES=0 to build it anyway"
 	fi
+	# SD-card devices: the root partition's size, which holds the system and, after it, the space where
+	# the unit keeps its changes and data. OpenWrt's default is small (104 MB on a Pi): device.conf can
+	# ask for more with ROOTFS_MB. The rest of the card stays unused either way
+	SIZE=()
+	[ -z "$ROOTFS_MB" ] || SIZE=(ROOTFS_PARTSIZE="$ROOTFS_MB")
 	if [ "$WITH_UI" = 1 ]; then
 		# Too big for the flash is the usual reason: skip this one, build the others
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" || \
+		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}" || \
 			skip "$ROLE $PROFILE: no image with the web interface (too big?): build it without, or set ui to - in profiles.txt"
 	else
-		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME"
+		make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}"
 	fi
 	# .bin for most routers, .img.gz for SD-card devices such as the Raspberry Pi. squashfs only: a Pi
 	# build also makes ext4 images, but going back to the image's defaults (firstboot) needs squashfs.
