@@ -1248,7 +1248,10 @@ build_one() (
 	if [ "$RNS" = 1 ]; then cp -a "$HERE/tree/files/." "$F/"; fi          # Reticulum + the page
 	if [ "$NEST" = 1 ]; then cp -a "$HERE/nest/files/." "$F/"; fi         # RA, DNS, welcome page, lxmd
 	install -d -m 700 "$F/etc/dropbear"
-	cat "$HERE"/keys/*.pub &gt; "$F/etc/dropbear/authorized_keys"
+	# Type and key only: the comment at the end of a .pub file (often user@laptop) would name the admin
+	# to anyone who reads the card
+	awk 'NF &gt;= 2 &amp;&amp; $1 ~ /^(ssh-|ecdsa-|sk-)/ { print $1, $2 }' "$HERE"/keys/*.pub &gt; "$F/etc/dropbear/authorized_keys"
+	[ -s "$F/etc/dropbear/authorized_keys" ] || die "No usable key in keys/*.pub (a line starts with ssh-ed25519, ssh-rsa, ecdsa-... or sk-...)"
 	chmod 600 "$F/etc/dropbear/authorized_keys"
 	install -d -m 755 "$F/etc/sparrows"
 	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
@@ -2796,13 +2799,14 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 <h4><span lang="en">How it opens: a request over Reticulum</span></h4>
 <ul lang="en">
   <li><strong>At boot</strong> the unit messages its approvers: "tree-26de asks to open <code>/home</code>, started at 04:12, heard through nest-9b58". It asks with a small separate "door" identity kept on the system side, because its own identities are inside <code>/home</code>.</li>
-  <li><strong>One approver says yes</strong> in a small tool on their phone or laptop, and <code>/home</code> opens. No SSH session, nothing to type.</li>
+  <li><strong>One approver answers</strong> in a small tool on their phone or laptop, with three buttons: <em>accept</em> (<code>/home</code> opens), <em>reject</em> (it stays locked until the next boot asks again) or <em>erase</em> (below). Decided on 2026-11-21. No SSH session, nothing to type.</li>
+  <li><strong>Erase:</strong> the unit destroys the LUKS header of <code>/home</code>, which takes seconds and makes its data unreadable for good, then overwrites its own system partitions and switches off. An erase must be signed by an approver, like a yes.</li>
   <li><strong>The passphrase never travels.</strong> At setup, a random unlock key gets its own LUKS slot, and the unit keeps it sealed for each approver's Reticulum key. The request carries the sealed key; the approver's tool opens it and sends it back sealed for a key the unit made for this boot only.</li>
   <li><strong>Until then</strong> the unit already does its station job (Wi-Fi, flyway, welcome page, relay). Only what needs its identities waits: the message store and its Sparrows page.</li>
   <li><strong>By hand:</strong> over SSH, <code>sparrows-unlock</code> asks for the passphrase (below). It is never removed.</li>
 </ul>
 <h4><span lang="en">Who to ask</span></h4>
-<p lang="en"><code>build.sh</code> asks once for the approvers: the unit's owner, the village admins. For each, only a Reticulum address, the 32 hex characters Sideband or MeshChat show as "your address". That is enough and safe: the address is a hash of the person's public key, so the unit fetches the key over Reticulum and checks it against the address, and nobody can slip another key in under it. The list stays in <code>keys/approvers.txt</code> on the admin laptop, out of git, and goes in the image. It is not secret, but anyone holding the image can see which addresses approve.</p>
+<p lang="en"><code>build.sh</code> asks once for the approvers: the unit's owner, the village admins. For each, the public key of a Reticulum identity kept only for approving, never the one they chat with: it links to nothing else. With the whole key in the image, the unit can seal for it with no announce at all, and the approver's tool never announces: it picks up requests from the nests' message store when it chooses. The list stays in <code>keys/approvers.txt</code> on the admin laptop, out of git, with no names in it.</p>
 <h4><span lang="en">Updates never touch it</span></h4>
 <ul lang="en">
   <li>The partition is found by the label in its LUKS header, <code>sparrows-home</code>, which can be read without the key. The first-boot script runs again after every <code>sysupgrade</code>: it looks for that label first, and creates a partition only when there is none.</li>
@@ -2812,6 +2816,14 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 </ul>
 <h4><span lang="en">The passphrase</span></h4>
 <p lang="en">Decided on 2026-11-21. One passphrase per unit, made when the admin sets up <code>/home</code> on that unit, not when the image is built: an image goes on many units and can be read from any card, so a passphrase inside it would open every lock. <code>build.sh</code> makes a long random passphrase, or takes one the admin chooses (it refuses a short one), shows it once, keeps a copy in <code>secrets/home/&lt;unit name&gt;.key</code> on the admin laptop, and says to save it somewhere safe: on paper or in a password manager, away from the laptop. It reaches the unit over SSH and is never written on the unit's card. Without it, and with no approver left, <code>/home</code> is lost.</p>
+<h4><span lang="en">The owner stays unnamed</span></h4>
+<p lang="en">Decided on 2026-11-21: what a unit holds may be readable; what matters is that nobody can tell who owns or runs it. Done: images carry the admin SSH keys without their comment, which often says <code>user@laptop</code> (tested on the laptop 2026-11-21). Planned: the approvers as above, unnamed and silent; unit names from the MAC, as today. What software can't hide:</p>
+<ul lang="en">
+  <li><strong>Where it stands.</strong> A unit in a house points at whoever lives there. Put units where many people pass, or where nobody lives.</li>
+  <li><strong>Radio.</strong> A transmitting unit can be located with direction-finding equipment.</li>
+  <li><strong>The card keeps old copies.</strong> An SD card moves data around inside; overwritten blocks can survive in its spare space. Only what was inside LUKS is surely gone after an erase, so nothing that names anyone should ever sit on the system side.</li>
+  <li><strong>An erase needs the unit on, and within reach of the village.</strong> A unit seized and switched on elsewhere never reaches an approver. To decide: erase by itself after a number of boots with no answer, or when it hears no known nest; the risk is erasing after a long power cut of the whole village.</li>
+</ul>
 <h4><span lang="en">Threats</span></h4>
 <ul lang="en">
   <li><strong>Card taken away:</strong> <code>/home</code> stays locked. The thief needs the passphrase, or an approver who says yes.</li>
