@@ -11,6 +11,9 @@
 [interfaces]
   # The village. First boot puts the interface here: wsta (the Wi-Fi client) when a radio joins the
   # Sparrows Wi-Fi, br-lan (the village bridge: wire and feeders) when none does
+  # No group_id: Reticulum's default group, the one Sideband and the other apps use out of the box.
+  # Every device of the village must be in the same group, or they never see each other (seen
+  # 2026-11-21: a laptop with group_id = sparrows and the nest found 0 peers)
   [[Sparrows]]
     type = AutoInterface
     enabled = yes
