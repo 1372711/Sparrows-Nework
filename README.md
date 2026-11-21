@@ -2115,7 +2115,7 @@ rnstatus
   <li><strong>Reticulum:</strong> <code>rnsd</code> with transport, <code>lxmd</code> as message store, and the Sparrows page, all from the pinned wheels.</li>
   <li><strong>Still never:</strong> IPv4, DHCP, a firewall. The build's rule check lets <code>odhcpd</code>, <code>dnsmasq</code> and <code>uhttpd</code> into a nest image only.</li>
   <li><strong>The Pi 4's Wi-Fi:</strong> access point and client only (no mesh, so no flyway), 2.4 GHz on channel 6 (no automatic channel in its driver). No 5 GHz feeder: its chip can't do the radar check the outdoor channels need. A small access point: fine for a house or a garden.</li>
-  <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
+  <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Seen on 2026-11-21: the card written from the nest image shows a 1 GB root partition. The rest of the card stays unused. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
   <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
 </ul>
 <p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>

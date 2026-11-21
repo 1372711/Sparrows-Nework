@@ -2942,7 +2942,7 @@ rnstatus
   <li><strong>Reticulum:</strong> <code>rnsd</code> with transport, <code>lxmd</code> as message store, and the Sparrows page, all from the pinned wheels.</li>
   <li><strong>Still never:</strong> IPv4, DHCP, a firewall. The build's rule check lets <code>odhcpd</code>, <code>dnsmasq</code> and <code>uhttpd</code> into a nest image only.</li>
   <li><strong>The Pi 4's Wi-Fi:</strong> access point and client only (no mesh, so no flyway), 2.4 GHz on channel 6 (no automatic channel in its driver). No 5 GHz feeder: its chip can't do the radar check the outdoor channels need. A small access point: fine for a house or a garden.</li>
-  <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
+  <li><strong>Room:</strong> a 1 GB root partition (<code>ROOTFS_MB</code> in <code>device.conf</code>) instead of OpenWrt's 104 MB, for the message store and small files. Seen on 2026-11-21: the card written from the nest image shows a 1 GB root partition. The rest of the card stays unused. Wikipedia and other big data go on a USB disk. The card takes longer to write.</li>
   <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
 </ul>
 <ul lang="fr">
@@ -2953,7 +2953,7 @@ rnstatus
   <li><strong>Reticulum :</strong> <code>rnsd</code> avec le transport, <code>lxmd</code> comme boîte aux lettres, et la page Sparrows, le tout à partir des wheels figés.</li>
   <li><strong>Toujours jamais :</strong> IPv4, DHCP, pare-feu. Le contrôle des règles du build laisse entrer <code>odhcpd</code>, <code>dnsmasq</code> et <code>uhttpd</code> dans une image de nid seulement.</li>
   <li><strong>Le Wi-Fi du Pi 4 :</strong> point d'accès et client seulement (pas de mesh, donc pas de voie), 2,4 GHz sur le canal 6 (pas de canal automatique dans son pilote). Pas de mangeoire 5 GHz : sa puce ne sait pas faire le contrôle radar que demandent les canaux extérieurs. Un petit point d'accès : bien pour une maison ou un jardin.</li>
-  <li><strong>Place :</strong> une partition racine de 1 Go (<code>ROOTFS_MB</code> dans <code>device.conf</code>) au lieu des 104 Mo d'OpenWrt, pour la boîte aux lettres et les petits fichiers. Wikipédia et les autres grosses données vont sur un disque USB. La carte prend plus de temps à écrire.</li>
+  <li><strong>Place :</strong> une partition racine de 1 Go (<code>ROOTFS_MB</code> dans <code>device.conf</code>) au lieu des 104 Mo d'OpenWrt, pour la boîte aux lettres et les petits fichiers. Vu le 2026-11-21 : la carte écrite avec l'image de nid montre une partition racine de 1 Go. Le reste de la carte n'est pas utilisé. Wikipédia et les autres grosses données vont sur un disque USB. La carte prend plus de temps à écrire.</li>
   <li><strong>Android :</strong> l'image annonce <code>2001:db8:1::/64</code>, le préfixe du banc, à côté de celui du village, comme le fait le nid Debian. Le vrai préfixe non-ULA reste à décider.</li>
 </ul>
 <ul lang="es">
@@ -2964,7 +2964,7 @@ rnstatus
   <li><strong>Reticulum:</strong> <code>rnsd</code> con transporte, <code>lxmd</code> como buzón, y la página Sparrows, todo a partir de los wheels fijados.</li>
   <li><strong>Sigue sin haber:</strong> IPv4, DHCP, cortafuegos. La comprobación de reglas de la construcción deja entrar <code>odhcpd</code>, <code>dnsmasq</code> y <code>uhttpd</code> solo en una imagen de nido.</li>
   <li><strong>El Wi-Fi de la Pi 4:</strong> punto de acceso y cliente solamente (sin malla, así que sin ruta), 2,4 GHz en el canal 6 (sin canal automático en su controlador). Sin comedero de 5 GHz: su chip no sabe hacer la comprobación de radar que piden los canales de exterior. Un punto de acceso pequeño: vale para una casa o un jardín.</li>
-  <li><strong>Espacio:</strong> una partición raíz de 1 GB (<code>ROOTFS_MB</code> en <code>device.conf</code>) en lugar de los 104 MB de OpenWrt, para el buzón y los archivos pequeños. Wikipedia y los demás datos grandes van en un disco USB. La tarjeta tarda más en escribirse.</li>
+  <li><strong>Espacio:</strong> una partición raíz de 1 GB (<code>ROOTFS_MB</code> en <code>device.conf</code>) en lugar de los 104 MB de OpenWrt, para el buzón y los archivos pequeños. Visto el 2026-11-21: la tarjeta escrita con la imagen de nido muestra una partición raíz de 1 GB. El resto de la tarjeta no se usa. Wikipedia y los demás datos grandes van en un disco USB. La tarjeta tarda más en escribirse.</li>
   <li><strong>Android:</strong> la imagen anuncia <code>2001:db8:1::/64</code>, el prefijo del banco, junto al del pueblo, como hace el nido Debian. El verdadero prefijo no ULA está por decidir.</li>
 </ul>
 <p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
