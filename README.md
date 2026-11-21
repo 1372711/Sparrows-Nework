@@ -2116,7 +2116,7 @@ PYTHONPATH=/usr/lib/sparrows/python exec /usr/bin/python3 -m "RNS.Utilities.rn$T
 &#32;
 A community network that runs without the Internet. Fixed Wi-Fi stations carry it across the village, and later from one village to the next.
 &#32;
-You reached this page over it: it was served by a small box nearby, called a tree.
+You reached this page over it: it was served by a small box nearby, a tree or a nest.
 &#32;
 &gt;&gt;Join
 &#32;

@@ -10,7 +10,7 @@
 
 Una red comunitaria que funciona sin Internet. Estaciones Wi-Fi fijas la llevan por el pueblo, y más adelante de un pueblo al siguiente.
 
-Has llegado a esta página a través de ella: la sirve una cajita cercana, llamada árbol.
+Has llegado a esta página a través de ella: la sirve una cajita cercana, un árbol o un nido.
 
 >>Unirse
 

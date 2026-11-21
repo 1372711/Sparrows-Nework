@@ -10,7 +10,7 @@
 
 Un réseau communautaire qui marche sans Internet. Des stations Wi-Fi fixes le portent à travers le village, et plus tard d'un village au suivant.
 
-Vous avez atteint cette page par lui : elle vient d'un petit boîtier tout proche, appelé un arbre.
+Vous avez atteint cette page par lui : elle vient d'un petit boîtier tout proche, un arbre ou un nid.
 
 >>Rejoindre
 
