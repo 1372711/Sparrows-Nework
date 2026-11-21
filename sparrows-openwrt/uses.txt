@@ -1,0 +1,32 @@
+# Sparrows-Network: what each port and radio of a station does, by role. Read by build.sh.
+# A role is a preset of uses, one per interface. To change what a role does, change its line here.
+#
+# Uses of a port or a radio:
+#   wire     the Ethernet ports: a cable to the site's switch, part of the village segment (bridged)
+#   feeder   an access point of the open "Sparrows" Wi-Fi, for people's devices (bridged)
+#   flyway   a radio link to other stations, carrying batman-adv (bridged):
+#              5 GHz   AP + client, hidden, SAE (secrets/flyway.key), ch 108; `perch ap` picks the AP
+#              2.4 GHz 802.11s mesh to the other units on the same channel, SAE (secrets/hedge.key), ch 1
+#   join     a client of the "Sparrows" Wi-Fi, like a phone. Never bridged: nothing hangs behind it
+#   off      not used
+#   Several uses on one radio: joined with +, e.g. flyway+feeder
+# Services:
+#   reticulum  rnsd with transport + the Sparrows page (Nomad Network). Needs room: SD-card devices
+#   nest       Reticulum, plus RAs (odhcpd), DNS (dnsmasq, no DHCP), the welcome page (uhttpd) and
+#              the message store (lxmd), on a fixed village address from the MAC. The only unit that
+#              sends RAs. Never joins: its radios serve
+#   -          none
+#
+# Roles add up on one unit: tree+feeder takes the uses of both. When a radio would both join and do
+# something else, it doesn't join: Reticulum then runs on the village bridge (wire + feeders).
+# Only one radio joins: when both would, the 2.4 GHz one does and the 5 GHz one is off.
+# One 5 GHz radio can't hold a flyway and a feeder (two channels): the build refuses it.
+# What a device's radios can't do (no mesh on a Pi's Wi-Fi, say) is in devices/<it>/device.conf.
+# A band set to - in profiles.txt is off whatever the role says.
+#
+# role    ports  2.4GHz         5GHz     services
+perch     wire   off            flyway   -
+feeder    wire   feeder         feeder   -
+hedge     wire   flyway+feeder  feeder   -
+tree      wire   join           join     reticulum
+nest      wire   off            off      nest

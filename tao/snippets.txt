@@ -1,21 +1,85 @@
+### names-find
+# The MAC is on the sticker:  1C-61-B4-BD-26-DE
+#   name         hedge-26de                               role + last 4 hex digits of the MAC
+#   link-local   fe80::1e61:b4ff:febd:26de                always there, even with no nest running
+#   village      fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de     once a nest sends RAs
+# Rule: flip the second-lowest bit of the first byte (1c -> 1e) and put ff:fe in the middle.
+
+# Every station on the cable or Wi-Fi you are on, with its MAC
+ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
+# By link-local, from the same segment (give your own interface after the %)
+ssh root@fe80::1e61:b4ff:febd:26de%eth0
+# By its village address, from anywhere in the village
+ssh root@fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de
+uci get system.@system[0].hostname      # hedge-26de
+### owrt-key
+# Once per admin, on the admin laptop
+ssh-keygen -t ed25519 -C "sparrows-admin"     # Enter = default path ~/.ssh/id_ed25519; set a passphrase
+# Back up ~/.ssh/id_ed25519 (the private half) offline. The images lock the root password:
+# without that file, the only way back into a station is failsafe mode at the unit.
+cd sparrows-openwrt && mkdir -p keys secrets
 ### owrt-use
-# Layout:  sparrows-openwrt/profiles.txt   role, target, device, power per band, web interface
-#          sparrows-openwrt/build.sh       ./build.sh [all|perch|feeder|hedge|tree], ./build.sh sd
-#          sparrows-openwrt/common/ perch/ feeder/ hedge/ tree/   files per role
+# Layout:  sparrows-openwrt/profiles.txt   role, target, device, power per band, web interface, [uses=]
+#          sparrows-openwrt/uses.txt       what each port and radio does, per role
+#          sparrows-openwrt/build.sh       ./build.sh [all|uses|<role>], ./build.sh sd
+#          sparrows-openwrt/common/ station/   files for every unit: base, ports and radios
+#          sparrows-openwrt/perch/ tree/ nest/ files only some units need (perch tool, Reticulum, nest)
 #          sparrows-openwrt/ui/ devices/   web interface files, devices that need more than a line
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
 cp ~/.ssh/id_ed25519.pub keys/admin.pub                    # the build refuses to run without a key
-printf '%s' 'the-flyway-passphrase' > secrets/flyway.key   # perch only: same as the running flyway
-head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 > secrets/hedge.key   # hedge only
+printf '%s' 'the-flyway-passphrase' > secrets/flyway.key   # 5 GHz flyway (perch) only: same as the running flyway
+head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 > secrets/hedge.key   # 2.4 GHz flyway (hedge) only
 # Back up secrets/ offline now, with your SSH key: no other copy of the radio keys exists
 ./build.sh                    # a menu: pick devices by number or role (Enter = all), n = add a device
-./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree)
+./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree, nest)
+./build.sh uses               # only show what each port and radio of every line will do
 VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
 CHECK_SIG=0 ./build.sh all    # skip the check of OpenWrt's signature (new OpenWrt key? add it to trust/)
 CHECK_RULES=0 ./build.sh all  # skip the check of each image's packages against the hard rules
 ls build/images/              # the images. The build ends with the sha256 of those it made, and what it skipped
+### web-ui-access
+# On your laptop: a tunnel through SSH, with your admin key. Leave it open.
+ssh -N -L 8080:127.0.0.1:80 root@<station address>
+# Then open http://localhost:8080 in the browser.
+# First time only, on the station over SSH: the root password LuCI asks for
+passwd
+
+# Verify on the station: the web server listens on the unit itself only
+netstat -ltn | grep ':80 '                 # 127.0.0.1:80 and ::1:80 only, never 0.0.0.0:80 or :::80
+# From another laptop on the village: must FAIL
+curl -m 5 'http://[<station address>]/'
+
+# Undo: flash the same role without -ui (sysupgrade -n), or on the station:
+/etc/init.d/uhttpd disable && /etc/init.d/uhttpd stop
+### sd-write
+# On the admin laptop, after building a Raspberry Pi image (or s in the menu)
+./build.sh sd                          # the factory .img.gz in build/images (asks which, if several)
+./build.sh sd path/to/image.img.gz     # any other image
+# It lists only removable, USB and MMC disks, never one that holds / /boot /home /usr /var or swap.
+# It shows what is on the card, asks you to TYPE its name, writes, then reads the card back.
+
+# The same by hand, if the script can't run. Replace sdX, and check it twice with lsblk.
+lsblk -po NAME,SIZE,TRAN,MODEL,MOUNTPOINT
+gzip -dc image.img.gz > card.img       # "trailing garbage ignored" is normal for OpenWrt images
+sudo umount /dev/sdX?* 2>/dev/null
+sudo dd if=card.img of=/dev/sdX bs=4M conv=fsync status=progress
+sudo blockdev --flushbufs /dev/sdX
+sudo cmp -n "$(stat -c %s card.img)" card.img /dev/sdX && echo "OK: the card matches"
+### banner-change
+# On the admin laptop: edit the text, keep the @...@ words where you want them filled in
+#   @NAME@ = feeder-26de   @ROLE@ = what this unit does   @RELEASE@ = OpenWrt version   @HINT@ = useful commands
+nano sparrows-openwrt/common/files/etc/sparrows/banner
+./build.sh                       # rebuild, then update the units (sysupgrade)
+
+# Verify: log in to a unit
+ssh root@<station address>       # the new text, with the unit's own name
+
+# Try a change on one unit first, without rebuilding (gone at the next update)
+vi /etc/banner
+
+# Undo: put the old text back in the build tree and rebuild
 ### perch-verify
 # Find the new perch from a laptop on its cable
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -39,6 +103,23 @@ watch -n1 "iw dev phy0-sta0 link | grep -e signal -e bitrate"
 # Undo
 perch sta               # back to client
 firstboot && reboot     # back to the image's defaults
+### perch-migrate
+# Not yet tested. Do it on the bench, the client end (old node2) first, the AP end (old node1) last.
+# LOCK-OUT RISK: after this the perch takes SSH keys only, and its old fixed address is gone.
+scp -O build/images/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
+ssh root@fd7e:4c1a:9b20:1::43
+sysupgrade -T /tmp/fw.bin          # checks the image, flashes nothing
+sysupgrade -n -v /tmp/fw.bin       # -n drops the old config, so the image's first-boot defaults run
+
+# Back in by link-local, with the key (address from the MAC on the sticker)
+ssh root@fe80::<from MAC>%eth0
+uci get system.@system[0].hostname # perch-xxxx
+
+# Same on the other perch (::42), then on that one only:
+perch ap
+
+# On the nest: delete the two host-record lines for node1 and node2 in /etc/dnsmasq.d/mesh.conf, then
+sudo dnsmasq --test && sudo systemctl restart dnsmasq
 ### feeder-verify
 # From a nest or a laptop on the mesh: find the feeder by its MAC
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -56,6 +137,23 @@ rdisc6 wlan0
 firstboot && reboot             # back to this image's defaults
 # Locked out: failsafe mode (reset button during boot) -> 192.168.1.1
 # Back to stock firmware: procedure on the OpenWrt wiki page of the device
+### zero-verify
+# Before the first boot: the factory image written with ./build.sh sd. A USB Ethernet adapter in the
+# port marked USB (not PWR), through an OTG cable or hub, and the village cable in the adapter.
+# Find it from a laptop on that cable. Its name and address come from the radio's MAC, not the adapter's.
+ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
+ssh root@fe80::<from the radio MAC>%eth0
+
+# On the Pi (hostname feeder-<last 4 hex of the radio MAC>)
+dmesg | grep -i brcmfmac        # "using brcm/brcmfmac43436-sdio" (or 43436s): firmware found
+iw dev                          # one AP, channel 6
+bridge link                     # eth0 (the adapter) and the Wi-Fi, both in br-lan
+ip -6 addr show br-lan          # fe80:: from the radio MAC (+ fd7e:4c1a:9b20:1:... once a nest sends RAs)
+ps | grep -e dnsmasq -e odhcpd  # nothing
+
+# From a phone on the SSID: it joins, gets an address from the nest, reaches http://sparrows.lan/
+
+# Undo: write the SD card again, with another image or with Raspberry Pi OS
 ### hedge-verify
 # Find it like a feeder, from a laptop on its cable
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -79,6 +177,70 @@ ip -6 addr show wlan0           # SLAAC addresses from the nest's prefixes
 # Undo
 firstboot && reboot             # back to this image's defaults
 # Or flash the feeder image: same box, open Wi-Fi only
+### page-change
+# On the admin laptop: the page is Micron markup, one file per language
+cd sparrows-openwrt/tree/files/usr/share/sparrows/nomadnet/pages
+nano index.mu fr.mu es.mu         # keep the three saying the same thing
+cd - && ./build.sh tree           # rebuild (rebuild the Tao first: the image ships tao/index.html too)
+
+# Try it on one tree first: the pages are in the read-only image, so copy them to the overlay
+mkdir -p /etc/sparrows-pages && cp /usr/share/sparrows/nomadnet/pages/* /etc/sparrows-pages/
+vi /etc/sparrows-pages/index.mu
+sed -i 's|^  pages_path = .*|  pages_path = /etc/sparrows-pages|' /etc/nomadnetwork/config
+/etc/init.d/nomadnet restart
+
+# Undo the try: put pages_path back to /usr/share/sparrows/nomadnet/pages, restart, rm -r /etc/sparrows-pages
+### tree-verify
+# Find it from a laptop on the village Wi-Fi or cable. Name and address come from the radio's MAC.
+ping -6 -c2 ff02::1%<if>; ip -6 neigh show dev <if>
+ssh root@<its fe80:: or fd7e:4c1a:9b20:1:... address>
+
+# On the tree (hostname tree-<last 4 hex of the radio MAC>)
+iw dev wsta link                 # Connected to ... SSID: Sparrows
+ip -6 addr show wsta             # fe80:: + SLAAC addresses from the nests' prefixes, no inet
+/etc/init.d/rnsd status          # running
+rns status                       # "Sparrows" interface Up, transport on
+/etc/init.d/nomadnet status      # running: the page node
+logread | grep -i python         # nothing (errors would show here)
+ps | grep -e dnsmasq -e odhcpd   # nothing
+
+# From a laptop on the village with Reticulum: the tree is seen as a peer
+rnstatus
+# In Nomad Network or MeshChat: Network -> announced nodes -> "Sparrows-Network (tree-xxxx)"
+# The page opens in English, with links to French and Spanish, and the handbook to download.
+
+# Undo the page only: /etc/init.d/nomadnet disable && /etc/init.d/nomadnet stop
+# Undo all: write the card with another image
+### eap-flash
+# 0. Note the hardware and stock firmware versions (web UI -> Status). Do NOT update the stock firmware first.
+# 1. Web UI -> Management -> SSH: enable, Save.
+# 2. SSH in with the web UI admin login. Stock firmware only offers old algorithms:
+ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
+    -o KexAlgorithms=+diffie-hellman-group1-sha1 admin@<stock-ip>
+cliclientd stopcs        # signature check off until the next reboot: flash right away
+
+# 3. On the laptop: a short file name (long ones are refused), and check the hash
+cp build/images/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin && sha256sum firmware.bin
+#    Web UI -> System -> Firmware Upgrade -> firmware.bin
+#    "bad file" = stopcs was not run. If it fails once, upload again.
+
+# 4. LOOP RISK: the image boots as an open-Wi-Fi bridge. Move the unit off the home LAN
+#    (injector LAN cable to the laptop or to the village switch) before it finishes booting.
+
+# 5. Log in by key over link-local (address from the MAC on the label)
+ssh-keygen -R 'fe80::1e61:b4ff:febd:26de%eth0'      # after each reflash the host key changes
+ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 root@fe80::1e61:b4ff:febd:26de%eth0
+uci get system.@system[0].hostname                  # hedge-26de
+
+# Back to stock: convert TP-Link's file with tplink-safeloader -z (OpenWrt wiki, EAP225 page),
+# then sysupgrade -n it. A unit that no longer boots needs a serial console on its test points.
+### station-upgrade
+# From a laptop on the village. dropbear has no sftp server, so -O; an IPv6 address needs [brackets]
+scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/fw.bin'
+# A Raspberry Pi takes its <image>-squashfs-sysupgrade.img.gz the same way
+# On the station
+sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
+sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
 ### pi-packages
 sudo apt update && sudo apt full-upgrade -y
 sudo apt install -y dnsmasq nginx nftables ndisc6
@@ -222,6 +384,45 @@ nslookup google.com               # -> fd7e:4c1a:9b20:1::1
 curl -sI http://connectivitycheck.gstatic.com/generate_204   # 302 -> http://sparrows.lan/
 
 # On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, no IPv4
+### welcome
+# On the nest: this file becomes the page every newcomer sees
+sudo cp /var/www/sparrows/index.html /var/www/sparrows/index.html.bak 2>/dev/null
+sudo install -m 644 index.html /var/www/sparrows/index.html
+curl -sI http://sparrows.lan/ | head -n1        # HTTP/1.1 200 OK
+# No logs on the on-ramp: add  access_log off;  inside both server blocks, then
+sudo nginx -t && sudo systemctl reload nginx
+
+# Undo
+sudo mv /var/www/sparrows/index.html.bak /var/www/sparrows/index.html
+### kit
+# On any computer with Internet and git: the whole project from GitHub. Public: no account needed
+git clone https://github.com/1372711/Sparrows-Nework.git sparrows
+cd sparrows && ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
+git pull                                      # later, from inside sparrows/: get the latest
+git log -1 --format='%h %ad %s'               # which version you have
+
+# On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
+# Public files only: keys/, secrets/ and build/ never go in the kit.
+mkdir -p kit
+rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
+cp <app-install-file> kit/                    # e.g. the Sideband APK, once chosen
+( cd kit && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
+grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ && echo "STOP: check these files"   # should print nothing
+scp -r kit index.html <user>@[fd7e:4c1a:9b20:1::1]:/tmp/
+
+# On the nest
+sudo rm -rf /var/www/sparrows/kit && sudo cp -r /tmp/kit /var/www/sparrows/kit
+sudo install -m 644 /tmp/index.html /var/www/sparrows/index.html
+# In /etc/nginx/sites-available/sparrows, inside the sparrows.lan server block:
+#     location /kit/ { autoindex on; }
+sudo nginx -t && sudo systemctl reload nginx
+curl -s http://sparrows.lan/kit/ | grep -c href           # the files are listed
+
+# Anyone who downloaded the kit checks it
+cd kit && sha256sum -c SHA256SUMS
+
+# Undo on the nest: remove the location line, then
+sudo rm -rf /var/www/sparrows/kit && sudo nginx -t && sudo systemctl reload nginx
 ### rns-install
 sudo apt install -y python3-venv
 sudo useradd --system --create-home --home-dir /var/lib/reticulum --shell /usr/sbin/nologin rns
@@ -361,106 +562,37 @@ journalctl -u nomadnet -n 30        # the node announces itself
 # Undo
 sudo systemctl disable --now nomadnet && sudo rm /etc/systemd/system/nomadnet.service
 rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/identity first to keep the address
-### owrt-key
-# Once per admin, on the admin laptop
-ssh-keygen -t ed25519 -C "sparrows-admin"     # Enter = default path ~/.ssh/id_ed25519; set a passphrase
-# Back up ~/.ssh/id_ed25519 (the private half) offline. The images lock the root password:
-# without that file, the only way back into a station is failsafe mode at the unit.
-cd sparrows-openwrt && mkdir -p keys secrets
-### names-find
-# The MAC is on the sticker:  1C-61-B4-BD-26-DE
-#   name         hedge-26de                               role + last 4 hex digits of the MAC
-#   link-local   fe80::1e61:b4ff:febd:26de                always there, even with no nest running
-#   village      fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de     once a nest sends RAs
-# Rule: flip the second-lowest bit of the first byte (1c -> 1e) and put ff:fe in the middle.
+### rec-nm
+# SD card in a Linux laptop: R=/media/$USER/rootfs  B=/media/$USER/bootfs
+# On the bench, also add under [ipv6]:  address2=2001:db8:1::1/64
+sudo tee $R/etc/NetworkManager/system-connections/mesh.nmconnection >/dev/null <<'EOF'
+[connection]
+id=mesh
+type=ethernet
+interface-name=eth0
+autoconnect=true
+autoconnect-priority=10
 
-# Every station on the cable or Wi-Fi you are on, with its MAC
-ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
-# By link-local, from the same segment (give your own interface after the %)
-ssh root@fe80::1e61:b4ff:febd:26de%eth0
-# By its village address, from anywhere in the village
-ssh root@fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de
-uci get system.@system[0].hostname      # hedge-26de
-### perch-migrate
-# Not yet tested. Do it on the bench, the client end (old node2) first, the AP end (old node1) last.
-# LOCK-OUT RISK: after this the perch takes SSH keys only, and its old fixed address is gone.
-scp -O build/images/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
-ssh root@fd7e:4c1a:9b20:1::43
-sysupgrade -T /tmp/fw.bin          # checks the image, flashes nothing
-sysupgrade -n -v /tmp/fw.bin       # -n drops the old config, so the image's first-boot defaults run
+[ipv4]
+method=disabled
 
-# Back in by link-local, with the key (address from the MAC on the sticker)
-ssh root@fe80::<from MAC>%eth0
-uci get system.@system[0].hostname # perch-xxxx
-
-# Same on the other perch (::42), then on that one only:
-perch ap
-
-# On the nest: delete the two host-record lines for node1 and node2 in /etc/dnsmasq.d/mesh.conf, then
-sudo dnsmasq --test && sudo systemctl restart dnsmasq
-### station-upgrade
-# From a laptop on the village. dropbear has no sftp server, so -O; an IPv6 address needs [brackets]
-scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/fw.bin'
-# A Raspberry Pi takes its <image>-squashfs-sysupgrade.img.gz the same way
-# On the station
-sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
-sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
-### eap-flash
-# 0. Note the hardware and stock firmware versions (web UI -> Status). Do NOT update the stock firmware first.
-# 1. Web UI -> Management -> SSH: enable, Save.
-# 2. SSH in with the web UI admin login. Stock firmware only offers old algorithms:
-ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
-    -o KexAlgorithms=+diffie-hellman-group1-sha1 admin@<stock-ip>
-cliclientd stopcs        # signature check off until the next reboot: flash right away
-
-# 3. On the laptop: a short file name (long ones are refused), and check the hash
-cp build/images/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin && sha256sum firmware.bin
-#    Web UI -> System -> Firmware Upgrade -> firmware.bin
-#    "bad file" = stopcs was not run. If it fails once, upload again.
-
-# 4. LOOP RISK: the image boots as an open-Wi-Fi bridge. Move the unit off the home LAN
-#    (injector LAN cable to the laptop or to the village switch) before it finishes booting.
-
-# 5. Log in by key over link-local (address from the MAC on the label)
-ssh-keygen -R 'fe80::1e61:b4ff:febd:26de%eth0'      # after each reflash the host key changes
-ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 root@fe80::1e61:b4ff:febd:26de%eth0
-uci get system.@system[0].hostname                  # hedge-26de
-
-# Back to stock: convert TP-Link's file with tplink-safeloader -z (OpenWrt wiki, EAP225 page),
-# then sysupgrade -n it. A unit that no longer boots needs a serial console on its test points.
-### welcome
-# On the nest: this file becomes the page every newcomer sees
-sudo cp /var/www/sparrows/index.html /var/www/sparrows/index.html.bak 2>/dev/null
-sudo install -m 644 index.html /var/www/sparrows/index.html
-curl -sI http://sparrows.lan/ | head -n1        # HTTP/1.1 200 OK
-# No logs on the on-ramp: add  access_log off;  inside both server blocks, then
-sudo nginx -t && sudo systemctl reload nginx
-
-# Undo
-sudo mv /var/www/sparrows/index.html.bak /var/www/sparrows/index.html
-### kit
-# On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
-# Public files only: keys/, secrets/ and build/ never go in the kit.
-mkdir -p kit
-rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
-cp <app-install-file> kit/                    # e.g. the Sideband APK, once chosen
-( cd kit && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
-grep -r -l -i -e passphrase -e 'BEGIN OPENSSH PRIVATE' kit/ && echo "STOP: check these files"   # should print nothing
-scp -r kit index.html <user>@[fd7e:4c1a:9b20:1::1]:/tmp/
-
-# On the nest
-sudo rm -rf /var/www/sparrows/kit && sudo cp -r /tmp/kit /var/www/sparrows/kit
-sudo install -m 644 /tmp/index.html /var/www/sparrows/index.html
-# In /etc/nginx/sites-available/sparrows, inside the sparrows.lan server block:
-#     location /kit/ { autoindex on; }
-sudo nginx -t && sudo systemctl reload nginx
-curl -s http://sparrows.lan/kit/ | grep -c href           # the files are listed
-
-# Anyone who downloaded the kit checks it
-cd kit && sha256sum -c SHA256SUMS
-
-# Undo on the nest: remove the location line, then
-sudo rm -rf /var/www/sparrows/kit && sudo nginx -t && sudo systemctl reload nginx
+[ipv6]
+method=manual
+address1=fd7e:4c1a:9b20:1::1/64
+never-default=true
+addr-gen-mode=eui64
+EOF
+sudo chmod 600 $R/etc/NetworkManager/system-connections/mesh.nmconnection
+sudo chown root:root $R/etc/NetworkManager/system-connections/mesh.nmconnection
+### rec-ssh
+ls $R/home; grep ':1000:' $R/etc/passwd            # empty -> update Imager and reflash
+sudo ln -sf /usr/lib/systemd/system/ssh.service \
+  $R/etc/systemd/system/multi-user.target.wants/ssh.service
+sudo rm -f $R/etc/ssh/sshd_not_to_be_run
+ls $R/etc/ssh/ssh_host_* || sudo ssh-keygen -A -f $R
+HASH=$(openssl passwd -6)                          # set or reset the user's password
+sudo sed -i "s|^moonshiner:[^:]*:|moonshiner:$HASH:|" $R/etc/shadow
+sync && sudo umount $R $B
 ### rns-hub
 # ---- On the VPS (Debian family). Same install as on a nest: venv, user rns, rnsd.service ----
 # /var/lib/reticulum/config
@@ -507,126 +639,66 @@ ss -tnp | grep 4242                                                   # one TCP 
 
 # Undo on the nest: enabled = no on that block (or delete it), then
 sudo systemctl restart rnsd lxmd
-### rec-nm
-# SD card in a Linux laptop: R=/media/$USER/rootfs  B=/media/$USER/bootfs
-# On the bench, also add under [ipv6]:  address2=2001:db8:1::1/64
-sudo tee $R/etc/NetworkManager/system-connections/mesh.nmconnection >/dev/null <<'EOF'
-[connection]
-id=mesh
-type=ethernet
-interface-name=eth0
-autoconnect=true
-autoconnect-priority=10
+### lora-flyway
+# Not yet tested. ---- On the admin laptop, while it has Internet: flash each board once ----
+python3 -m venv ~/rns && ~/rns/bin/pip install rns
+~/rns/bin/rnodeconf --autoinstall            # pick the board (e.g. LilyGO T3S3, SX1262) and 868 MHz
+~/rns/bin/rnodeconf /dev/ttyACM0 --info      # firmware version, board, frequency range
 
-[ipv4]
-method=disabled
+# ---- On each nest: the board on USB, readable by the rns user ----
+ls -l /dev/serial/by-id/                     # a stable name for the board
+sudo usermod -aG dialout rns
+# Add under [interfaces] in /var/lib/reticulum/config. The SAME radio values at both ends.
+  [[LoRa flyway]]
+    type = RNodeInterface
+    enabled = yes
+    port = /dev/serial/by-id/<the board>
+    frequency = 869525000         # middle of 869.4-869.65 MHz: 500 mW ERP, 10 % of the time
+    bandwidth = 125000
+    spreadingfactor = 9           # about 1.7 kbit/s. Higher = farther and slower
+    codingrate = 5
+    txpower = 17                  # dBm on the board. ERP = txpower + antenna dBi - cable loss - 2.15, max 27
+    airtime_limit_long = 9        # % of the time over the long window: under the 10 % of the law
+    airtime_limit_short = 33      # % over the short window: bursts allowed, the long limit still holds
 
-[ipv6]
-method=manual
-address1=fd7e:4c1a:9b20:1::1/64
-never-default=true
-addr-gen-mode=eui64
-EOF
-sudo chmod 600 $R/etc/NetworkManager/system-connections/mesh.nmconnection
-sudo chown root:root $R/etc/NetworkManager/system-connections/mesh.nmconnection
-### rec-ssh
-ls $R/home; grep ':1000:' $R/etc/passwd            # empty -> update Imager and reflash
-sudo ln -sf /usr/lib/systemd/system/ssh.service \
-  $R/etc/systemd/system/multi-user.target.wants/ssh.service
-sudo rm -f $R/etc/ssh/sshd_not_to_be_run
-ls $R/etc/ssh/ssh_host_* || sudo ssh-keygen -A -f $R
-HASH=$(openssl passwd -6)                          # set or reset the user's password
-sudo sed -i "s|^moonshiner:[^:]*:|moonshiner:$HASH:|" $R/etc/shadow
-sync && sudo umount $R $B
-### web-ui-access
-# On your laptop: a tunnel through SSH, with your admin key. Leave it open.
-ssh -N -L 8080:127.0.0.1:80 root@<station address>
-# Then open http://localhost:8080 in the browser.
-# First time only, on the station over SSH: the root password LuCI asks for
-passwd
+# Apply and verify on the nest
+sudo systemctl restart rnsd lxmd
+sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "LoRa flyway" Up, its airtime and channel load
+journalctl -u rnsd -n 50                                              # no serial error
+# From a laptop in this village: the other village's nest is reachable over LoRa
+rnpath <lxmd address of the other nest>      # a path, 2 or more hops
+rnprobe rnstransport.probe <the other nest's transport hash>   # RSSI and SNR (needs respond_to_probes = Yes there)
 
-# Verify on the station: the web server listens on the unit itself only
-netstat -ltn | grep ':80 '                 # 127.0.0.1:80 and ::1:80 only, never 0.0.0.0:80 or :::80
-# From another laptop on the village: must FAIL
-curl -m 5 'http://[<station address>]/'
+# Undo on the nest: enabled = no on that block (or delete it), then
+sudo systemctl restart rnsd lxmd
+### nest-build
+# Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
+#   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
+./build.sh nest                  # shows what each interface will do, then builds
+./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the Debian card aside)
 
-# Undo: flash the same role without -ui (sysupgrade -n), or on the station:
-/etc/init.d/uhttpd disable && /etc/init.d/uhttpd stop
-### sd-write
-# On the admin laptop, after building a Raspberry Pi image (or s in the menu)
-./build.sh sd                          # the factory .img.gz in build/images (asks which, if several)
-./build.sh sd path/to/image.img.gz     # any other image
-# It lists only removable, USB and MMC disks, never one that holds / /boot /home /usr /var or swap.
-# It shows what is on the card, asks you to TYPE its name, writes, then reads the card back.
+# Its village address comes from the Ethernet MAC (on the Pi:  cat /sys/class/net/eth0/address)
+# e.g. dc:a6:32:12:34:56  ->  fd7e:4c1a:9b20:1:dea6:32ff:fe12:3456   (same rule as names-find)
 
-# The same by hand, if the script can't run. Replace sdX, and check it twice with lsblk.
-lsblk -po NAME,SIZE,TRAN,MODEL,MOUNTPOINT
-gzip -dc image.img.gz > card.img       # "trailing garbage ignored" is normal for OpenWrt images
-sudo umount /dev/sdX?* 2>/dev/null
-sudo dd if=card.img of=/dev/sdX bs=4M conv=fsync status=progress
-sudo blockdev --flushbufs /dev/sdX
-sudo cmp -n "$(stat -c %s card.img)" card.img /dev/sdX && echo "OK: the card matches"
-### zero-verify
-# Before the first boot: the factory image written with ./build.sh sd. A USB Ethernet adapter in the
-# port marked USB (not PWR), through an OTG cable or hub, and the village cable in the adapter.
-# Find it from a laptop on that cable. Its name and address come from the radio's MAC, not the adapter's.
-ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
-ssh root@fe80::<from the radio MAC>%eth0
-
-# On the Pi (hostname feeder-<last 4 hex of the radio MAC>)
-dmesg | grep -i brcmfmac        # "using brcm/brcmfmac43436-sdio" (or 43436s): firmware found
-iw dev                          # one AP, channel 6
-bridge link                     # eth0 (the adapter) and the Wi-Fi, both in br-lan
-ip -6 addr show br-lan          # fe80:: from the radio MAC (+ fd7e:4c1a:9b20:1:... once a nest sends RAs)
-ps | grep -e dnsmasq -e odhcpd  # nothing
-
-# From a phone on the SSID: it joins, gets an address from the nest, reaches http://sparrows.lan/
-
-# Undo: write the SD card again, with another image or with Raspberry Pi OS
-### banner-change
-# On the admin laptop: edit the text, keep the @...@ words where you want them filled in
-#   @NAME@ = feeder-26de   @ROLE@ = what this unit does   @RELEASE@ = OpenWrt version   @HINT@ = useful commands
-nano sparrows-openwrt/common/files/etc/sparrows/banner
-./build.sh                       # rebuild, then update the units (sysupgrade)
-
-# Verify: log in to a unit
-ssh root@<station address>       # the new text, with the unit's own name
-
-# Try a change on one unit first, without rebuilding (gone at the next update)
-vi /etc/banner
-
-# Undo: put the old text back in the build tree and rebuild
-### tree-verify
-# Find it from a laptop on the village Wi-Fi or cable. Name and address come from the radio's MAC.
+# ---- Card in the Pi, cable on the site's switch. From a laptop on the village ----
 ping -6 -c2 ff02::1%<if>; ip -6 neigh show dev <if>
-ssh root@<its fe80:: or fd7e:4c1a:9b20:1:... address>
+ssh root@fe80::<from MAC>%<if>
+# On the nest (hostname nest-feeder-xxxx)
+. /etc/sparrows/station; echo $ADDR        # its village address
+ip -6 addr show br-lan                     # fd7e:4c1a:9b20:1:... and 2001:db8:1:... /64, no inet
+bridge link                                # eth0 and the Wi-Fi AP, both in br-lan
+iw dev                                     # one AP, SSID Sparrows, channel 6
+logread -e odhcpd                          # RAs sent on br-lan, no error
+netstat -lnu | grep ':53 '; netstat -ltn | grep ':80 '   # dnsmasq on 53, uhttpd on the village addresses
+rns status                                 # "Sparrows" interface Up, on br-lan
+/etc/init.d/lxmd status                    # running: the message store
 
-# On the tree (hostname tree-<last 4 hex of the radio MAC>)
-iw dev wsta link                 # Connected to ... SSID: Sparrows
-ip -6 addr show wsta             # fe80:: + SLAAC addresses from the nests' prefixes, no inet
-/etc/init.d/rnsd status          # running
-rns status                       # "Sparrows" interface Up, transport on
-/etc/init.d/nomadnet status      # running: the page node
-logread | grep -i python         # nothing (errors would show here)
-ps | grep -e dnsmasq -e odhcpd   # nothing
+# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the same checks as the Debian nest ----
+rdisc6 <if>                       # both prefixes, Router lifetime 1800, the nest's address as DNS
+ip -6 neigh show dev <if>         # the nest's fe80 entry says "router"
+dig AAAA sparrows.lan @<nest address>        # the nest's address
+curl -sI http://connectivitycheck.gstatic.com/generate_204   # the welcome page, not 204
+ping 192.168.1.1                  # must FAIL (no IPv4)
+# On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, the page opens
 
-# From a laptop on the village with Reticulum: the tree is seen as a peer
-rnstatus
-# In Nomad Network or MeshChat: Network -> announced nodes -> "Sparrows-Network (tree-xxxx)"
-# The page opens in English, with links to French and Spanish, and the handbook to download.
-
-# Undo the page only: /etc/init.d/nomadnet disable && /etc/init.d/nomadnet stop
-# Undo all: write the card with another image
-### page-change
-# On the admin laptop: the page is Micron markup, one file per language
-cd sparrows-openwrt/tree/files/usr/share/sparrows/nomadnet/pages
-nano index.mu fr.mu es.mu         # keep the three saying the same thing
-cd - && ./build.sh tree           # rebuild (rebuild the Tao first: the image ships tao/index.html too)
-
-# Try it on one tree first: the pages are in the read-only image, so copy them to the overlay
-mkdir -p /etc/sparrows-pages && cp /usr/share/sparrows/nomadnet/pages/* /etc/sparrows-pages/
-vi /etc/sparrows-pages/index.mu
-sed -i 's|^  pages_path = .*|  pages_path = /etc/sparrows-pages|' /etc/nomadnetwork/config
-/etc/init.d/nomadnet restart
-
-# Undo the try: put pages_path back to /usr/share/sparrows/nomadnet/pages, restart, rm -r /etc/sparrows-pages
+# Undo: put the Debian SD card back in the Pi

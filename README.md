@@ -28,7 +28,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
 <li><a href="#talk">Talking: messages, groups, calls</a></li>
 <li><a href="#ipv6">IPv6 without DHCP</a></li>
 </ul></li><li><a href="#part-build">III. How to build it</a><ul>
-<li><a href="#images">Station images: perch, feeder, hedge, tree</a></li>
+<li><a href="#images">Station images: perch, feeder, hedge, tree, nest</a></li>
 <li><a href="#pi">Nests, example: Raspberry Pi</a></li>
 <li><a href="#reticulum">Reticulum</a></li>
 <li><a href="#page-node">A neighbour's page node, example: Pi Zero 2 W</a></li>
@@ -39,6 +39,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
 <li><a href="#roadmap">Roadmap</a></li>
 <li><a href="#ideas">Ideas not yet decided</a></li>
 <li><a href="#outside">A hub between villages, on a VPS</a></li>
+<li><a href="#lora">A LoRa flyway to a town 15 km away</a></li>
 <li><a href="#growing">How this page grows</a></li>
 </ul></li><li><a href="#glossary">Glossary</a><ul>
 </ul></li></ul>
@@ -241,8 +242,8 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
   <li><span><span lang="en">People's devices in IPv6 through a hedge: a Linux laptop and an Android phone get SLAAC addresses and DNS from the nest's RA. Android needed the router flag and a non-ULA prefix on the nest (<a href="#android">see why</a>); the phone shows "no Internet", as intended (2026-11-14)</span></span><span class="st ok" data-ui="ok">tested</span></li>
   <li><span><span lang="en">Captive-portal pop-up; iPhone and Windows; the prefix for real deployments</span></span><span class="st nt" data-ui="nt">not yet tested</span></li>
   <li><span><span lang="en">Reticulum on the first nest (a Pi 4): <code>rnsd</code> + <code>lxmd</code></span></span><span class="st nt" data-ui="nt">not yet tested</span></li>
-  <li><span><span lang="en">Standard OpenWrt images for perches, feeders and hedges: one image per role, nothing to set per unit (2026-11-14: the hedge image runs on one EAP225-Outdoor v3, flashed from stock; the rest not yet)</span></span><span class="st nt" data-ui="nt">not yet tested</span></li>
-  <li><span><span lang="en">Zero-config nest image, signed updates carried by the mesh; OpenBSD as a second nest system; a private hub on a VPS linking villages; the project in git over Reticulum</span></span><span class="st idea" data-ui="idea">idea</span></li>
+  <li><span><span lang="en">Standard OpenWrt images for every role, nests included since 2026-11-21, with what each port and radio does shown before the build: one image per role, nothing to set per unit (2026-11-14: the hedge image runs on one EAP225-Outdoor v3, flashed from stock; the rest not yet)</span></span><span class="st nt" data-ui="nt">not yet tested</span></li>
+  <li><span><span lang="en">Role chosen on the unit after flashing, signed updates carried by the mesh; OpenBSD as a second nest system; a private hub on a VPS linking villages; the project in git over Reticulum</span></span><span class="st idea" data-ui="idea">idea</span></li>
 </ul>
 <h2 id="part-network"><span lang="en">II. The network</span></h2>
 <h3 id="schematic"><span lang="en">Schematic of one village</span></h3>
@@ -333,7 +334,7 @@ El Sparrows Tao en español, inglés y francés: <a href="tao/index.html">tao/in
     <td><span lang="en">EAP225-Outdoor, any OpenWrt device with two radios and 802.11s</span></td>
     <td><span lang="en">two radios, 16 MB flash</span></td></tr>
   <tr><th><span lang="en">Nest</span></th>
-    <td><span lang="en">Debian 13 family (Debian, Raspberry Pi OS…) + the nest config; Reticulum, LXMF and a Nomad Network page node with Retipedia, pinned, in a venv. OpenBSD as a second system is an idea (Part IV)</span></td>
+    <td><span lang="en">Moving to OpenWrt with the nest image (decided 2026-11-21, not yet tested). Today: Debian 13 family (Debian, Raspberry Pi OS…) + the nest config; Reticulum, LXMF and a Nomad Network page node with Retipedia, pinned, in a venv. OpenBSD as a second system is an idea (Part IV)</span></td>
     <td><span lang="en">Pi 4 or 5, Pi Zero 2 W, mini PC, old laptop</span></td>
     <td><span lang="en">arm64 or x86_64, 512 MB RAM; an SSD for a store nest</span></td></tr>
   <tr><th><span lang="en">Tree</span></th>
@@ -509,47 +510,244 @@ uci get system.@system[0].hostname      # hedge-26de</code></pre></div>
 </table></div>
 <h2 id="part-build"><span lang="en">III. How to build it</span></h2>
 <p lang="en">Each section below is a worked example of one role on one piece of hardware. Other hardware takes the same role if it runs the same standard software. Commands and config files are the same in every language, so they appear once. Comments inside them stay in English.</p>
-<p lang="en">The scripts are separate files that travel with this handbook: <code>sparrows-openwrt/</code> builds the station images (<code>build.sh</code>, <code>profiles.txt</code>, one first-boot file per role) and <code>tao/</code> builds this page (<code>build.py</code>). They are printed here in full, straight from those files, so they can be read before they are run. Download them from the <a href="kit/">kit folder</a> next to this page (<a href="#kit">how it is made</a>).</p>
-<h3 id="images"><span lang="en">Station images: perch, feeder, hedge, tree</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
+<p lang="en">The scripts are separate files that travel with this handbook: <code>sparrows-openwrt/</code> builds the station images (<code>build.sh</code>, <code>profiles.txt</code>, <code>uses.txt</code>, one first-boot file for every role) and <code>tao/</code> builds this page (<code>build.py</code>). They are printed here in full, straight from those files, so they can be read before they are run. Download them from the <a href="kit/">kit folder</a> next to this page (<a href="#kit">how it is made</a>).</p>
+<h3 id="images"><span lang="en">Station images: perch, feeder, hedge, tree, nest</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
 <p lang="en">One build tree, <code>sparrows-openwrt</code>, makes one image per role and per device with the OpenWrt Image Builder. Every unit of a role gets the same image: nothing to set per unit. Written on 2026-11-13, hedge added on 2026-11-14, tree on 2026-11-19. So far the hedge image has run on one EAP225-Outdoor v3, flashed from stock firmware 5.1.0: it boots, takes SSH keys over link-local, brings up both radios and the mesh interface, passes the radar check, and lets a laptop and a phone into the village (2026-11-14). The perch, feeder and tree images have not run on a device yet.</p>
 <ul lang="en">
-  <li><strong>Name:</strong> each unit names itself after its role and the end of its MAC, for example <code>perch-3fa2</code>, <code>feeder-91c0</code> or <code>hedge-07be</code>.</li>
-  <li><strong>Address:</strong> SLAAC from the nests' RAs, built from the MAC on the sticker, plus link-local. The unit receives RAs and never sends any.</li>
+  <li><strong>Name:</strong> each unit names itself after its role and the end of its MAC, for example <code>perch-3fa2</code>, <code>feeder-91c0</code> or <code>hedge-07be</code>. A unit with two roles takes both names: <code>nest-feeder-26de</code>.</li>
+  <li><strong>Address:</strong> SLAAC from the nests' RAs, built from the MAC on the sticker, plus link-local. The unit receives RAs and never sends any. A nest sets the same address itself, from the same MAC, and sends the RAs.</li>
   <li><strong>Admin:</strong> SSH keys only, root password locked. Failsafe mode still works for recovery.</li>
-  <li><strong>Never:</strong> IPv4, DHCP, RA, firewall. This part is shared by every role. Reticulum only on the tree, whose job it is.</li>
-  <li><strong>Secrets:</strong> perch images carry the flyway key, hedge images the hedge key. <code>build.sh</code> refuses a key that isn't one line of 8 to 63 printable ASCII characters.</li>
+  <li><strong>Never:</strong> IPv4, DHCP, a firewall, a link to the Internet. RAs only from a nest. This part is shared by every role. Reticulum only where the role asks for it: tree and nest.</li>
+  <li><strong>Secrets:</strong> an image with a 5 GHz flyway (perch) carries the flyway key, one with a 2.4 GHz flyway (hedge) the hedge key. <code>build.sh</code> refuses a key that isn't one line of 8 to 63 printable ASCII characters.</li>
   <li><strong>Other hardware:</strong> one line in <code>profiles.txt</code>, with the power to set at the radio on each band: the legal EIRP minus the antenna gain. The build menu can write that line: <code>n</code>, then the target from the device's OpenWrt page, part of the model name, the role and the two powers. The line is marked "not yet tested" until the device has run on the bench. A device that needs more than a line (another OpenWrt profile, firmware to fetch, its own first-boot file) gets a folder in <code>devices/</code>, like the <a href="#zero">Pi Zero 2 W</a>.</li>
 </ul>
+<h4 id="uses"><span lang="en">What each port and radio does</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Decided on 2026-11-21. A role is a preset of uses, one per interface, written in <code>uses.txt</code>. One first-boot file, <code>90-sparrows-station</code>, reads them and sets up every role; it replaces the four per-role files, with the same radio settings. The uses:</p>
+<ul lang="en">
+  <li><a class="term" href="#g-wire">wire</a>: the Ethernet ports, a cable to the site's switch, part of the village segment.</li>
+  <li><a class="term" href="#g-feeder">feeder</a>: an access point of the open <code>Sparrows</code> Wi-Fi.</li>
+  <li><a class="term" href="#g-flyway">flyway</a>: a radio link to other stations carrying batman-adv. On 5 GHz, AP + client as on a perch; on 2.4 GHz, the 802.11s mesh of the hedges.</li>
+  <li><a class="term" href="#g-join">join</a>: a client of the <code>Sparrows</code> Wi-Fi, like a phone. Never bridged.</li>
+  <li><strong>off</strong>, and two services: <code>reticulum</code> (a tree) and <code>nest</code>.</li>
+</ul>
+<p lang="en">Roles add up on one unit when it has the room: <code>tree+feeder</code> or <code>nest+feeder</code> in the role column of <code>profiles.txt</code> takes the uses of both. A radio that would both join and serve doesn't join, and a nest never joins. A device that needs something else gets a manual line, <code>uses=wire,feeder,flyway,-</code> (ports, 2.4 GHz, 5 GHz, services), written by the menu: <code>n</code>, then <code>m</code>. The build refuses what can't work and says why, before downloading anything: a use the chip can't do (no mesh on a Pi's Wi-Fi, from <code>devices/*/device.conf</code>), a flyway and a feeder on one 5 GHz radio (two channels), a unit left with nothing to do. Before building it prints what each port and radio will do; <code>./build.sh uses</code> prints only that. Tried on 2026-11-21 against a stand-in Image Builder and a stand-in <code>uci</code>: each role gets the same settings as with its old file. Not yet run on a unit.</p>
+<div class="code"><div class="hd"><span class="file">uses.txt</span></div><pre><code># Sparrows-Network: what each port and radio of a station does, by role. Read by build.sh.
+# A role is a preset of uses, one per interface. To change what a role does, change its line here.
+#
+# Uses of a port or a radio:
+#   wire     the Ethernet ports: a cable to the site's switch, part of the village segment (bridged)
+#   feeder   an access point of the open "Sparrows" Wi-Fi, for people's devices (bridged)
+#   flyway   a radio link to other stations, carrying batman-adv (bridged):
+#              5 GHz   AP + client, hidden, SAE (secrets/flyway.key), ch 108; `perch ap` picks the AP
+#              2.4 GHz 802.11s mesh to the other units on the same channel, SAE (secrets/hedge.key), ch 1
+#   join     a client of the "Sparrows" Wi-Fi, like a phone. Never bridged: nothing hangs behind it
+#   off      not used
+#   Several uses on one radio: joined with +, e.g. flyway+feeder
+# Services:
+#   reticulum  rnsd with transport + the Sparrows page (Nomad Network). Needs room: SD-card devices
+#   nest       Reticulum, plus RAs (odhcpd), DNS (dnsmasq, no DHCP), the welcome page (uhttpd) and
+#              the message store (lxmd), on a fixed village address from the MAC. The only unit that
+#              sends RAs. Never joins: its radios serve
+#   -          none
+#
+# Roles add up on one unit: tree+feeder takes the uses of both. When a radio would both join and do
+# something else, it doesn't join: Reticulum then runs on the village bridge (wire + feeders).
+# Only one radio joins: when both would, the 2.4 GHz one does and the 5 GHz one is off.
+# One 5 GHz radio can't hold a flyway and a feeder (two channels): the build refuses it.
+# What a device's radios can't do (no mesh on a Pi's Wi-Fi, say) is in devices/&lt;it&gt;/device.conf.
+# A band set to - in profiles.txt is off whatever the role says.
+#
+# role    ports  2.4GHz         5GHz     services
+perch     wire   off            flyway   -
+feeder    wire   feeder         feeder   -
+hedge     wire   flyway+feeder  feeder   -
+tree      wire   join           join     reticulum
+nest      wire   off            off      nest</code></pre></div>
+<div class="code"><div class="hd"><span class="file">station/files/etc/uci-defaults/90-sparrows-station</span></div><pre><code>#!/bin/sh
+# Sparrows-Network: what each port and radio of this station does. One file for every role.
+# build.sh writes the uses in /etc/sparrows/station, from uses.txt (or a manual line of profiles.txt):
+#   PORTS = wire | off              USE2, USE5 = uses of the 2.4 / 5 GHz radio: off, or a list of
+#   RETICULUM, NEST = 1 | 0         feeder (open Wi-Fi), flyway (batman-adv link), join (Wi-Fi client)
+# Bridge only: no IPv4, no DHCP, no RA, no firewall (base in 10-sparrows-common). A nest adds its
+# services after this file (91-sparrows-nest).
+# Runs once at first boot (and again after `firstboot &amp;&amp; reboot`).
+# Status: NOT YET TESTED. Replaces the per-role files (2026-11-21), with the same radio settings.
+&#32;
+. /etc/sparrows/station
+&#32;
+SSID='Sparrows'                  # the open Wi-Fi, for people's devices
+FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
+FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
+MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
+MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
+FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
+FEED_CH5='132'                   # 5 GHz feeder: outdoor DFS, VHT40 = 132+136. Far from 108
+&#32;
+has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
+ALL="$USE2 $USE5"
+&#32;
+# A radio key: 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Pitfalls).
+# build.sh already refuses a bad key; this only catches a hand-edited one.
+key() {
+	chmod 600 "/etc/sparrows/$1"
+	K=$(cat "/etc/sparrows/$1")
+	printf '%s' "$K" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
+		logger -p daemon.err -t sparrows "$1 is not 8-63 printable ASCII: this flyway will not link"
+	printf '%s' "$K"
+}
+&#32;
+# --- Ports: wire = in the village bridge (the image's default); off = out of it ---
+BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
+[ "$PORTS" != off ] || uci -q delete network.$BR.ports
+&#32;
+# --- Flyway: batman-adv, bridged with the rest in br-lan ---
+if has "$ALL" flyway; then
+	uci set network.bat0=interface
+	uci set network.bat0.proto='batadv'
+	uci set network.bat0.routing_algo='BATMAN_IV'
+	uci set network.bat0.bridge_loop_avoidance='1'   # a site switch with 2 batman nodes = two paths;
+	                                                 # BLA must be on all of them
+	uci set network.mesh0=interface
+	uci set network.mesh0.proto='batadv_hardif'
+	uci set network.mesh0.master='bat0'
+	uci set network.mesh0.mtu='1536'                 # batman header, avoids fragmentation
+	uci -q del_list network.$BR.ports='bat0'
+	uci add_list network.$BR.ports='bat0'
+fi
+&#32;
+# --- Join: the Wi-Fi client is an interface of its own, address by SLAAC from the nests' RAs ---
+if has "$ALL" join; then
+	uci set network.wsta=interface
+	uci set network.wsta.proto='dhcpv6'
+	uci set network.wsta.reqaddress='none'
+	uci set network.wsta.reqprefix='no'
+fi
+uci commit network
+&#32;
+# --- Radios: the first radio of each band takes that band's uses, any other is off ---
+[ -s /etc/config/wireless ] || wifi config
+DONE=''
+for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q delete wireless.default_$r
+	B=$(uci -q get wireless.$r.band)
+	case "$B" in
+		2g) U=$USE2; TX=$TX2 ;;
+		5g) U=$USE5; TX=$TX5 ;;
+		*)  U=''; TX='-' ;;
+	esac
+	if [ "$TX" = '-' ] || [ -z "$U" ] || [ "$U" = off ] || has "$DONE" "$B"; then
+		uci set wireless.$r.disabled='1'
+		continue
+	fi
+	DONE="$DONE $B"
+	uci set wireless.$r.disabled='0'
+	uci set wireless.$r.country='FR'
+	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
+	uci set wireless.$r.txpower="$TX"
+&#32;
+	# Channel: a flyway fixes it; a client follows its AP; a feeder alone uses the feeder's
+	if [ "$B" = 2g ]; then
+		HT='HT20'
+		if has "$U" flyway; then CH=$MESH_CH; elif has "$U" join; then CH='auto'; else CH=$FEED_CH2; fi
+	else
+		if has "$U" flyway; then CH=$FLYWAY_CH; HT='HT20'
+		elif has "$U" join; then CH='auto'; HT='VHT40'
+		else CH=$FEED_CH5; HT='VHT40'; fi
+	fi
+	uci set wireless.$r.channel="$CH"
+	uci set wireless.$r.htmode="$HT"
+&#32;
+	if has "$U" flyway &amp;&amp; [ "$B" = 5g ]; then
+		uci set wireless.flyway=wifi-iface       # the perch tool works on this one
+		uci set wireless.flyway.device="$r"
+		uci set wireless.flyway.mode='sta'       # safe default: a client only transmits after hearing its AP
+		uci set wireless.flyway.ssid="$FLYWAY_SSID"
+		uci set wireless.flyway.encryption='sae'
+		uci set wireless.flyway.key="$(key flyway.key)"
+		uci set wireless.flyway.network='mesh0'
+	fi
+	if has "$U" flyway &amp;&amp; [ "$B" = 2g ]; then
+		uci set wireless.mesh_$r=wifi-iface
+		uci set wireless.mesh_$r.device="$r"
+		uci set wireless.mesh_$r.mode='mesh'
+		uci set wireless.mesh_$r.mesh_id="$MESH_ID"
+		uci set wireless.mesh_$r.encryption='sae'
+		uci set wireless.mesh_$r.key="$(key hedge.key)"
+		uci set wireless.mesh_$r.mesh_fwding='0'     # batman-adv does the routing, not 802.11s
+		uci set wireless.mesh_$r.network='mesh0'
+	fi
+	if has "$U" feeder; then
+		uci set wireless.ap_$r=wifi-iface
+		uci set wireless.ap_$r.device="$r"
+		uci set wireless.ap_$r.mode='ap'
+		uci set wireless.ap_$r.ssid="$SSID"
+		uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
+		uci set wireless.ap_$r.network='lan'
+		uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
+		uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
+	fi
+	if has "$U" join; then
+		uci set wireless.wsta=wifi-iface
+		uci set wireless.wsta.device="$r"
+		uci set wireless.wsta.mode='sta'
+		uci set wireless.wsta.ssid="$SSID"
+		uci set wireless.wsta.encryption='none'          # the open on-ramp Wi-Fi, like any phone
+		uci set wireless.wsta.network='wsta'
+		uci set wireless.wsta.ifname='wsta'              # fixed name: the Reticulum config uses it
+	fi
+done
+uci commit wireless
+&#32;
+# --- Reticulum: on the Wi-Fi client if a radio joins, else on the village bridge ---
+if [ "$RETICULUM" = 1 ]; then
+	if has "$ALL" join; then DEV='wsta'; else DEV='br-lan'; fi
+	sed -i "s|@RNSDEV@|$DEV|" /etc/reticulum/config
+	. /lib/functions.sh
+	group_add rns 1500 2&gt;/dev/null
+	user_add rns 1500 1500 rns /etc/reticulum /bin/false 2&gt;/dev/null   # its own user, never root
+	sed -i "s|@NAME@|$(uci -q get system.@system[0].hostname)|" /etc/nomadnetwork/config
+	chown -R rns:rns /etc/reticulum /etc/nomadnetwork
+	/etc/init.d/rnsd enable
+	/etc/init.d/nomadnet enable
+fi
+&#32;
+exit 0</code></pre></div>
 <h4><span lang="en">1. Build</span></h4>
 <p lang="en">On any x86_64 Linux machine with Internet access.</p>
 <p lang="en">First an admin SSH key, if there is none yet: the images accept nothing else. Then the radio keys, then the build. OpenWrt 25.12 uses <code>apk</code>, not <code>opkg</code>.</p>
-<p lang="en">In a terminal, <code>./build.sh</code> opens a menu: the devices already in <code>profiles.txt</code>, numbered. Pick several by number or by role (<code>1 3</code>, <code>hedge</code>), or press Enter for all. <code>v</code> changes the OpenWrt release, <code>w</code> turns the web interface on or off, <code>s</code> writes a Raspberry Pi image to an SD card, <code>n</code> adds a device. It shows the list and asks before building. From a script, <code>./build.sh all</code> or a role name builds with no questions. Menu added on 2026-11-18 and tried against a stand-in Image Builder; not yet run with the real one. Checks added on 2026-11-20, tried the same way: before downloading anything it checks each chosen line of <code>profiles.txt</code> (a known role, a power from 0 to 30 dBm, the bands the role needs); a build replaces the images of the devices it builds and keeps the others in <code>build/images</code>; at the end it lists what it built and what it skipped.</p>
-<p lang="en">Two checks run on every build, added on 2026-11-20 and tried against a stand-in Image Builder, not yet the real one. First, OpenWrt's signature. The checksums only prove that a download isn't broken, so the build also checks OpenWrt's signature on them, with OpenWrt's public keys kept in <code>trust/</code>, and prints the key that signed. A tampered server or mirror is then caught too. <code>trust/</code> holds OpenWrt's two build keys, the 2016 one and the 2023 Nitrokey one (fingerprints on openwrt.org); which one signs 25.12 has not been seen yet. The tool is <code>gpgv</code>, already there on Debian and Ubuntu. Second, the hard rules. Before building, the Image Builder lists every package the image would hold, and the build stops if it finds a DHCP or RA server, a firewall, PPP, or a web interface nobody asked for. Either check can be skipped when needed: <code>CHECK_SIG=0</code> or <code>CHECK_RULES=0</code> in front of <code>./build.sh</code>, and the build says it skipped it. When OpenWrt signs with a new key, better check its fingerprint on openwrt.org's key page and add it to <code>trust/</code> than skip the check.</p>
+<p lang="en">In a terminal, <code>./build.sh</code> opens a menu: the devices already in <code>profiles.txt</code>, numbered. Pick several by number or by role (<code>1 3</code>, <code>hedge</code>), or press Enter for all. <code>v</code> changes the OpenWrt release, <code>w</code> turns the web interface on or off, <code>s</code> writes a Raspberry Pi image to an SD card, <code>n</code> adds a device. It shows the list and asks before building. From a script, <code>./build.sh all</code> or a role name builds with no questions. Menu added on 2026-11-18 and tried against a stand-in Image Builder; not yet run with the real one. Checks added on 2026-11-20, tried the same way: before downloading anything it checks each chosen line of <code>profiles.txt</code> (a known role, a power from 0 to 30 dBm, the bands the role needs); a build replaces the images of the devices it builds and keeps the others in <code>build/images</code>; at the end it lists what it built and what it skipped. Since 2026-11-21 each line of the menu shows what its ports and radios do, and the build lists it for every chosen device before asking to go on; in <code>n</code>, <code>m</code> asks the use of each interface instead of a role.</p>
+<p lang="en">Two checks run on every build, added on 2026-11-20. The signature check ran on the real Image Builder on 2026-11-21; the rule check has only been tried against a stand-in. First, OpenWrt's signature. The checksums only prove that a download isn't broken, so the build also checks OpenWrt's signature on them, with OpenWrt's public keys kept in <code>trust/</code>, and prints the key that signed. A tampered server or mirror is then caught too. <code>trust/</code> holds OpenWrt's two build keys, the 2016 one and the 2023 Nitrokey one (fingerprints on openwrt.org); on 2026-11-21, 25.12.6 was signed by the 2023 Nitrokey key (<code>8A8BC12F46B836C0F9CDB36F1D53D1877742E911</code>) and the check passed. The tool is <code>gpgv</code>, already there on Debian and Ubuntu. Second, the hard rules. Before building, the Image Builder lists every package the image would hold, and the build stops if it finds a DHCP or RA server, a firewall, PPP, or a web interface nobody asked for. Either check can be skipped when needed: <code>CHECK_SIG=0</code> or <code>CHECK_RULES=0</code> in front of <code>./build.sh</code>, and the build says it skipped it. When OpenWrt signs with a new key, better check its fingerprint on openwrt.org's key page and add it to <code>trust/</code> than skip the check.</p>
 <p class="note" lang="en">Back up <code>secrets/</code> offline, with your SSH key, for example on a USB stick kept away from the laptop. It holds the village's radio keys, and nothing else keeps a copy: not git, not the kit, not this handbook. If it is lost, a running perch or hedge still holds its key: <code>cat /etc/sparrows/flyway.key</code> (or <code>hedge.key</code>) over SSH. If every copy is lost, make a new key and reflash every perch, or every hedge.</p>
 <div class="code"><div class="hd"><span class="file">admin key</span></div><pre><code># Once per admin, on the admin laptop
 ssh-keygen -t ed25519 -C "sparrows-admin"     # Enter = default path ~/.ssh/id_ed25519; set a passphrase
 # Back up ~/.ssh/id_ed25519 (the private half) offline. The images lock the root password:
 # without that file, the only way back into a station is failsafe mode at the unit.
 cd sparrows-openwrt &amp;&amp; mkdir -p keys secrets</code></pre></div>
-<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code># Layout:  sparrows-openwrt/profiles.txt   role, target, device, power per band, web interface
-#          sparrows-openwrt/build.sh       ./build.sh [all|perch|feeder|hedge|tree], ./build.sh sd
-#          sparrows-openwrt/common/ perch/ feeder/ hedge/ tree/   files per role
+<div class="code"><div class="hd"><span class="file">shell</span></div><pre><code># Layout:  sparrows-openwrt/profiles.txt   role, target, device, power per band, web interface, [uses=]
+#          sparrows-openwrt/uses.txt       what each port and radio does, per role
+#          sparrows-openwrt/build.sh       ./build.sh [all|uses|&lt;role&gt;], ./build.sh sd
+#          sparrows-openwrt/common/ station/   files for every unit: base, ports and radios
+#          sparrows-openwrt/perch/ tree/ nest/ files only some units need (perch tool, Reticulum, nest)
 #          sparrows-openwrt/ui/ devices/   web interface files, devices that need more than a line
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
 cp ~/.ssh/id_ed25519.pub keys/admin.pub                    # the build refuses to run without a key
-printf '%s' 'the-flyway-passphrase' &gt; secrets/flyway.key   # perch only: same as the running flyway
-head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 &gt; secrets/hedge.key   # hedge only
+printf '%s' 'the-flyway-passphrase' &gt; secrets/flyway.key   # 5 GHz flyway (perch) only: same as the running flyway
+head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 &gt; secrets/hedge.key   # 2.4 GHz flyway (hedge) only
 # Back up secrets/ offline now, with your SSH key: no other copy of the radio keys exists
 ./build.sh                    # a menu: pick devices by number or role (Enter = all), n = add a device
-./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree)
+./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree, nest)
+./build.sh uses               # only show what each port and radio of every line will do
 VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
 CHECK_SIG=0 ./build.sh all    # skip the check of OpenWrt's signature (new OpenWrt key? add it to trust/)
 CHECK_RULES=0 ./build.sh all  # skip the check of each image's packages against the hard rules
 ls build/images/              # the images. The build ends with the sha256 of those it made, and what it skipped</code></pre></div>
 <div class="code"><div class="hd"><span class="file">profiles.txt</span></div><pre><code># Sparrows-Network: hardware that can take each role.
-# One line per device. To support another device, add a line: nothing else changes.
+# One line per device and role. To support another device, add a line: nothing else changes.
+#
+# role = a role of uses.txt (perch, feeder, hedge, tree, nest), or several joined with +, e.g. tree+feeder:
+#   what each port and radio does comes from uses.txt. The unit is named after it (tree-feeder-26de).
 #
 # tx2 / tx5 = power set at the radio, in dBm = legal EIRP limit (FR) - antenna gain.
 #   2.4 GHz: 20 dBm EIRP.
@@ -559,28 +757,42 @@ ls build/images/              # the images. The build ends with the sha256 of th
 # ui = the web interface (LuCI) may go in this image, when the build asks for it (UI=1, or w in the menu).
 # "-" = never: 8 MB of flash or 64 MB of RAM is too small (Sparrows Tao, Hard rules). No column = "-".
 #
-# profile = the OpenWrt profile name, or a folder in devices/ for a device that needs more than a
-#   line (another OpenWrt profile, firmware to fetch, its own first-boot file). See devices/*/device.conf.
+# uses = manual mode, for a special device: what each interface does, instead of a role's preset.
+#   uses=&lt;ports&gt;,&lt;2.4 GHz&gt;,&lt;5 GHz&gt;,&lt;services&gt;   e.g. uses=wire,feeder,flyway,-
+#   The role column is then only a name for the unit (letters, digits, -). Needs the ui column before it.
+#   The menu writes these lines for you (n, then m). Uses are explained in uses.txt.
 #
-# role   target          profile                    tx2  tx5  ui
-perch    ath79/generic   tplink_cpe510-v3           -    17   -
-feeder   ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
-feeder   ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
-hedge    ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
-hedge    ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+# profile = the OpenWrt profile name, or a folder in devices/ for a device that needs more than a
+#   line (another OpenWrt profile, firmware to fetch, what its radios can do, its own first-boot
+#   file). See devices/*/device.conf.
+#
+# role    target          profile                    tx2  tx5  ui  uses
+perch     ath79/generic   tplink_cpe510-v3           -    17   -
+feeder    ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+feeder    ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+hedge     ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+hedge     ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
 # Pi Zero 2 W: 2.4 GHz only, with a USB Ethernet adapter for the village cable. Not yet tested.
-feeder   bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+feeder    bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
 # Same Pi Zero 2 W as a tree: a Wi-Fi client of the village running Reticulum. No adapter needed.
-tree     bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui</code></pre></div>
+tree      bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+# Both at once: its Wi-Fi serves Sparrows, Reticulum runs on the cable (USB adapter). Not yet tested.
+tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
+# Pi 4 as a nest, its own Wi-Fi as Sparrows Wi-Fi (2.4 GHz: its chip has no radar check for 5 GHz
+# outdoor channels). Replaces the Debian nest once it passes the same checks. Not yet tested.
+nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui</code></pre></div>
 <div class="code"><div class="hd"><span class="file">build.sh</span></div><pre><code>#!/usr/bin/env bash
-# Build the Sparrows-Network OpenWrt images (perch, feeder, hedge, tree) with the OpenWrt Image Builder.
+# Build the Sparrows-Network OpenWrt images with the OpenWrt Image Builder.
 # One image per role and device: the same image goes on every unit of that role.
+# What each port and radio does comes from the role (uses.txt), or from a manual line (profiles.txt).
 # Runs on x86_64 Linux. Needs: wget, zstd, make, gcc, python3, perl, rsync (see OpenWrt IB docs), gpgv.
 #
 # Usage: ./build.sh              -&gt; in a terminal: a menu to pick the devices (Enter = all of them)
 #                                   without a terminal (a script, cron): every line of profiles.txt
 #        ./build.sh all          -&gt; every line of profiles.txt, no menu
-#        ./build.sh perch        -&gt; perches only (or: feeder, hedge, tree), no menu
+#        ./build.sh perch        -&gt; every line with that role, alone or combined (or: feeder, hedge,
+#                                   tree, or a manual line's name), no menu
+#        ./build.sh uses         -&gt; what each port and radio of every line will do, nothing built
 #        VER=25.12.x ./build.sh  -&gt; another 25.12 release
 #        UI=1 ./build.sh all     -&gt; with the web interface (LuCI), only where profiles.txt says "ui"
 #        ./build.sh sd [image]   -&gt; write a Raspberry Pi image (.img.gz) to an SD card: asks which
@@ -593,20 +805,21 @@ tree     bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui</code></pre></d
 #                                 https://openwrt.org/docs/guide-user/security/signatures, add it there)
 #   CHECK_RULES=0 ./build.sh   -&gt; don't check the image's package list against the hard rules
 #
-# The menu lists the devices already in profiles.txt (several can be picked at once), can change
-# the release, can turn the web interface on or off, and can add a new device: it searches the
-# Image Builder for the model, asks the role, the radio power and whether the web interface fits,
-# and adds the line to profiles.txt marked "not yet tested".
+# The menu lists the devices already in profiles.txt with what their interfaces do (several can be
+# picked at once), can change the release, can turn the web interface on or off, and can add a new
+# device: it searches the Image Builder for the model, asks the role (or the uses of each interface,
+# in manual mode), the radio power and whether the web interface fits, shows what each interface
+# will do, and adds the line to profiles.txt marked "not yet tested".
 # Web interface: LuCI, listening on the unit itself only (ui/files, reached through SSH). Never on a
 # device marked "-" (8 MB flash / 64 MB RAM); there the image is built without it, and says so.
 #
 # Before the first build:
 #   keys/*.pub           admin SSH public keys (root password is locked)
-#   secrets/flyway.key   the flyway SAE passphrase (perch only)
-#   secrets/hedge.key    the hedge mesh SAE passphrase (hedge only)
+#   secrets/flyway.key   the 5 GHz flyway SAE passphrase (images with a 5 GHz flyway: perch)
+#   secrets/hedge.key    the 2.4 GHz flyway SAE passphrase (images with a 2.4 GHz flyway: hedge)
 #                        Each: one line of 8 to 63 printable ASCII characters, ideally letters/digits only.
 #                        Generate one: head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32
-#                        Perch and hedge images contain their key: never publish them.
+#                        Images with a flyway contain its key: never publish them.
 set -euo pipefail
 &#32;
 VER="${VER:-25.12.6}"     # 2026-10-18, security fixes. Check https://downloads.openwrt.org/releases/ for the latest 25.12.x
@@ -615,16 +828,21 @@ CHECK_SIG="${CHECK_SIG:-1}"
 CHECK_RULES="${CHECK_RULES:-1}"
 HERE="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
 OUT="$HERE/build/images"
-ROLES="perch feeder hedge tree"
+# The Image Builder's Makefiles break on a path with a space in it (seen 2026-11-21: "/home/me/00 - x"
+# was cut at the first space, and "make info" failed). Then it works in a folder of its own, outside
+# the tree; the images still land in build/images. SPARROWS_BUILD=&lt;folder&gt; chooses another one.
+BUILD="${SPARROWS_BUILD:-$HERE/build}"
+case "$BUILD" in *[[:space:]]*) BUILD="${XDG_CACHE_HOME:-$HOME/.cache}/sparrows-build" ;; esac
 &#32;
-# Every role: no DHCP/RA server, no firewall, no PPP, no web UI (perch, feeder and hedge only bridge)
+# Every image: no DHCP/RA server, no firewall, no PPP, no web UI (a station only bridges)
 BASE="-dnsmasq -odhcpd-ipv6only -firewall4 -nftables -kmod-nft-offload -ppp -ppp-mod-pppoe -luci -luci-ssl"
-PKG_perch="$BASE -wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
-PKG_feeder="$BASE"
-PKG_hedge="$BASE -wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
-# Tree: a Wi-Fi client running Reticulum and the Sparrows page (Nomad Network). Python and the
-# libraries Reticulum asks for; Reticulum and Nomad Network come as pinned wheels (tree/role.conf). Needs room: SD-card devices, not 8-16 MB flash.
-PKG_tree="$BASE python3 python3-cryptography python3-pyserial iw"
+# ...plus what its uses need
+PKG_flyway="-wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
+PKG_join="iw"
+# A nest keeps odhcpd and dnsmasq (RA and DNS, no DHCP) and adds uhttpd: PKG_nest, in nest/role.conf.
+# Reticulum: Python and the libraries Reticulum asks for; Reticulum and Nomad Network come as pinned
+# wheels (tree/role.conf). Needs room: SD-card devices, not 8-16 MB flash.
+PKG_reticulum="python3 python3-cryptography python3-pyserial iw"
 # LuCI = luci-light minus its firewall and PPP pages. luci-light itself would bring firewall4 and
 # nftables back (luci-app-firewall needs a firewall): no firewall is a hard rule. No HTTPS: it only
 # listens on 127.0.0.1 and ::1
@@ -636,25 +854,157 @@ FORBIDDEN_NO_UI="luci-base uhttpd"     # ...and no web interface unless it was a
 &#32;
 die() { echo "$*" &gt;&amp;2; exit 1; }
 &#32;
-# The device lines of profiles.txt: role target profile tx2 tx5 [ui]. A # starts a comment anywhere
+# The device lines of profiles.txt: role target profile tx2 tx5 [ui] [uses=...]. A # starts a comment anywhere
 profiles() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/profiles.txt"; }
+&#32;
+# ---------------------------------------------------------------- uses of each interface
+&#32;
+# The role presets of uses.txt: role ports 2.4GHz 5GHz services
+presets() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/uses.txt"; }
+ROLES=$(presets | awk '{ printf "%s ", $1 }'); ROLES=${ROLES% }
+&#32;
+has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
+&#32;
+# What a device's radios can do: CAN2 / CAN5 in devices/&lt;profile&gt;/device.conf, else everything
+can() (
+	CAN2='feeder flyway join' CAN5='feeder flyway join'
+	if [ -f "$HERE/devices/$1/device.conf" ]; then
+		# shellcheck source=/dev/null
+		. "$HERE/devices/$1/device.conf"
+	fi
+	echo "$CAN2|$CAN5"
+)
+&#32;
+# The uses of a device line, as PORTS|USE2|USE5|RETICULUM|NEST (e.g. wire|flyway feeder|feeder|0|0),
+# or why it can't be built (and returns 1). A role's preset is lenient (a band set to - is simply
+# off); a manual uses= line is strict (it says exactly what it wants).
+uses_of() {
+	local R=$1 P=$2 X2=$3 X5=$4 SPEC=${5:-} PORTS='' U2='' U5='' S='' RNS=0 NEST=0 MANUAL=0
+	local PART L A B C D W X C2 C5 N
+	if [ -n "$SPEC" ]; then
+		MANUAL=1
+		IFS=, read -r PORTS U2 U5 S X &lt;&lt;&lt;"${SPEC#uses=}"
+		{ [ -n "$S" ] &amp;&amp; [ -z "$X" ]; } || { echo "uses= needs 4 fields: ports,2.4GHz,5GHz,services"; return 1; }
+		U2=${U2//+/ } U5=${U5//+/ }
+		[ "$S" != - ] || S=''
+		S=${S//+/ }
+	else
+		for PART in ${R//+/ }; do
+			L=$(presets | awk -v r="$PART" '$1 == r')
+			[ -n "$L" ] || { echo "unknown role '$PART' (roles: $ROLES)"; return 1; }
+			read -r _ A B C D &lt;&lt;&lt;"$L"
+			[ "$A" != wire ] || PORTS=wire
+			[ "$B" = off ] || U2="$U2 ${B//+/ }"
+			[ "$C" = off ] || U5="$U5 ${C//+/ }"
+			[ "$D" = - ] || S="$S $D"
+		done
+		[ -n "$PORTS" ] || PORTS=off
+	fi
+	case "$PORTS" in wire|off) ;; *) echo "ports '$PORTS' is not wire or off"; return 1 ;; esac
+	for W in $U2 $U5; do
+		case "$W" in feeder|flyway|join|off) ;; *) echo "'$W' is not a use (feeder, flyway, join, off)"; return 1 ;; esac
+	done
+	for W in $S; do
+		case "$W" in
+			reticulum) RNS=1 ;;
+			nest) NEST=1 RNS=1 ;;      # a nest relays and stores for Reticulum too
+			*) echo "'$W' is not a service (reticulum, nest, or -)"; return 1 ;;
+		esac
+	done
+	# Each use once, always in the same order; off means nothing
+	N=''; for W in flyway feeder join; do if has "$U2" "$W"; then N="$N $W"; fi; done; U2=${N# }
+	N=''; for W in flyway feeder join; do if has "$U5" "$W"; then N="$N $W"; fi; done; U5=${N# }
+&#32;
+	# A band set to - is off
+	if [ "$X2" = - ] &amp;&amp; [ -n "$U2" ]; then
+		[ "$MANUAL" = 0 ] || { echo "uses on 2.4 GHz, but its power is -"; return 1; }
+		U2=''
+	fi
+	if [ "$X5" = - ] &amp;&amp; [ -n "$U5" ]; then
+		[ "$MANUAL" = 0 ] || { echo "uses on 5 GHz, but its power is -"; return 1; }
+		U5=''
+	fi
+	# What the chip can do (device.conf)
+	IFS='|' read -r C2 C5 &lt;&lt;&lt;"$(can "$P")"
+	for W in $U2; do has "$C2" "$W" || { echo "this device's 2.4 GHz radio can't do '$W' (devices/$P/device.conf)"; return 1; }; done
+	for W in $U5; do has "$C5" "$W" || { echo "this device's 5 GHz radio can't do '$W' (devices/$P/device.conf)"; return 1; }; done
+&#32;
+	# A nest never joins: it serves the village, its radios don't hang on someone else's
+	if [ "$NEST" = 1 ]; then U2=${U2% join}; U2=${U2%join}; U5=${U5% join}; U5=${U5%join}; fi
+	# A radio that joins does nothing else: when it has another use, it doesn't join
+	# (Reticulum then runs on the village bridge). And only one radio joins: the 2.4 GHz one
+	if has "$U2" join &amp;&amp; [ "$U2" != join ]; then U2=${U2% join}; fi
+	if has "$U5" join &amp;&amp; [ "$U5" != join ]; then U5=${U5% join}; fi
+	if [ "$U2" = join ] &amp;&amp; [ "$U5" = join ]; then U5=''; fi
+	# One 5 GHz radio can't hold a flyway (ch 108) and a feeder (ch 132)
+	if has "$U5" flyway &amp;&amp; has "$U5" feeder; then
+		echo "5 GHz: a flyway (ch 108) and a feeder (ch 132) can't share one radio"; return 1
+	fi
+	if [ -z "$U2$U5" ] &amp;&amp; [ "$RNS" = 0 ]; then
+		echo "with these bands, this unit would do nothing"; return 1
+	fi
+	echo "$PORTS|${U2:-off}|${U5:-off}|$RNS|$NEST"
+}
+&#32;
+# One line: "ports wire | 2.4 flyway+feeder | 5 feeder | Reticulum"
+uses_short() {
+	local PORTS U2 U5 RNS NEST
+	IFS='|' read -r PORTS U2 U5 RNS NEST &lt;&lt;&lt;"$1"
+	printf 'ports %s | 2.4 %s | 5 %s%s' "$PORTS" "${U2// /+}" "${U5// /+}" \
+		"$( if [ "$NEST" = 1 ]; then echo ' | nest'; elif [ "$RNS" = 1 ]; then echo ' | Reticulum'; fi )"
+}
+&#32;
+# What each interface will do, in words
+uses_long() {
+	local PORTS U2 U5 RNS NEST B U W T FIRST
+	IFS='|' read -r PORTS U2 U5 RNS NEST &lt;&lt;&lt;"$1"
+	if [ "$PORTS" = wire ]; then
+		printf '    %-10s %s\n' 'Ethernet' "wire: cable to the site's switch, part of the village (bridged)"
+	else
+		printf '    %-10s %s\n' 'Ethernet' "off: not in the village bridge"
+	fi
+	for B in 2.4 5; do
+		if [ "$B" = 2.4 ]; then U=$U2; else U=$U5; fi
+		if [ "$U" = off ]; then printf '    %-10s %s\n' "$B GHz" 'off'; continue; fi
+		FIRST="$B GHz"
+		for W in $U; do
+			case "$W:$B" in
+				feeder:*)  T='feeder: the open Sparrows Wi-Fi, for people'"'"'s devices' ;;
+				flyway:5)  T='flyway: link to other perches, AP or client (perch ap), SAE, ch 108, batman-adv' ;;
+				flyway:*)  T='flyway: mesh to the other units on ch 1 (802.11s, SAE), batman-adv' ;;
+				join:*)    T='join: client of the Sparrows Wi-Fi, like a phone (not bridged)' ;;
+			esac
+			printf '    %-10s %s\n' "$FIRST" "$T"
+			FIRST=''
+		done
+	done
+	if [ "$RNS" = 1 ]; then
+		if has "$U2 $U5" join; then W='wsta, the Wi-Fi client'; else W='br-lan, the village bridge'; fi
+		printf '    %-10s %s\n' 'Services' "Reticulum relay + the Sparrows page, on $W"
+	fi
+	if [ "$NEST" = 1 ]; then
+		printf '    %-10s %s\n' '' 'nest: router advertisements, DNS (sparrows.lan, catch-all), the welcome page,'
+		printf '    %-10s %s\n' '' '      the message store (lxmd), on a fixed village address from the MAC'
+	fi
+}
 &#32;
 # Why a device line can't be built (nothing if it can): caught here, not on a mast
 bad_line() {
-	local R=$1 T=${2:-} P=${3:-} X2=${4:-} X5=${5:-} U=${6:--} REST=${7:-} X
-	case " $ROLES " in *" $R "*) ;; *) echo "unknown role '$R'"; return ;; esac
+	local R=$1 T=${2:-} P=${3:-} X2=${4:-} X5=${5:-} U=${6:--} SPEC=${7:-} REST=${8:-} X MAP
+	if [ -n "$SPEC" ]; then
+		[[ "$SPEC" =~ ^uses= ]] || { echo "7th column '$SPEC' is not uses=..."; return; }
+		[[ "$R" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "name '$R' (manual line): letters, digits and - only"; return; }
+	else
+		[[ "$R" =~ ^[a-z][a-z0-9+]*$ ]] || { echo "role '$R' is not a role or roles joined with +"; return; }
+	fi
 	[[ "$T" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "target '$T' is not name/subtarget"; return; }
 	[ -n "$P" ] || { echo "no profile"; return; }
 	for X in "$X2" "$X5"; do
 		[[ "$X" =~ ^(-|[0-9]|[12][0-9]|30)$ ]] || { echo "radio power '$X' is not - or 0 to 30 dBm"; return; }
 	done
-	case "$R" in
-		perch) [ "$X5" != '-' ] || { echo "a perch needs its 5 GHz radio"; return; } ;;
-		hedge) { [ "$X2" != '-' ] &amp;&amp; [ "$X5" != '-' ]; } || { echo "a hedge needs both bands (2.4 GHz mesh, 5 GHz Wi-Fi)"; return; } ;;
-		*)     { [ "$X2" != '-' ] || [ "$X5" != '-' ]; } || { echo "a $R needs at least one band"; return; } ;;
-	esac
-	[[ "$U" =~ ^(ui|-)$ ]] || { echo "last column '$U' is not ui or -"; return; }
-	[ -z "$REST" ] || echo "too many columns"
+	[[ "$U" =~ ^(ui|-)$ ]] || { echo "6th column '$U' is not ui or -"; return; }
+	[ -z "$REST" ] || { echo "too many columns"; return; }
+	MAP=$(uses_of "$R" "$P" "$X2" "$X5" "$SPEC") || echo "$MAP"
 }
 &#32;
 ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
@@ -663,7 +1013,7 @@ ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
 # the download isn't broken; the signature proves it is OpenWrt's, whatever server or mirror it came
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
 check_sig() {
-	local FILE=$1 SIG=$2 KR="$HERE/build/trust.gpg" GH="$HERE/build/gnupg" STATUS ID
+	local FILE=$1 SIG=$2 KR="$BUILD/trust.gpg" GH="$BUILD/gnupg" STATUS ID
 	command -v gpgv &gt;/dev/null || { echo "gpgv is missing (Debian/Ubuntu: apt install gpgv), or CHECK_SIG=0 to skip this check" &gt;&amp;2; return 1; }
 	compgen -G "$HERE/trust/*.asc" &gt;/dev/null || { echo "No OpenWrt public key in trust/*.asc, or CHECK_SIG=0 to skip this check" &gt;&amp;2; return 1; }
 	mkdir -p "$GH" &amp;&amp; chmod 700 "$GH"
@@ -703,7 +1053,7 @@ get_ib() (
 	TARGET=$1
 	IB=$(ib_name "$TARGET")
 	URL="https://downloads.openwrt.org/releases/${VER}/targets/${TARGET}"
-	mkdir -p "$HERE/build" &amp;&amp; cd "$HERE/build" || exit 1
+	mkdir -p "$BUILD" &amp;&amp; cd "$BUILD" || exit 1
 	[ -d "$IB" ] &amp;&amp; exit 0
 	echo "Downloading the Image Builder for $TARGET ($VER)..." &gt;&amp;2
 	wget -q -O "$IB.sha256sums" "$URL/sha256sums" || { echo "No $VER release for $TARGET" &gt;&amp;2; exit 1; }
@@ -724,13 +1074,17 @@ get_ib() (
 )
 &#32;
 # A device left out of this build: said now, and again in the summary at the end
-skip() { echo "$*" &gt;&amp;2; echo "$*" &gt;&gt; "$HERE/build/.skipped"; exit 0; }
+skip() { echo "$*" &gt;&amp;2; echo "$*" &gt;&gt; "$BUILD/.skipped"; exit 0; }
 &#32;
 # Build one image. Runs in a subshell: "exit 0" skips this device, any error stops the build.
 build_one() (
-	ROLE=$1 TARGET=$2 PROFILE=$3 TX2=$4 TX5=$5 UIOK=${6:--}
-	[ -d "$HERE/$ROLE/files" ] || die "Unknown role '$ROLE' in profiles.txt"
-	WITH_UI=0 NAME="sparrows-$ROLE"
+	ROLE=$1 TARGET=$2 PROFILE=$3 TX2=$4 TX5=$5 UIOK=${6:--} SPEC=${7:-}
+	MAP=$(uses_of "$ROLE" "$PROFILE" "$TX2" "$TX5" "$SPEC") || die "$ROLE $PROFILE: $MAP"
+	IFS='|' read -r PORTS USE2 USE5 RNS NEST &lt;&lt;&lt;"$MAP"
+	[ "$USE2" != off ] || USE2=''
+	[ "$USE5" != off ] || USE5=''
+	NAMEROLE=${ROLE//+/-}            # tree+feeder -&gt; tree-feeder: in the unit's name and the image's
+	WITH_UI=0 NAME="sparrows-$NAMEROLE"
 &#32;
 	# --- A device that needs more than a line: devices/&lt;name&gt;/device.conf (see profiles.txt) ---
 	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES=''
@@ -743,36 +1097,38 @@ build_one() (
 	fi
 	if [ "$UI" = 1 ]; then
 		if [ "$UIOK" = ui ]; then
-			WITH_UI=1 NAME="sparrows-$ROLE-ui"
+			WITH_UI=1 NAME="sparrows-$NAMEROLE-ui"
 		else
 			echo "$ROLE $PROFILE: too small for the web interface (profiles.txt), built without it" &gt;&amp;2
 		fi
 	fi
 &#32;
-	# --- SAE passphrase for roles that carry a backbone link ---
-	case "$ROLE" in
-		perch) KEYF='flyway.key' ;;
-		hedge) KEYF='hedge.key' ;;
-		*)     KEYF='' ;;
-	esac
-	if [ -n "$KEYF" ]; then
-		[ -s "$HERE/secrets/$KEYF" ] || die "Put the SAE passphrase in secrets/$KEYF first"
+	# --- SAE passphrase for each flyway: 5 GHz (perch) and 2.4 GHz (hedge) ---
+	KEYS=''
+	if has "$USE5" flyway; then KEYS="$KEYS flyway.key"; fi
+	if has "$USE2" flyway; then KEYS="$KEYS hedge.key"; fi
+	for KEYF in $KEYS; do
+		[ -s "$HERE/secrets/$KEYF" ] || die "$ROLE $PROFILE: put the SAE passphrase in secrets/$KEYF first"
 		# Seen 2026-11-14: a key outside 8-63 printable ASCII never links (see Sparrows Tao, Pitfalls).
 		# The whole file is checked, as the unit reads it: one line (a final newline is fine)
 		( LC_ALL=C; K=$(&lt;"$HERE/secrets/$KEYF"); RE='^[ -~]{8,63}$'; [[ $K =~ $RE ]] ) || \
 			die "secrets/$KEYF must be one line of 8 to 63 printable ASCII characters (no accents)"
-	fi
+	done
 &#32;
-	# --- Files for this role + device: common base, role files, keys, radio limits ---
-	F="$HERE/build/files-$ROLE-$PROFILE"
+	# --- Files for this unit: common base, the uses, keys, what the uses need, radio limits ---
+	F="$BUILD/files-$NAMEROLE-$PROFILE"
 	rm -rf "$F"
 	cp -a "$HERE/common/files" "$F"
-	cp -a "$HERE/$ROLE/files/." "$F/"
+	cp -a "$HERE/station/files/." "$F/"
+	if has "$USE5" flyway; then cp -a "$HERE/perch/files/." "$F/"; fi      # the perch tool
+	if [ "$RNS" = 1 ]; then cp -a "$HERE/tree/files/." "$F/"; fi          # Reticulum + the page
+	if [ "$NEST" = 1 ]; then cp -a "$HERE/nest/files/." "$F/"; fi         # RA, DNS, welcome page, lxmd
 	install -d -m 700 "$F/etc/dropbear"
 	cat "$HERE"/keys/*.pub &gt; "$F/etc/dropbear/authorized_keys"
 	chmod 600 "$F/etc/dropbear/authorized_keys"
 	install -d -m 755 "$F/etc/sparrows"
-	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\n" "$ROLE" "$TX2" "$TX5" &gt; "$F/etc/sparrows/station"
+	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
+		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" &gt; "$F/etc/sparrows/station"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" &gt;&gt; "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" &gt;&gt; "$F/etc/sparrows/station"
 	if [ -n "$DEV" ] &amp;&amp; [ -d "$DEV/files" ]; then
@@ -780,7 +1136,7 @@ build_one() (
 	fi
 	# Firmware the device needs and OpenWrt doesn't ship: fetched once, checked file by file
 	if [ -n "$FW_FILES" ]; then
-		C="$HERE/build/firmware/$PROFILE"
+		C="$BUILD/firmware/$PROFILE"
 		mkdir -p "$C" "$F/$FW_DIR"
 		while read -r SUM FILE; do
 			[ -n "$FILE" ] || continue
@@ -792,9 +1148,9 @@ build_one() (
 			install -m 644 "$C/$FILE" "$F/$FW_DIR/$FILE"
 		done &lt;&lt;&lt;"$FW_FILES"
 	fi
-	if [ -n "$KEYF" ]; then
+	for KEYF in $KEYS; do
 		install -m 600 "$HERE/secrets/$KEYF" "$F/etc/sparrows/$KEYF"
-	fi
+	done
 	if [ "$WITH_UI" = 1 ]; then
 		cp -a "$HERE/ui/files/." "$F/"
 	fi
@@ -803,14 +1159,18 @@ build_one() (
 		if [ -d "$F/$D" ]; then chmod 755 "$F/$D"/*; fi
 	done
 &#32;
-	# --- Python wheels the role needs (role.conf): fetched once, checked, unpacked into the image ---
-	WHEELS='' HANDBOOK_TO=''
-	if [ -f "$HERE/$ROLE/role.conf" ]; then
+	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
+	WHEELS='' HANDBOOK_TO='' PKG_nest=''
+	if [ "$RNS" = 1 ]; then
 		# shellcheck source=/dev/null
-		. "$HERE/$ROLE/role.conf"
+		. "$HERE/tree/role.conf"
+	fi
+	if [ "$NEST" = 1 ]; then
+		# shellcheck source=/dev/null
+		. "$HERE/nest/role.conf"
 	fi
 	if [ -n "$WHEELS" ]; then
-		C="$HERE/build/wheels"
+		C="$BUILD/wheels"
 		mkdir -p "$C" "$F/usr/lib/sparrows/python"
 		while read -r SUM URL; do
 			[ -n "$URL" ] || continue
@@ -823,33 +1183,43 @@ build_one() (
 			python3 -I -m zipfile -e "$W" "$F/usr/lib/sparrows/python/"
 		done &lt;&lt;&lt;"$WHEELS"
 	fi
-	# The built handbook, when the role offers it (the tree's page node)
+	# The built handbook: offered by the page node, and the welcome page of a nest
 	if [ -n "$HANDBOOK_TO" ]; then
 		if [ -f "$HERE/../tao/index.html" ]; then
-			install -D -m 644 "$HERE/../tao/index.html" "$F/$HANDBOOK_TO"
+			for H in $HANDBOOK_TO; do install -D -m 644 "$HERE/../tao/index.html" "$F/$H"; done
 		else
 			echo "$ROLE $PROFILE: no ../tao/index.html next to the build tree, so no handbook file in the image" &gt;&amp;2
 		fi
 	fi
 &#32;
 	get_ib "$TARGET" || die "No Image Builder for $TARGET"
-	cd "$HERE/build/$(ib_name "$TARGET")"
-	# grep without -q: -q stops reading early, make dies of SIGPIPE and pipefail skips a valid profile
-	make info | grep "^$IB_PROFILE:" &gt;/dev/null || skip "$ROLE $PROFILE: no profile $IB_PROFILE in OpenWrt $VER $TARGET"
-	PKG="PKG_$ROLE"
-	PACKAGES="${!PKG} $DEV_PACKAGES"
+	cd "$BUILD/$(ib_name "$TARGET")"
+	# The profile list. A failing Image Builder is said as such, not taken for a missing profile
+	INFO=$(make info 2&gt;&amp;1) || die "$ROLE $PROFILE: the Image Builder doesn't run (make info):"$'\n'"$(printf '%s\n' "$INFO" | tail -n 4)"
+	printf '%s\n' "$INFO" | grep -q "^$IB_PROFILE:" || skip "$ROLE $PROFILE: no profile $IB_PROFILE in OpenWrt $VER $TARGET"
+	# The packages: the base, then what the uses need, each package once
+	PACKAGES="$BASE"
+	if [ "$NEST" = 1 ]; then PACKAGES=$(printf '%s\n' $BASE | grep -v -x -e -dnsmasq -e -odhcpd-ipv6only | tr '\n' ' '); fi
+	if has "$USE2 $USE5" flyway; then PACKAGES="$PACKAGES $PKG_flyway"; fi
+	if has "$USE2 $USE5" join; then PACKAGES="$PACKAGES $PKG_join"; fi
+	if [ "$RNS" = 1 ]; then PACKAGES="$PACKAGES $PKG_reticulum"; fi
+	PACKAGES="$PACKAGES $PKG_nest $DEV_PACKAGES"
+	[ "$WITH_UI" = 0 ] || PACKAGES="$PACKAGES $PKG_ui"
+	PACKAGES=$(printf '%s\n' $PACKAGES | awk '!seen[$0]++' | tr '\n' ' ')
 	[ -z "$DEV" ] || NAME="$NAME-$PROFILE"       # e.g. sparrows-feeder-rpi-zero-2-w-...-rpi-3-...
 	# Image names: openwrt-&lt;release&gt;-&lt;NAME&gt;-&lt;target&gt;-&lt;profile&gt;-squashfs-factory.bin. Matched exactly, so
 	# sparrows-feeder never picks up sparrows-feeder-ui, and no image of an earlier run passes for this one
 	STEM="$NAME-${TARGET/\//-}-$IB_PROFILE"
 	rm -f bin/targets/"$TARGET"/*-"$STEM"-*
-	[ "$WITH_UI" = 0 ] || PACKAGES="$PACKAGES $PKG_ui"
 	# The hard rules, checked by the machine: the Image Builder lists every package the image would
 	# hold, dependencies included, before building it. Seen 2026-11-20: luci-light brought a firewall back
 	if [ "$CHECK_RULES" = 1 ]; then
 		MANIFEST=$(make manifest PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" STRIP_ABI=1) || \
 			die "$ROLE $PROFILE: the Image Builder can't put these packages together (make manifest)"
 		NO="$FORBIDDEN"; [ "$WITH_UI" = 1 ] || NO="$NO $FORBIDDEN_NO_UI"
+		# A nest is the one unit that sends RAs and answers DNS (no DHCP), and serves the page.
+		# Still no firewall, no PPP, no DHCPv6 server
+		if [ "$NEST" = 1 ]; then NO=$(printf '%s\n' $NO | grep -v -x -e dnsmasq -e odhcpd-ipv6only -e uhttpd | tr '\n' ' '); fi
 		BAD=$(printf '%s\n' "$MANIFEST" | awk -v no="$NO" 'BEGIN { split(no, a); for (i in a) f[a[i]] = 1 }
 			($1 in f) { printf "%s ", $1 }')
 		[ -z "$BAD" ] || die "$ROLE $PROFILE: the image would hold ${BAD}against the hard rules (no DHCP, RA, firewall or PPP on a station; no web interface unless asked). Fix the package lists in build.sh, or CHECK_RULES=0 to build it anyway"
@@ -871,9 +1241,9 @@ build_one() (
 	done
 	[ "${#IMGS[@]}" -gt 0 ] || die "$ROLE $PROFILE: make image gave no .bin or .img.gz"
 	# They replace this device's earlier images (any release, with or without -ui). Other devices' stay
-	rm -f "$OUT"/*-"sparrows-$ROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
+	rm -f "$OUT"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
 	cp "${IMGS[@]}" "$OUT/"
-	printf '%s\n' "${IMGS[@]##*/}" &gt;&gt; "$HERE/build/.built"
+	printf '%s\n' "${IMGS[@]##*/}" &gt;&gt; "$BUILD/.built"
 )
 &#32;
 # ---------------------------------------------------------------- menu (terminal only)
@@ -890,16 +1260,29 @@ ask_tx() {
 	done
 }
 &#32;
+# Manual mode: the use of each interface, asked one by one. Prints uses=ports,2.4,5,services
+ask_uses() {
+	local P U2 U5 S
+	echo "Manual mode. Uses: wire, feeder (open Wi-Fi), flyway (link carrying batman-adv)," &gt;&amp;2
+	echo "join (client of the Sparrows Wi-Fi), off. Several on one radio with +, e.g. flyway+feeder." &gt;&amp;2
+	echo "Services: nest (RAs, DNS, welcome page, message store, Reticulum), reticulum, or none." &gt;&amp;2
+	P=$(ask "Ethernet ports (wire or off): ")
+	U2=$(ask "2.4 GHz radio (e.g. feeder, flyway+feeder, join, off): ")
+	U5=$(ask "5 GHz radio (e.g. feeder, flyway, join, off): ")
+	S=$(ask "Services (nest, reticulum, or Enter for none; both need an SD-card device): ")
+	printf 'uses=%s,%s,%s,%s' "${P:-wire}" "${U2:-off}" "${U5:-off}" "${S:--}"
+}
+&#32;
 # Find a device in the Image Builder of its target, then add it to profiles.txt
 add_device() {
-	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' i
+	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' SPEC='' MAP i
 	echo
 	echo "The target is on the device's page of the OpenWrt Table of Hardware, e.g. ath79/generic, bcm27xx/bcm2711."
 	TARGET=$(ask "Target: ")
 	[[ "$TARGET" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "Not a target (form: name/subtarget)."; return; }
 	get_ib "$TARGET" || return 0
 	WORD=$(ask "Part of the model name, e.g. cpe510, eap225, rpi-4: ")
-	mapfile -t FOUND &lt; &lt;(cd "$HERE/build/$(ib_name "$TARGET")" &amp;&amp; make info 2&gt;/dev/null \
+	mapfile -t FOUND &lt; &lt;(cd "$BUILD/$(ib_name "$TARGET")" &amp;&amp; make info 2&gt;/dev/null \
 		| sed -n 's/^\([A-Za-z0-9_.,-]*\):$/\1/p' | grep -i -F -- "$WORD" || true)
 	[ "${#FOUND[@]}" -gt 0 ] || { echo "No model matching '$WORD' in $TARGET ($VER)."; return; }
 	for i in "${!FOUND[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${FOUND[$i]}"; done
@@ -907,11 +1290,14 @@ add_device() {
 	[[ "$N" =~ ^[0-9]+$ &amp;&amp; "$N" -ge 1 &amp;&amp; "$N" -le "${#FOUND[@]}" ]] || { echo "Nothing added."; return; }
 	PROFILE=${FOUND[$((N - 1))]}
 &#32;
-	RS=$(ask "Role(s) for this device ($ROLES, several with spaces): ")
+	echo "Roles: $ROLES. Join roles with + to have both on one unit (e.g. tree+feeder)."
+	RS=$(ask "Role(s) for this device (several with spaces), or m for manual mode: ")
 	[ -n "$RS" ] || { echo "Nothing added."; return; }
-	for R in $RS; do
-		case " $ROLES " in *" $R "*) ;; *) echo "Unknown role '$R'. Nothing added."; return ;; esac
-	done
+	if [ "$RS" = m ]; then
+		RS=$(ask "A name for this kind of unit (letters, digits, -), e.g. garden: ")
+		[[ "$RS" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "Not a name. Nothing added."; return; }
+		SPEC=$(ask_uses)
+	fi
 &#32;
 	echo "Power to set at the radio = legal EIRP (FR) - antenna gain. 2.4 GHz: 20 dBm EIRP."
 	echo "5 GHz outdoor (ch 100-140): 30 dBm EIRP with TPC, 27 dBm without. - = band not used."
@@ -922,7 +1308,7 @@ add_device() {
 	esac
 &#32;
 	for R in $RS; do
-		WHY=$(bad_line "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK")
+		WHY=$(bad_line "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK" "$SPEC")
 		if [ -n "$WHY" ]; then
 			echo "  $R not added: $WHY."
 			continue
@@ -931,8 +1317,11 @@ add_device() {
 			echo "  $R $PROFILE is already in profiles.txt: left as it is."
 			continue
 		fi
-		LINE=$(printf '%-8s %-15s %-26s %-4s %-4s %s' "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK")
-		NEW="$NEW$LINE"$'\n'
+		MAP=$(uses_of "$R" "$PROFILE" "$TX2" "$TX5" "$SPEC")
+		echo "  $R on $PROFILE:"
+		uses_long "$MAP"
+		LINE=$(printf '%-9s %-15s %-26s %-4s %-4s %-3s %s' "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK" "$SPEC")
+		NEW="$NEW${LINE% }"$'\n'
 	done
 	[ -n "$NEW" ] || return 0
 	printf '\nTo add to profiles.txt:\n%s' "$NEW"
@@ -942,19 +1331,23 @@ add_device() {
 	echo "Added. It is now in the list."
 }
 &#32;
+# The lines whose role is R, alone or joined with +, or the manual line named R
+lines_of_role() { awk -v r="$1" '{ n = split($1, p, "+"); for (i = 1; i &lt;= n; i++) if (p[i] == r) { print; next } }'; }
+&#32;
 # Sets CHOSEN to the picked device lines (and VER, if the release was changed)
 menu() {
-	local LINES CH T i R T2 P X2 X5 U PICK OK
+	local LINES CH T i R P X2 X5 U S PICK OK MAP
 	while :; do
 		mapfile -t LINES &lt; &lt;(profiles)
 		echo
 		echo "Sparrows images, OpenWrt $VER, web interface $( [ "$UI" = 1 ] &amp;&amp; echo ON || echo off ). Devices in profiles.txt:"
 		for i in "${!LINES[@]}"; do
-			read -r R T2 P X2 X5 U &lt;&lt;&lt;"${LINES[$i]}"
-			[ "${U:--}" = ui ] &amp;&amp; U='web interface possible' || U=''
-			printf '  %2d) %-7s %-28s 2.4 GHz: %-3s 5 GHz: %-3s %s\n' $((i + 1)) "$R" "$P" "$X2" "$X5" "$U"
+			read -r R _ P X2 X5 U S &lt;&lt;&lt;"${LINES[$i]}"
+			[ "${U:--}" = ui ] &amp;&amp; U=' +web' || U=''
+			if MAP=$(uses_of "$R" "$P" "$X2" "$X5" "${S:-}"); then MAP=$(uses_short "$MAP"); else MAP="CAN'T BUILD: $MAP"; fi
+			printf '  %2d) %-11s %-26s %s%s\n' $((i + 1)) "$R" "$P" "$MAP" "$U"
 		done
-		echo "   n) add a device that is not in the list"
+		echo "   n) add a device that is not in the list (m there: manual mode, the use of each interface)"
 		echo "   v) another OpenWrt release"
 		echo "   w) web interface on/off (only where it fits)"
 		echo "   s) write a Raspberry Pi image to an SD card (no build)"
@@ -974,11 +1367,8 @@ menu() {
 		for T in $CH; do
 			if [[ "$T" =~ ^[0-9]+$ ]] &amp;&amp; [ "$T" -ge 1 ] &amp;&amp; [ "$T" -le "${#LINES[@]}" ]; then
 				PICK+=("${LINES[$((T - 1))]}")
-			elif [[ " $ROLES " == *" $T "* ]]; then
-				for i in "${!LINES[@]}"; do
-					read -r R _ &lt;&lt;&lt;"${LINES[$i]}"
-					if [ "$R" = "$T" ]; then PICK+=("${LINES[$i]}"); fi
-				done
+			elif S=$(printf '%s\n' "${LINES[@]}" | lines_of_role "$T") &amp;&amp; [ -n "$S" ]; then
+				mapfile -t -O "${#PICK[@]}" PICK &lt;&lt;&lt;"$S"
 			else
 				echo "'$T' is not in the list."; OK=0
 			fi
@@ -1052,8 +1442,8 @@ write_sd() {
 	[ "$(ask "To go on, type the disk name (${DEV#/dev/}): ")" = "${DEV#/dev/}" ] || { echo "Cancelled, nothing written."; return 0; }
 &#32;
 	# OpenWrt puts its metadata after the gzip data: gzip warns "trailing garbage" and exits 2
-	RAW="$HERE/build/sd-card.img"
-	mkdir -p "$HERE/build"           # absent in a fresh copy of the kit, with an image from elsewhere
+	RAW="$BUILD/sd-card.img"
+	mkdir -p "$BUILD"           # absent in a fresh copy of the kit, with an image from elsewhere
 	echo "Unpacking..."
 	gzip -dc "$IMG" &gt; "$RAW" 2&gt;/dev/null || [ $? -eq 2 ] || die "Cannot unpack $IMG"
 	BYTES=$(stat -c %s "$RAW")
@@ -1085,25 +1475,35 @@ MENU=0
 CHOSEN=''
 case "$ARG" in
 	'')    if [ "$MENU" = 1 ]; then menu; else CHOSEN=$(profiles); fi ;;
-	all)   CHOSEN=$(profiles) ;;
-	perch|feeder|hedge|tree) CHOSEN=$(profiles | awk -v r="$ARG" '$1 == r') ;;
+	all|uses) CHOSEN=$(profiles) ;;
 	sd)    write_sd "${2:-}"; exit 0 ;;
-	*)     die "Usage: ./build.sh [all|perch|feeder|hedge|tree] | ./build.sh sd [image.img.gz]" ;;
+	-*|*/*) die "Usage: ./build.sh [all|uses|&lt;role&gt;] | ./build.sh sd [image.img.gz]" ;;
+	*)     CHOSEN=$(profiles | lines_of_role "$ARG")
+	       [ -n "$CHOSEN" ] || die "No line with role '$ARG' in profiles.txt (roles: $ROLES). Usage: ./build.sh [all|uses|&lt;role&gt;] | ./build.sh sd [image.img.gz]" ;;
 esac
 [ -n "$CHOSEN" ] || die "Nothing to build."
 &#32;
 # Every chosen line checked before anything is downloaded
 BAD=''
-while read -r ROLE TARGET PROFILE TX2 TX5 UIOK REST; do
-	WHY=$(bad_line "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "$REST")
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC REST; do
+	WHY=$(bad_line "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "${SPEC:-}" "${REST:-}")
 	[ -z "$WHY" ] || BAD="$BAD  $ROLE $TARGET $PROFILE: $WHY"$'\n'
 done &lt;&lt;&lt;"$CHOSEN"
 [ -z "$BAD" ] || die "profiles.txt, line(s) to fix first:"$'\n'"${BAD%$'\n'}"
 &#32;
+# What each port and radio will do, shown before anything is built
 echo
-echo "OpenWrt $VER. To build:"
-printf '%s\n' "$CHOSEN" | awk -v ui="$UI" '{ w = (ui == 1 &amp;&amp; $6 == "ui") ? "  + web interface" : ""
-	printf "  %-7s %s (%s)%s\n", $1, $3, $2, w }'
+echo "OpenWrt $VER. To build, and what each interface will do:"
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC; do
+	W=''; [ "$UI" = 1 ] &amp;&amp; [ "${UIOK:--}" = ui ] &amp;&amp; W='  + web interface'
+	echo "  $ROLE on $PROFILE ($TARGET)${SPEC:+, manual}$W"
+	uses_long "$(uses_of "$ROLE" "$PROFILE" "$TX2" "$TX5" "${SPEC:-}")"
+done &lt;&lt;&lt;"$CHOSEN"
+# Every nest image gets the same village address scheme: say so once
+if printf '%s\n' "$CHOSEN" | lines_of_role nest | grep -q . ; then
+	echo "  Nests: Android needs a non-ULA prefix; the image uses 2001:db8:1::/64, the BENCH range (nest/files)."
+fi
+[ "$ARG" != uses ] || exit 0
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
 if [ "$MENU" = 1 ]; then
@@ -1116,31 +1516,33 @@ for C in wget zstd tar make gcc perl rsync python3 sha256sum $( [ "$CHECK_SIG" =
 	command -v "$C" &gt;/dev/null || MISSING="$MISSING $C"
 done
 [ -z "$MISSING" ] || die "Missing on this machine:$MISSING (the Image Builder needs them; see its page on openwrt.org)"
-mkdir -p "$HERE/build" "$OUT"
-: &gt; "$HERE/build/.built"; : &gt; "$HERE/build/.skipped"
+mkdir -p "$BUILD" "$OUT"
+case "$BUILD" in *[[:space:]]*) die "The build folder $BUILD has a space in its path, which the Image Builder can't handle. Set SPARROWS_BUILD=&lt;a folder without spaces&gt;" ;; esac
+[ "$BUILD" = "$HERE/build" ] || echo "This folder's path has a space: the Image Builder works in $BUILD (images still go to $OUT)."
+: &gt; "$BUILD/.built"; : &gt; "$BUILD/.skipped"
 &#32;
-while read -r ROLE TARGET PROFILE TX2 TX5 UIOK; do
-	build_one "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" &lt;/dev/null
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC; do
+	build_one "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "${SPEC:-}" &lt;/dev/null
 done &lt;&lt;&lt;"$CHOSEN"
 &#32;
 echo
-if [ -s "$HERE/build/.skipped" ]; then
+if [ -s "$BUILD/.skipped" ]; then
 	echo "Skipped:"
-	sed 's/^/  /' "$HERE/build/.skipped"
+	sed 's/^/  /' "$BUILD/.skipped"
 	echo
 fi
-[ -s "$HERE/build/.built" ] || die "No image was built."
+[ -s "$BUILD/.built" ] || die "No image was built."
 echo "Built now, in $OUT:"
-( cd "$OUT" &amp;&amp; while read -r I; do sha256sum -- "$I"; done &lt; "$HERE/build/.built" )
+( cd "$OUT" &amp;&amp; while read -r I; do sha256sum -- "$I"; done &lt; "$BUILD/.built" )
 &#32;
-if grep -q -e '-ui-' "$HERE/build/.built"; then
+if grep -q -e '-ui-' "$BUILD/.built"; then
 	echo
 	echo "Web interface (images with -ui): it only listens on the unit itself. From your laptop:"
 	echo "  ssh -N -L 8080:127.0.0.1:80 root@&lt;station address&gt;    then open http://localhost:8080"
 	echo "  The first time, set the root password over SSH:  passwd   (SSH itself stays keys only)"
 fi
 &#32;
-if [ "$MENU" = 1 ] &amp;&amp; grep -q '\.img\.gz$' "$HERE/build/.built"; then
+if [ "$MENU" = 1 ] &amp;&amp; grep -q '\.img\.gz$' "$BUILD/.built"; then
 	echo
 	case "$(ask "Write a Raspberry Pi image to an SD card now? [y/N] ")" in [yY]*) write_sd ;; esac
 fi</code></pre></div>
@@ -1205,13 +1607,13 @@ sudo blockdev --flushbufs /dev/sdX
 sudo cmp -n "$(stat -c %s card.img)" card.img /dev/sdX &amp;&amp; echo "OK: the card matches"</code></pre></div>
 <h4><span lang="en">2. Base shared by every station</span></h4>
 <div class="code"><div class="hd"><span class="file">common/files/etc/uci-defaults/10-sparrows-common</span></div><pre><code>#!/bin/sh
-# Sparrows-Network: base shared by every OpenWrt station (perch, feeder, hedge, tree).
-# No IPv4, no DHCP, no RA, no firewall, SSH keys only. Perch, feeder and hedge are a Layer 2 bridge
-# with no Reticulum; the tree adds its Wi-Fi client and Reticulum (90-sparrows-tree).
+# Sparrows-Network: base shared by every OpenWrt station, whatever its role.
+# No IPv4, no DHCP, no RA (except on a nest: 91-sparrows-nest), no firewall, SSH keys only. The ports and radios get their uses in
+# 90-sparrows-station, from /etc/sparrows/station.
 # Runs once at first boot (and again after `firstboot &amp;&amp; reboot`).
 # Status: NOT YET TESTED.
 &#32;
-. /etc/sparrows/station          # ROLE, TX2, TX5 (written by build.sh from profiles.txt)
+. /etc/sparrows/station          # ROLE, TX2, TX5, PORTS, USE2, USE5, RETICULUM, NEST (written by build.sh)
 &#32;
 # --- Name: &lt;role&gt;-&lt;last 4 hex of the MAC&gt;, e.g. perch-3fa2. Same image on every unit ---
 # MACDEV (in /etc/sparrows/station) = where the fixed MAC is: eth0 on most units; phy0 (the radio)
@@ -1228,15 +1630,20 @@ uci set system.@system[0].cronloglevel='9'
 uci commit system
 &#32;
 # --- Login text: /etc/sparrows/banner (edit it in the build tree), filled in for this unit ---
-case "$ROLE" in
-	perch)  WHAT='perch: backbone radio, one end of a flyway'; HINT='perch status   perch ap | perch sta' ;;
-	feeder) WHAT='feeder: open Wi-Fi for people, bridged to the village'; HINT='iw dev   logread | grep -i cac' ;;
-	hedge)  WHAT='hedge: open Wi-Fi + 2.4 GHz mesh to the other hedges'; HINT='batctl n   batctl o' ;;
-	tree)   WHAT='tree: Reticulum relay + the Sparrows page, on the village Wi-Fi'; HINT='rns status   /etc/init.d/nomadnet status' ;;
-	*)      WHAT=$ROLE; HINT='' ;;
-esac
+# What it does, from its uses, e.g. "hedge: ports wire, 2.4 GHz flyway+feeder, 5 GHz feeder".
+# No | in these texts: sed below uses it as its separator
+use() { [ -z "$1" ] || [ "$1" = off ] &amp;&amp; echo off || echo "$1" | tr ' ' '+'; }
+WHAT="$ROLE: ports $PORTS, 2.4 GHz $(use "$USE2"), 5 GHz $(use "$USE5")"
+[ "$RETICULUM" != 1 ] || WHAT="$WHAT, Reticulum"
+[ "${NEST:-0}" != 1 ] || WHAT="$WHAT, nest (RAs, DNS, welcome page, message store)"
+HINT=''
+case " $USE5 " in *" flyway "*) HINT="$HINT  perch status  perch ap" ;; esac
+case " $USE2 $USE5 " in *" flyway "*) HINT="$HINT  batctl n  batctl o" ;; esac
+case " $USE2 $USE5 " in *" feeder "*|*" join "*) HINT="$HINT  iw dev" ;; esac
+[ "$RETICULUM" != 1 ] || HINT="$HINT  rns status"
+[ "${NEST:-0}" != 1 ] || HINT="$HINT  logread -e odhcpd  /etc/init.d/lxmd status"
 REL=$( [ -f /etc/openwrt_release ] &amp;&amp; . /etc/openwrt_release; echo "${DISTRIB_DESCRIPTION:-OpenWrt}")
-[ -z "$HINT" ] || HINT="Useful here: $HINT"
+[ -z "$HINT" ] || HINT="Useful here:${HINT# }"
 sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
 	/etc/sparrows/banner &gt; /etc/banner
 &#32;
@@ -1286,69 +1693,7 @@ vi /etc/banner
 # Undo: put the old text back in the build tree and rebuild</code></pre></div>
 <h4 id="perch-image"><span lang="en">3. Perch image</span></h4>
 <p lang="en">The same radio settings as the per-node script that ran on the bench on 2026-11-14, with nothing left to set per unit (name and address come from the MAC), plus bridge loop avoidance. Every perch boots as a client: a client only transmits after hearing its AP, so a fresh perch is harmless. On the one perch per flyway that must carry the radar duty, <code>perch ap</code> makes it the AP. The tool refuses channels 120 to 128 and the indoor channels. The image carries <code>batctl-default</code>, not <code>batctl-tiny</code>: <code>batctl n</code>, <code>o</code>, <code>ping</code>, <code>traceroute</code> and <code>tp</code> all work, and the CPE510 image built that way fits in its 8 MB of flash (2026-11-14). The flyway key is checked twice: by <code>build.sh</code>, and again at first boot, which logs an error if it was edited by hand.</p>
-<div class="code"><div class="hd"><span class="file">perch/files/etc/uci-defaults/90-sparrows-perch</span></div><pre><code>#!/bin/sh
-# Sparrows-Network: perch = backbone radio on a mast, one end of a flyway.
-# 5 GHz AP + client carrying batman-adv (802.11s does not work on DFS channels).
-# Every perch boots as a CLIENT. Make the one perch per flyway that does the radar
-# duty an AP with:  perch ap [channel]   (see /usr/sbin/perch)
-# Status: NOT YET TESTED as an image (same radio settings as the retired per-node script, which ran in IPv6 on 2026-11-14).
-&#32;
-. /etc/sparrows/station          # ROLE, TX2, TX5
-&#32;
-CHANNEL='108'                    # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
-SSID='wifilibre-link'            # same as the running flyway, so new perches join it
-KEY=$(cat /etc/sparrows/flyway.key)
-chmod 600 /etc/sparrows/flyway.key
-# Key must be 8-63 printable ASCII, or the flyway never links (tested 2026-11-14, Sparrows Tao, Pitfalls).
-# build.sh already refuses a bad key; this only catches a hand-edited flyway.key.
-printf '%s' "$KEY" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
-	logger -p daemon.err -t sparrows "flyway.key is not 8-63 printable ASCII: the flyway will not link"
-&#32;
-# --- batman-adv on the flyway, bridged with Ethernet in br-lan ---
-uci set network.bat0=interface
-uci set network.bat0.proto='batadv'
-uci set network.bat0.routing_algo='BATMAN_IV'
-uci set network.bat0.bridge_loop_avoidance='1'   # needed once a site switch holds 2 batman nodes (perch, hedge)
-uci set network.mesh0=interface
-uci set network.mesh0.proto='batadv_hardif'
-uci set network.mesh0.master='bat0'
-uci set network.mesh0.mtu='1536'          # batman header, avoids fragmentation
-BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
-uci -q del_list network.$BR.ports='bat0'
-uci add_list network.$BR.ports='bat0'
-uci commit network
-&#32;
-# --- Radio: the 5 GHz radio carries the flyway, any other radio is off ---
-[ -s /etc/config/wireless ] || wifi config
-R5=''
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
-	uci -q delete wireless.default_$r
-	if [ -z "$R5" ] &amp;&amp; [ "$(uci -q get wireless.$r.band)" = '5g' ]; then
-		R5=$r
-	else
-		uci set wireless.$r.disabled='1'
-	fi
-done
-if [ -n "$R5" ]; then
-	uci set wireless.$R5.disabled='0'
-	uci set wireless.$R5.country='FR'
-	uci set wireless.$R5.channel="$CHANNEL"
-	uci set wireless.$R5.htmode='HT20'
-	uci set wireless.$R5.txpower="$TX5"
-	uci set wireless.$R5.log_level='4'
-&#32;
-	uci -q delete wireless.mesh               # no 802.11s
-	uci set wireless.flyway=wifi-iface
-	uci set wireless.flyway.device="$R5"
-	uci set wireless.flyway.mode='sta'        # safe default: a client only transmits after hearing its AP
-	uci set wireless.flyway.ssid="$SSID"
-	uci set wireless.flyway.encryption='sae'
-	uci set wireless.flyway.key="$KEY"
-	uci set wireless.flyway.network='mesh0'
-fi
-uci commit wireless
-&#32;
-exit 0</code></pre></div>
+<p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>perch wire off flyway -</code>.</p>
 <div class="code"><div class="hd"><span class="file">perch/files/usr/sbin/perch</span></div><pre><code>#!/bin/sh
 # perch: switch this perch between flyway roles, or show its state.
 #   perch ap  [channel]   this end beacons and does the radar duty (one AP per flyway)
@@ -1434,47 +1779,7 @@ sudo dnsmasq --test &amp;&amp; sudo systemctl restart dnsmasq</code></pre></div>
 <h4 id="eap"><span lang="en">4. Feeder image, example: EAP225-Outdoor</span></h4>
 <p lang="en">Open SSID on both bands, clients can reach each other (Reticulum works phone to phone), multicast is sent to each client as unicast so RAs arrive reliably, no per-client log lines.</p>
 <p lang="en">Three units arrived on 2026-11-14: two v1 and one v3. Both versions are supported by OpenWrt and are nearly the same box: the same SoC with its 2.4 GHz radio, a QCA9886 for 5 GHz, 128 MB of RAM and 16 MB of flash; the v3 differs by its Ethernet chip. Each gets the image built for its own version: check the label before flashing.</p>
-<div class="code"><div class="hd"><span class="file">feeder/files/etc/uci-defaults/90-sparrows-feeder</span></div><pre><code>#!/bin/sh
-# Sparrows-Network: feeder = open access Wi-Fi bridged to the village segment.
-# Bridge only (base in 10-sparrows-common): no IPv4, no DHCP, no RA, no firewall, no Reticulum.
-# Status: NOT YET TESTED.
-&#32;
-. /etc/sparrows/station          # ROLE, TX2, TX5
-&#32;
-SSID='Sparrows'
-CH2="${CH2:-auto}"   # 2.4 GHz: automatic channel (ACS), unless the device sets one (no ACS). Else 1, 6 or 11
-CH5='132'    # 5 GHz outdoor DFS, VHT40 = 132+136. Far from the backbone (108). Never 120-128
-&#32;
-[ -s /etc/config/wireless ] || wifi config
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
-	uci -q delete wireless.default_$r
-	if [ "$(uci -q get wireless.$r.band)" = '2g' ]; then
-		CH=$CH2; HT='HT20'; TX=$TX2
-	else
-		CH=$CH5; HT='VHT40'; TX=$TX5
-	fi
-	if [ "$TX" = '-' ]; then                   # band not used on this device (profiles.txt)
-		uci set wireless.$r.disabled='1'
-		continue
-	fi
-	uci set wireless.$r.disabled='0'
-	uci set wireless.$r.country='FR'
-	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
-	uci set wireless.$r.channel="$CH"
-	uci set wireless.$r.htmode="$HT"
-	uci set wireless.$r.txpower="$TX"
-	uci set wireless.ap_$r=wifi-iface
-	uci set wireless.ap_$r.device="$r"
-	uci set wireless.ap_$r.mode='ap'
-	uci set wireless.ap_$r.ssid="$SSID"
-	uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
-	uci set wireless.ap_$r.network='lan'
-	uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
-	uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
-done
-uci commit wireless
-&#32;
-exit 0</code></pre></div>
+<p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>feeder wire feeder feeder -</code>.</p>
 <p lang="en">Flash the <code>factory</code> image as described in <a href="#flash-eap">Flash an EAP225-Outdoor</a> below, then plug the feeder into the site switch. Wait about 70 s after boot for the radar check on 5 GHz.</p>
 <div class="code"><div class="hd"><span class="file">verify</span></div><pre><code># From a nest or a laptop on the mesh: find the feeder by its MAC
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
@@ -1508,6 +1813,11 @@ rdisc6 wlan0</code></pre></div>
 &#32;
 # OpenWrt has no image of its own for it: the Pi 3 image boots it (same SoC, BCM2710).
 IB_PROFILE='rpi-3'
+&#32;
+# What its radio can do (uses.txt): access point and client, but no 802.11s mesh in its driver,
+# so no flyway. The build refuses a flyway on it. One band only: 2.4 GHz.
+CAN2='feeder join'
+CAN5=''
 &#32;
 # No Ethernet on the board: the village cable goes into a USB Ethernet adapter on the micro-USB
 # OTG port (an OTG cable or hub). Drivers for the common adapters:
@@ -1582,79 +1892,7 @@ ps | grep -e dnsmasq -e odhcpd  # nothing
 </ul>
 <p lang="en">Why 802.11s on 2.4 GHz: it is the only band where 802.11s works for us (never on DFS channels), and a mesh needs no AP and client roles, so there is nothing to set per unit and no radar wait on the backbone side. It is also how Freifunk communities run this kind of box. It serves P3 (any hedge relays, losing one loses nothing) and "works for amateurs" (flash, power, done).</p>
 <p lang="en"><span class="st idea" data-ui="idea">idea</span> Not chosen for now: the EAP joining a CPE510 flyway on 5 GHz as a client, with the open Wi-Fi on the same radio. The open Wi-Fi would then sit on the flyway's channel and eat its airtime, and an access point next to a client on a DFS channel is untested ground.</p>
-<div class="code"><div class="hd"><span class="file">hedge/files/etc/uci-defaults/90-sparrows-hedge</span></div><pre><code>#!/bin/sh
-# Sparrows-Network: hedge = a feeder and a perch in one box (example: EAP225-Outdoor).
-#   5 GHz radio:   open "Sparrows" Wi-Fi for people's devices, as on a feeder.
-#   2.4 GHz radio: 802.11s mesh to the neighbouring hedges, carrying batman-adv
-#                  (802.11s works on 2.4 GHz, never on DFS channels), plus the same
-#                  open "Sparrows" Wi-Fi for devices that only have 2.4 GHz.
-# No AP / client roles: every hedge on the same channel and mesh ID finds the others.
-# Bridge only (base in 10-sparrows-common): no IPv4, no DHCP, no RA, no firewall, no Reticulum.
-# Status: NOT YET TESTED.
-&#32;
-. /etc/sparrows/station          # ROLE, TX2, TX5
-&#32;
-SSID='Sparrows'
-MESH_ID='sparrows-hedge'         # same on every hedge of the village
-CH2='1'                          # fixed, same on every hedge (a mesh can't use ACS): 1, 6 or 11
-CH5='132'                        # open Wi-Fi, outdoor DFS, VHT40 = 132+136. Never 120-128
-KEY=$(cat /etc/sparrows/hedge.key)
-chmod 600 /etc/sparrows/hedge.key
-# 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Sparrows Tao, Pitfalls).
-printf '%s' "$KEY" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
-	logger -p daemon.err -t sparrows "hedge.key is not 8-63 printable ASCII: hedges will not mesh"
-&#32;
-# --- batman-adv on the 2.4 GHz mesh, bridged with Ethernet and the open Wi-Fi in br-lan ---
-uci set network.bat0=interface
-uci set network.bat0.proto='batadv'
-uci set network.bat0.routing_algo='BATMAN_IV'
-uci set network.bat0.bridge_loop_avoidance='1'   # a hedge cabled to a switch that also has a perch or
-                                                 # another hedge = two paths; BLA must be on all of them
-uci set network.mesh0=interface
-uci set network.mesh0.proto='batadv_hardif'
-uci set network.mesh0.master='bat0'
-uci set network.mesh0.mtu='1536'                 # batman header, avoids fragmentation
-BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
-uci -q del_list network.$BR.ports='bat0'
-uci add_list network.$BR.ports='bat0'
-uci commit network
-&#32;
-# --- Radios ---
-[ -s /etc/config/wireless ] || wifi config
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
-	uci -q delete wireless.default_$r
-	uci set wireless.$r.disabled='0'
-	uci set wireless.$r.country='FR'
-	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
-	if [ "$(uci -q get wireless.$r.band)" = '2g' ]; then
-		uci set wireless.$r.channel="$CH2"
-		uci set wireless.$r.htmode='HT20'
-		uci set wireless.$r.txpower="$TX2"
-		uci set wireless.mesh_$r=wifi-iface
-		uci set wireless.mesh_$r.device="$r"
-		uci set wireless.mesh_$r.mode='mesh'
-		uci set wireless.mesh_$r.mesh_id="$MESH_ID"
-		uci set wireless.mesh_$r.encryption='sae'
-		uci set wireless.mesh_$r.key="$KEY"
-		uci set wireless.mesh_$r.mesh_fwding='0'     # batman-adv does the routing, not 802.11s
-		uci set wireless.mesh_$r.network='mesh0'
-	else
-		uci set wireless.$r.channel="$CH5"
-		uci set wireless.$r.htmode='VHT40'
-		uci set wireless.$r.txpower="$TX5"
-	fi
-	uci set wireless.ap_$r=wifi-iface
-	uci set wireless.ap_$r.device="$r"
-	uci set wireless.ap_$r.mode='ap'
-	uci set wireless.ap_$r.ssid="$SSID"
-	uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
-	uci set wireless.ap_$r.network='lan'
-	uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
-	uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
-done
-uci commit wireless
-&#32;
-exit 0</code></pre></div>
+<p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>hedge wire flyway+feeder feeder -</code>.</p>
 <div class="code"><div class="hd"><span class="file">install, verify, undo</span></div><pre><code># Find it like a feeder, from a laptop on its cable
 ping -6 -c2 ff02::1%eth0; ip -6 neigh show dev eth0
 ssh root@fe80::&lt;from MAC&gt;%eth0
@@ -1680,9 +1918,10 @@ firstboot &amp;&amp; reboot             # back to this image's defaults
 <h4 id="tree-image"><span lang="en">Tree image: a Reticulum relay and the Sparrows page, on the village Wi-Fi, example: Pi Zero 2 W</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en">Added on 2026-11-19. A <a class="term" href="#g-tree">tree</a> on OpenWrt. It joins the open <code>Sparrows</code> Wi-Fi as a client, like a phone, gets its address from the nests' RAs, and runs <code>rnsd</code> with transport on, so it relays Reticulum traffic for the others. It bridges nothing, sends no RA, serves no on-ramp. On a Pi Zero 2 W it needs no USB adapter: plug it in where the Wi-Fi reaches.</p>
 <p lang="en">Reticulum is not an OpenWrt package. <code>build.sh</code> downloads its wheel at a pinned version (<code>tree/role.conf</code>: version and sha256), checks it, and unpacks it into the image, so the tree needs no Internet and no <code>pip</code>. Python and the two libraries Reticulum needs come from OpenWrt. <code>rnsd</code> runs as its own user, not root, and its identity survives updates. The config was checked on 2026-11-19 with <code>rnsd</code> 1.6.1 on a laptop (it starts, the interface waits for <code>wsta</code>); the image itself has not run yet. It needs room: SD-card devices only, never 8 or 16 MB of flash.</p>
-<div class="code"><div class="hd"><span class="file">tree/role.conf</span></div><pre><code># Sparrows-Network: what the tree role needs beyond OpenWrt packages. Read by build.sh.
+<div class="code"><div class="hd"><span class="file">tree/role.conf</span></div><pre><code># Sparrows-Network: what Reticulum needs beyond OpenWrt packages. Read by build.sh for any image
+# that runs Reticulum (the tree role, or a reticulum service in uses.txt or a manual line).
 # Python wheels, pinned by version and sha256, unpacked into /usr/lib/sparrows/python in the image,
-# so the tree needs no Internet and no pip. A new version = a new line here, after a bench test.
+# so the unit needs no Internet and no pip. A new version = a new line here, after a bench test.
 #   rns + lxmf + nomadnet: Reticulum, messages, the page node
 #   urwid, wcwidth, qrcode, typing_extensions: what nomadnet imports (wcwidth 0.8.5: the last pure-Python one)
 WHEELS='
@@ -1698,63 +1937,10 @@ bb075315d310951d3cc894f7c21cc7fab3c5b8c802af3ffad4d1fa4e54093329  https://files.
 # The built handbook (tao/index.html, next to sparrows-openwrt/) goes in the image too, as a file the
 # page node offers for download. Rebuild the Tao before the image to ship the latest one.
 HANDBOOK_TO='usr/share/sparrows/nomadnet/files/sparrows-tao.html'</code></pre></div>
-<div class="code"><div class="hd"><span class="file">tree/files/etc/uci-defaults/90-sparrows-tree</span></div><pre><code>#!/bin/sh
-# Sparrows-Network: tree = a Reticulum relay (Layer 1) and nothing else.
-# It joins the village's open Wi-Fi as a client, like a phone: no bridge, no RA, no on-ramp.
-# rnsd with transport on, from the Reticulum that build.sh put in /usr/lib/sparrows/python.
-# Nomad Network in node mode serves the Sparrows page (/usr/share/sparrows/nomadnet/pages).
-# Status: NOT YET TESTED.
-&#32;
-. /etc/sparrows/station          # ROLE, TX2, TX5
-&#32;
-SSID='Sparrows'
-&#32;
-# --- Network: the Wi-Fi client is an interface of its own, address by SLAAC from the nests' RAs ---
-uci set network.wsta=interface
-uci set network.wsta.proto='dhcpv6'
-uci set network.wsta.reqaddress='none'
-uci set network.wsta.reqprefix='no'
-uci commit network
-&#32;
-# --- Radio: one client on the first band this device uses (profiles.txt), the others off ---
-[ -s /etc/config/wireless ] || wifi config
-STA=''
-for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
-	uci -q delete wireless.default_$r
-	if [ "$(uci -q get wireless.$r.band)" = '2g' ]; then TX=$TX2; else TX=$TX5; fi
-	if [ -z "$STA" ] &amp;&amp; [ "$TX" != '-' ]; then
-		STA=$r
-		uci set wireless.$r.disabled='0'
-		uci set wireless.$r.country='FR'
-		uci set wireless.$r.channel='auto'         # a client follows the access point
-		uci set wireless.$r.txpower="$TX"
-		uci set wireless.$r.log_level='4'
-	else
-		uci set wireless.$r.disabled='1'
-	fi
-done
-if [ -n "$STA" ]; then
-	uci set wireless.wsta=wifi-iface
-	uci set wireless.wsta.device="$STA"
-	uci set wireless.wsta.mode='sta'
-	uci set wireless.wsta.ssid="$SSID"
-	uci set wireless.wsta.encryption='none'          # the open on-ramp Wi-Fi, like any phone
-	uci set wireless.wsta.network='wsta'
-	uci set wireless.wsta.ifname='wsta'              # fixed name: the Reticulum config uses it
-fi
-uci commit wireless
-&#32;
-# --- Reticulum runs as its own user, never as root ---
-. /lib/functions.sh
-group_add rns 1500 2&gt;/dev/null
-user_add rns 1500 1500 rns /etc/reticulum /bin/false 2&gt;/dev/null
-sed -i "s|@NAME@|$(uci -q get system.@system[0].hostname)|" /etc/nomadnetwork/config
-chown -R rns:rns /etc/reticulum /etc/nomadnetwork
-/etc/init.d/rnsd enable
-/etc/init.d/nomadnet enable
-&#32;
-exit 0</code></pre></div>
-<div class="code"><div class="hd"><span class="file">tree/files/etc/reticulum/config</span></div><pre><code># Sparrows-Network tree: Reticulum transport node. Status: NOT YET TESTED on OpenWrt.
+<p lang="en">First boot: the shared file in <a href="#uses">What each port and radio does</a>, with this line of <code>uses.txt</code>: <code>tree wire join join reticulum</code>.</p>
+<p lang="en">On a <code>tree+feeder</code> unit (or a nest) no radio joins, so Reticulum runs on the village bridge, <code>br-lan</code>, instead of <code>wsta</code>: first boot writes the right one in the config below.</p>
+<div class="code"><div class="hd"><span class="file">tree/files/etc/reticulum/config</span></div><pre><code># Sparrows-Network: Reticulum transport node (tree, or any unit with the reticulum service).
+# Status: NOT YET TESTED on OpenWrt.
 [reticulum]
   enable_transport = Yes          # a tree relays for the others
   share_instance = Yes            # rns status and the other tools use this rnsd
@@ -1764,11 +1950,12 @@ exit 0</code></pre></div>
   loglevel = 2                    # errors only: a tree remembers as little as possible
 &#32;
 [interfaces]
-  # The village's open Wi-Fi, through the client interface (wsta)
+  # The village. First boot puts the interface here: wsta (the Wi-Fi client) when a radio joins the
+  # Sparrows Wi-Fi, br-lan (the village bridge: wire and feeders) when none does
   [[Sparrows]]
     type = AutoInterface
     enabled = yes
-    devices = wsta</code></pre></div>
+    devices = @RNSDEV@</code></pre></div>
 <div class="code"><div class="hd"><span class="file">tree/files/etc/init.d/rnsd</span></div><pre><code>#!/bin/sh /etc/rc.common
 # Sparrows-Network tree: Reticulum transport daemon, as user rns, restarted if it stops.
 &#32;
@@ -1901,6 +2088,177 @@ rnstatus
 &#32;
 # Undo the page only: /etc/init.d/nomadnet disable &amp;&amp; /etc/init.d/nomadnet stop
 # Undo all: write the card with another image</code></pre></div>
+<h4 id="nest-image"><span lang="en">Nest image: a Raspberry Pi 4 as nest + feeder</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Decided on 2026-11-21: nests run OpenWrt too, so every unit of the village runs one system, is built by one <code>build.sh</code> and updated one way. The nest is a role like the others, so one Pi 4 can be <code>nest+feeder</code>: its cable on the site's switch, its own Wi-Fi as <code>Sparrows</code> Wi-Fi. It has no home side: admin from a laptop on the village with the SSH key, software as images built on the admin laptop. The Debian nest below stays the running one until this image passes the same checks on the bench (RAs, DNS, router flag, Android, the welcome page, Reticulum).</p>
+<ul lang="en">
+  <li><strong>Address:</strong> fixed, from its MAC, as every station builds by SLAAC: <code>fd7e:4c1a:9b20:1:</code> + the interface ID. Two nests never clash, and none is "the" nest at <code>::1</code>.</li>
+  <li><strong>RAs:</strong> <code>odhcpd</code>, SLAAC only, router lifetime 1800 s, the router flag, its own address as DNS server and <code>sparrows.lan</code> as domain inside. The same values as the tested Debian nest.</li>
+  <li><strong>DNS:</strong> <code>dnsmasq</code> with DHCP off and no upstream: every name, <code>sparrows.lan</code> included, points to this nest. No query log.</li>
+  <li><strong>Welcome page:</strong> <code>uhttpd</code> on the nest's village addresses, serving this handbook; any unknown path gives the page, so a phone's connection check lands on it.</li>
+  <li><strong>Reticulum:</strong> <code>rnsd</code> with transport, <code>lxmd</code> as message store, and the Sparrows page, all from the pinned wheels.</li>
+  <li><strong>Still never:</strong> IPv4, DHCP, a firewall. The build's rule check lets <code>odhcpd</code>, <code>dnsmasq</code> and <code>uhttpd</code> into a nest image only.</li>
+  <li><strong>The Pi 4's Wi-Fi:</strong> access point and client only (no mesh, so no flyway), 2.4 GHz on channel 6 (no automatic channel in its driver). No 5 GHz feeder: its chip can't do the radar check the outdoor channels need. A small access point: fine for a house or a garden.</li>
+  <li><strong>Android:</strong> the image announces <code>2001:db8:1::/64</code>, the bench prefix, next to the village one, as the Debian nest does. The real non-ULA prefix is still to decide.</li>
+</ul>
+<p class="note" lang="en">Lock-out risk: the Pi then has no home Wi-Fi. Check that your key is in <code>keys/</code> before building, and keep the Debian SD card aside: putting it back is the undo.</p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then a laptop on the village</span></div><pre><code># Not yet tested. ---- On the admin laptop: the line is already in profiles.txt ----
+#   nest+feeder bcm27xx/bcm2711 rpi-4   17   -   ui
+./build.sh nest                  # shows what each interface will do, then builds
+./build.sh sd                    # write the rpi-4 factory .img.gz to a NEW card (keep the Debian card aside)
+&#32;
+# Its village address comes from the Ethernet MAC (on the Pi:  cat /sys/class/net/eth0/address)
+# e.g. dc:a6:32:12:34:56  -&gt;  fd7e:4c1a:9b20:1:dea6:32ff:fe12:3456   (same rule as names-find)
+&#32;
+# ---- Card in the Pi, cable on the site's switch. From a laptop on the village ----
+ping -6 -c2 ff02::1%&lt;if&gt;; ip -6 neigh show dev &lt;if&gt;
+ssh root@fe80::&lt;from MAC&gt;%&lt;if&gt;
+# On the nest (hostname nest-feeder-xxxx)
+. /etc/sparrows/station; echo $ADDR        # its village address
+ip -6 addr show br-lan                     # fd7e:4c1a:9b20:1:... and 2001:db8:1:... /64, no inet
+bridge link                                # eth0 and the Wi-Fi AP, both in br-lan
+iw dev                                     # one AP, SSID Sparrows, channel 6
+logread -e odhcpd                          # RAs sent on br-lan, no error
+netstat -lnu | grep ':53 '; netstat -ltn | grep ':80 '   # dnsmasq on 53, uhttpd on the village addresses
+rns status                                 # "Sparrows" interface Up, on br-lan
+/etc/init.d/lxmd status                    # running: the message store
+&#32;
+# ---- From the laptop (and a phone on the Sparrows Wi-Fi): the same checks as the Debian nest ----
+rdisc6 &lt;if&gt;                       # both prefixes, Router lifetime 1800, the nest's address as DNS
+ip -6 neigh show dev &lt;if&gt;         # the nest's fe80 entry says "router"
+dig AAAA sparrows.lan @&lt;nest address&gt;        # the nest's address
+curl -sI http://connectivitycheck.gstatic.com/generate_204   # the welcome page, not 204
+ping 192.168.1.1                  # must FAIL (no IPv4)
+# On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, the page opens
+&#32;
+# Undo: put the Debian SD card back in the Pi</code></pre></div>
+<div class="code"><div class="hd"><span class="file">nest/files/etc/uci-defaults/91-sparrows-nest</span></div><pre><code>#!/bin/sh
+# Sparrows-Network: nest services, on OpenWrt (decided 2026-11-21: one system on every unit).
+# The same on-ramp as the Debian nest, with OpenWrt's own tools:
+#   a fixed village address, built from the MAC (EUI-64), so every nest has its own: nests are equal
+#   odhcpd   router advertisements: SLAAC only, the router flag, the DNS server and domain inside
+#   dnsmasq  DNS only, no DHCP: sparrows.lan and every other name -&gt; this nest (catch-all)
+#   uhttpd   the welcome page (this handbook) on the village address
+#   rnsd + lxmd   Reticulum relay and the message store (propagation node)
+# Still never: IPv4, DHCP, a firewall, a link to the Internet. Runs after 90-sparrows-station.
+# Status: NOT YET TESTED.
+&#32;
+. /etc/sparrows/station
+&#32;
+ULA='fd7e:4c1a:9b20:1'           # the village prefix, as on the Debian nest
+NONULA='2001:db8:1'              # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
+                                 # The real one is not decided yet
+&#32;
+# --- Interface ID from the MAC, the same rule as every station: flip bit 2 of byte 1, ff:fe inside ---
+case "${MACDEV:-eth0}" in
+	phy*) MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2&gt;/dev/null) ;;
+	*)    MAC=$(cat "/sys/class/net/${MACDEV:-eth0}/address" 2&gt;/dev/null) ;;
+esac
+OLDIFS=$IFS; IFS=':'
+# shellcheck disable=SC2086
+set -- $MAC
+IFS=$OLDIFS
+IID=$(printf '%02x%s:%sff:fe%s:%s%s' $((0x$1 ^ 2)) "$2" "$3" "$4" "$5" "$6")
+ADDR="$ULA:$IID"
+ADDR2="$NONULA:$IID"
+echo "ADDR='$ADDR'" &gt;&gt; /etc/sparrows/station
+&#32;
+# --- The village bridge gets fixed addresses instead of SLAAC: a nest sends RAs, it doesn't take them ---
+uci set network.lan.proto='static'
+uci -q delete network.lan.reqaddress
+uci -q delete network.lan.reqprefix
+uci -q delete network.lan.ip6addr
+uci add_list network.lan.ip6addr="$ADDR/64"
+uci add_list network.lan.ip6addr="$ADDR2/64"
+uci commit network
+&#32;
+# --- Router advertisements (odhcpd). Nothing else from it: no DHCPv4, no DHCPv6 ---
+uci set dhcp.odhcpd.maindhcp='0'
+uci set dhcp.lan=dhcp
+uci set dhcp.lan.interface='lan'
+uci set dhcp.lan.ignore='1'               # dnsmasq: no DHCPv4 here
+uci set dhcp.lan.dhcpv4='disabled'
+uci set dhcp.lan.dhcpv6='disabled'        # SLAAC only (Android ignores DHCPv6 anyway)
+uci set dhcp.lan.ra='server'
+uci set dhcp.lan.ra_flags='none'          # no managed / other-config flag
+uci set dhcp.lan.ra_slaac='1'
+uci set dhcp.lan.ra_default='2'           # announce a default router though there is no route out:
+                                          # Android drops a network without one. Nothing is forwarded:
+                                          # this nest has no other network to forward to
+uci set dhcp.lan.ra_maxinterval='60'      # RA every 60 s at most
+uci set dhcp.lan.ra_lifetime='1800'       # router lifetime 1800 s, as on the Debian nest
+uci -q delete dhcp.lan.dns
+uci add_list dhcp.lan.dns="$ADDR2"        # non-ULA first: some Android versions drop a ULA DNS server
+uci add_list dhcp.lan.dns="$ADDR"
+uci -q delete dhcp.lan.domain
+uci add_list dhcp.lan.domain='sparrows.lan'
+&#32;
+# --- DNS (dnsmasq): no upstream, sparrows.lan and every other name -&gt; this nest ---
+uci set dhcp.@dnsmasq[0].noresolv='1'
+uci set dhcp.@dnsmasq[0].domainneeded='1'
+uci set dhcp.@dnsmasq[0].domain='sparrows.lan'
+uci set dhcp.@dnsmasq[0].local='/sparrows.lan/'
+uci set dhcp.@dnsmasq[0].logqueries='0'   # never log who asks for what
+uci -q delete dhcp.@dnsmasq[0].address
+uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any name -&gt; the welcome page
+uci commit dhcp
+&#32;
+# --- Welcome page (uhttpd), on the village addresses only. LuCI, if any, stays on 127.0.0.1 ---
+uci set uhttpd.sparrows=uhttpd
+uci -q delete uhttpd.sparrows.listen_http
+uci add_list uhttpd.sparrows.listen_http="[$ADDR]:80"
+uci add_list uhttpd.sparrows.listen_http="[$ADDR2]:80"
+uci set uhttpd.sparrows.home='/www/sparrows'
+uci set uhttpd.sparrows.error_page='/index.html'   # any unknown path (phones' checks) -&gt; the page
+uci set uhttpd.sparrows.rfc1918_filter='0'
+uci set uhttpd.sparrows.max_requests='10'
+# No web interface in this image (its first-boot file is absent): the default instance goes
+[ -f /etc/uci-defaults/95-sparrows-ui ] || uci -q delete uhttpd.main
+uci commit uhttpd
+&#32;
+# --- Message store: lxmd as propagation node, as user rns (made in 90-sparrows-station) ---
+mkdir -p /etc/lxmd &amp;&amp; chown rns:rns /etc/lxmd
+/etc/init.d/lxmd enable
+&#32;
+exit 0</code></pre></div>
+<div class="code"><div class="hd"><span class="file">nest/role.conf</span></div><pre><code># Sparrows-Network: what the nest service needs beyond its files. Read by build.sh.
+# A nest also runs Reticulum: its wheels come from tree/role.conf.
+&#32;
+# The built handbook is the welcome page, served by uhttpd on the village address
+HANDBOOK_TO="$HANDBOOK_TO www/sparrows/index.html"
+&#32;
+# A nest sends RAs and answers DNS: odhcpd and dnsmasq stay in its image (DNS only, no DHCP),
+# and uhttpd serves the page. Still no firewall.
+PKG_nest='dnsmasq odhcpd-ipv6only uhttpd'</code></pre></div>
+<div class="code"><div class="hd"><span class="file">nest/files/etc/init.d/lxmd</span></div><pre><code>#!/bin/sh /etc/rc.common
+# Sparrows-Network nest: LXMF propagation node (keeps messages for people who are away), as user rns.
+# It uses the rnsd started just before it (shared instance). First run writes /etc/lxmd/config.
+&#32;
+START=96
+STOP=09
+USE_PROCD=1
+&#32;
+start_service() {
+	procd_open_instance
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME=/etc/lxmd
+	procd_set_param command /usr/bin/python3 -m LXMF.Utilities.lxmd --config /etc/lxmd --rnsconfig /etc/reticulum -p
+	procd_set_param user rns
+	procd_set_param respawn 3600 10 0
+	procd_close_instance
+}</code></pre></div>
+<div class="code"><div class="hd"><span class="file">devices/rpi-4/device.conf</span></div><pre><code># Raspberry Pi 4: OpenWrt profile rpi-4 (bcm27xx/bcm2711). build.sh reads this file when a line of
+# profiles.txt names "rpi-4" in its profile column. OpenWrt ships its Wi-Fi firmware.
+# Status: NOT YET TESTED on the unit (written 2026-11-21).
+&#32;
+# Its radio (brcmfmac): access point and client, no 802.11s mesh, so no flyway. 5 GHz: no radar
+# detection, so no AP on the outdoor DFS channels the feeders use; set tx5 to - in profiles.txt.
+CAN2='feeder join'
+CAN5='join'
+&#32;
+# No automatic channel choice (ACS) in its driver: a fixed 2.4 GHz channel
+CH2='6'
+&#32;
+# The name and the village address come from the Ethernet MAC (eth0), as on most units
+MACDEV='eth0'</code></pre></div>
 <h4 id="flash-eap"><span lang="en">6. Flash an EAP225-Outdoor from TP-Link stock firmware</span> <span class="st ok" data-ui="ok">tested</span></h4>
 <p lang="en">Tested on 2026-11-14 on a v3 (hardware 3.0, stock firmware 5.1.0) with the hedge image. The v1 is not yet tested; the OpenWrt wiki gives the same method. The same steps serve the feeder image.</p>
 <p class="note" lang="en">Do not update the stock firmware before flashing. The OpenWrt wiki reports bricked units when flashing from stock 5.1.1, and says v3.20 hardware with 5.2.x firmware can't be flashed at all. The v4 is not supported.</p>
@@ -1944,6 +2302,7 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 </ol>
 <p class="note" lang="en">Costs. Omni antennas, so a few hundred metres between hedges. The 2.4 GHz mesh shares its channel with the 2.4 GHz open Wi-Fi of the same box, and throughput roughly halves at each hop: good for a village core, not for links between villages. The hedge key sits inside every hedge image, like the flyway key in perch images: keep them private. A hedge is lower and easier to reach than a perch on a mast, which is why it has its own key rather than the flyway's. The rogue-RA point of the feeder applies here too.</p>
 <h3 id="pi"><span lang="en">Nests, example: Raspberry Pi</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
+<p class="note" lang="en">Since 2026-11-21 nests move to OpenWrt (<a href="#nest-image">Nest image</a>). This Debian nest is the one running today and stays the reference until the OpenWrt nest passes the same checks.</p>
 <p lang="en">This is the configuration as it stands today, one Pi 4 at <code>::1</code>. It still carries things the target model removes; they stay until their replacement is tested (see the end of this section). Tested on 2026-11-14: the router advertisements, the DNS answers, the router flag and the non-ULA bench prefix, with a laptop and an Android phone. The local domain is now <code>sparrows.lan</code>.</p>
 <h4><span lang="en">1. Flash</span></h4>
 <p lang="en">Raspberry Pi OS Lite 64-bit (Trixie) with an up-to-date Raspberry Pi Imager. Customisation: any hostname (the nest renames itself just below), a user, SSH enabled, the home box Wi-Fi, country FR. Admin goes through the home Wi-Fi side.</p>
@@ -2111,8 +2470,14 @@ sudo mv /var/www/sparrows/index.html.bak /var/www/sparrows/index.html</code></pr
   <li><strong>Same file on every nest.</strong> Compare with <code>sha256sum</code>.</li>
 </ul>
 <h4 id="kit"><span lang="en">9. The kit folder: files and scripts to download</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
-<p lang="en">Next to this page, the nest serves a <code>kit/</code> folder: the build scripts, this handbook's sources, and the app install file, with a <code>SHA256SUMS</code> list. It belongs to the on-ramp (Layer 0) for the same reason as this page: someone with no app yet, or about to build a first station, can't reach anything on Layer 1. It holds only public files: no radio key, no SSH key, no built perch or hedge image (those carry the village's radio keys and are handed over in person).</p>
-<div class="code"><div class="hd"><span class="file">admin laptop, then nest</span></div><pre><code># On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
+<p lang="en">Next to this page, the nest serves a <code>kit/</code> folder: the build scripts, this handbook's sources, and the app install file, with a <code>SHA256SUMS</code> list. It belongs to the on-ramp (Layer 0) for the same reason as this page: someone with no app yet, or about to build a first station, can't reach anything on Layer 1. It holds only public files: no radio key, no SSH key, no built perch or hedge image (those carry the village's radio keys and are handed over in person). An admin with Internet access can also take everything straight from the project's git repository on GitHub, and update it with <code>git pull</code>. The repository is public since 2026-11-21: no account is needed to read it. Its front page shows this handbook in English.</p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then nest</span></div><pre><code># On any computer with Internet and git: the whole project from GitHub. Public: no account needed
+git clone https://github.com/1372711/Sparrows-Nework.git sparrows
+cd sparrows &amp;&amp; ls                             # tao/ (this handbook) and sparrows-openwrt/ (the build)
+git pull                                      # later, from inside sparrows/: get the latest
+git log -1 --format='%h %ad %s'               # which version you have
+&#32;
+# On the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
 # Public files only: keys/, secrets/ and build/ never go in the kit.
 mkdir -p kit
 rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
@@ -2296,6 +2661,11 @@ sudo systemctl disable --now nomadnet &amp;&amp; sudo rm /etc/systemd/system/nom
 rm -rf ~/rns ~/.reticulum ~/.nomadnetwork   # back up ~/.nomadnetwork/storage/identity first to keep the address</code></pre></div>
 <p lang="en">Back up <code>~/.nomadnetwork/storage/identity</code>: it is the node's key, so it is its address. Lose it and every link to the node breaks. Reading the pages: Nomad Network in a terminal, or MeshChat on a laptop. Whether Sideband on Android shows Nomad pages is still to check.</p>
 <h3 id="pitfalls"><span lang="en">Pitfalls</span></h3>
+<h4><span lang="en">Building images</span></h4>
+<ul lang="en">
+  <li>A space anywhere in the build tree's path (<code>~/00 - sparrows-network/...</code>) breaks the OpenWrt Image Builder: its Makefiles cut the path at the space, <code>make info</code> fails, and an older <code>build.sh</code> reported it as "no profile rpi-3" (seen 2026-11-21). Since then <code>build.sh</code> runs the Image Builder in <code>~/.cache/sparrows-build</code> when the path has a space, and still puts the images in <code>build/images</code>. Another folder: <code>SPARROWS_BUILD=/some/path ./build.sh</code>. A failing <code>make info</code> is now shown as such.</li>
+  <li>The Image Builder needs <code>rsync</code>, missing on a fresh Debian 12: <code>sudo apt install rsync</code>. <code>build.sh</code> lists what is missing before downloading anything.</li>
+</ul>
 <h4>Radio</h4>
 <ul lang="en">
   <li>802.11s mesh does not work on DFS channels. Both nodes pass the radar check, then never peer. Use AP + client on 5 GHz. 802.11s is fine on 2.4 GHz, which is what hedges use.</li>
@@ -2413,7 +2783,7 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
 <ul class="todo" lang="en">
   <li>One /64 per village, and how villages are separated and linked</li>
   <li>Propagation nodes and file stores that sync and survive a cut</li>
-  <li>Optional LoRa flyway as backup (RNode), and other media where they fit</li>
+  <li>Optional LoRa flyway as backup (RNode), and other media where they fit (<a href="#lora">see the idea</a>)</li>
   <li>A private hub on a VPS that the nests connect to, then a second one with another provider. Peering with the public network stays a separate decision (<a href="#outside">see the idea</a>)</li>
 </ul>
 <h4><span lang="en">Phase 4: social layer and governance</span></h4>
@@ -2471,8 +2841,8 @@ sync &amp;&amp; sudo umount $R $B</code></pre></div>
     <p lang="en"><span class="k">Cost</span>with <code>-n</code>, the one choice made on a unit today, <code>perch ap</code>, is lost at each update: either the <code>perch</code> tool keeps it in one small file that comes back after the update, or it is redone by hand. The SSH host key also changes at each update; host certificates signed by a village key would fix that. On the nest, two slots double the system space on the card, and RAUC's switch back on a failed boot depends on the Pi's boot loader: still to check on the bench, on the Pi model we use.</p>
   </div>
   <div class="card">
-    <h4><span lang="en">One OS, the role chosen on the unit</span></h4>
-    <p lang="en">Discussed on 2026-11-18. Today stations run OpenWrt and nests run Debian: two systems to build, update and learn. Debian can't run on a CPE510 or an EAP225, but OpenWrt runs on a Raspberry Pi, so OpenWrt is the only way to have one system everywhere. A nest's on-ramp is already in OpenWrt: <code>odhcpd</code> sends RAs with the DNS server inside, <code>dnsmasq</code> answers the catch-all DNS, <code>uhttpd</code> serves the page, <code>fw4</code> (nftables) does the redirect and the isolation.</p>
+    <h4><span lang="en">The role chosen on the unit</span></h4>
+    <p lang="en">Discussed on 2026-11-18. Today stations run OpenWrt and nests run Debian: two systems to build, update and learn. Debian can't run on a CPE510 or an EAP225, but OpenWrt runs on a Raspberry Pi, so OpenWrt is the only way to have one system everywhere. A nest's on-ramp is already in OpenWrt: <code>odhcpd</code> sends RAs with the DNS server inside, <code>dnsmasq</code> answers the catch-all DNS, <code>uhttpd</code> serves the page, <code>fw4</code> (nftables) does the redirect and the isolation. <strong>Decided on 2026-11-21:</strong> one system, OpenWrt, nests included (<a href="#nest-image">Nest image</a>), with what each port and radio does chosen at build time (<a href="#uses">uses</a>). What stays an idea is below: choosing the role on the unit after flashing.</p>
     <p lang="en"><span class="k">How</span>one image per hardware model, holding every role that model can take (<code>profiles.txt</code> already lists them; a CPE510 has no room for Python, so it can never be a nest). After flashing, one command picks the role, for example <code>sparrows role hedge</code>, and writes it to <code>/etc/sparrows/role</code>. At every boot, not only the first, the config is rebuilt from that file: a hand edit is gone at the next reboot. Only the role file and the keys survive an update. <code>perch ap</code> becomes a role of its own, so it is no longer lost.</p>
     <p lang="en"><span class="k">Cost</span>Reticulum supports OpenWrt packaging since version 0.8.7 (2024), but its OpenWrt package feed was still being stabilized, and LXMF, Nomad Network and Retipedia must each be tested on it. A Pi update rewrites the SD card, so Wikipedia and other big data go on a USB disk. Fewer people know OpenWrt as a server, though everyone who builds stations learns it anyway. The Debian nest stays the reference until an OpenWrt nest on a second Pi passes the same checks.</p>
   </div>
@@ -2550,13 +2920,72 @@ ss -tnp | grep 4242                                                   # one TCP 
 &#32;
 # Undo on the nest: enabled = no on that block (or delete it), then
 sudo systemctl restart rnsd lxmd</code></pre></div>
+<h3 id="lora"><span lang="en">A LoRa flyway to a town 15 km away</span> <span class="st idea" data-ui="idea">idea</span></h3>
+<p lang="en">Discussed on 2026-11-20. Not decided, not tested. Two LoRa boards running RNode firmware, one at each end, each plugged by USB into a nest. Reticulum on the nests relays between the village and the LoRa link. It carries messages and small pages, slowly, with no Internet and no operator in between.</p>
+<h4><span lang="en">Which board</span></h4>
+<ul lang="en">
+  <li><strong>The chip:</strong> an SX1262 on 868 MHz. It hears weaker signals than the older SX1276 and sends up to +22 dBm. Avoid 433 MHz (10 mW only in the EU) and 2.4 GHz LoRa (shorter range).</li>
+  <li><strong>LilyGO T3S3 (SX1262):</strong> cheap and well supported by RNode. The default choice.</li>
+  <li><strong>Heltec LoRa32 V3 or V4:</strong> same chip, also cheap. Its small antenna socket is fragile: use a short pigtail to an N connector.</li>
+  <li><strong>RAK4631 (WisBlock):</strong> nRF52 and SX1262. It uses very little power: the one for a solar relay on a mast.</li>
+  <li>Check the list of supported boards in <code>rnodeconf</code> before buying: it changes with new versions.</li>
+</ul>
+<h4><span lang="en">What makes 15 km work: height</span></h4>
+<ul lang="en">
+  <li><strong>Line of sight is not enough: keep the Fresnel zone clear.</strong> At 868 MHz over 15 km it is about 36 m in radius at the middle. Keep at least 60 % of it clear (about 22 m), plus about 3 m for the curve of the Earth, above the trees and roofs at mid-path.</li>
+  <li><strong>The country is flat, so go up:</strong> a water tower, a church tower or a tall mast, at both ends.</li>
+  <li><strong>The margin is large.</strong> Free-space loss over 15 km is about 115 dB. With about 20 dBm radiated, a 5 dBi antenna at the other end and SF9, the signal arrives near −90 dBm and the board hears down to about −129 dBm: about 35 dB to spare. A partly blocked path may still work. Only a test on site will tell.</li>
+  <li><strong>Antennas:</strong> an outdoor collinear (about 5 dBi), or a Yagi aimed at the other end. Put the board in a box at the top, next to the antenna, with a short cable. Bring USB or Ethernet down the mast, not a long antenna cable.</li>
+  <li><strong>Test before mounting:</strong> two boards on battery, one person at each site, and the signal strength that <code>rnprobe</code> shows (RSSI and SNR; the other end needs <code>respond_to_probes = Yes</code>).</li>
+</ul>
+<h4><span lang="en">The law: one sub-band</span></h4>
+<ul lang="en">
+  <li><strong>869.4–869.65 MHz:</strong> up to 500 mW <a href="#g-erp">ERP</a>, sending at most 10 % of the time. The best sub-band for a long link. Elsewhere in 868 MHz it is 25 mW and 1 %.</li>
+  <li><strong>The limit includes the antenna.</strong> ERP = power set on the board + antenna gain (dBi) − cable loss − 2.15. With a high-gain Yagi, lower the power.</li>
+  <li><strong>Reticulum keeps the 10 %</strong> with <code>airtime_limit_long</code> and <code>airtime_limit_short</code> in the config below.</li>
+  <li><strong>Speed:</strong> about 1.7 kbit/s at SF9 and 125 kHz. Enough for LXMF messages and Nomad Network pages, not for files. Where both ends see each other, a pair of perches on 5 GHz carries the same distance at tens of Mbit/s: LoRa is then a backup, or a first link while the masts wait.</li>
+</ul>
+<h4><span lang="en">How we would do it</span></h4>
+<p lang="en">Flash both boards while the laptop has Internet, plug each into a nest, and add the same block to both nests. Both ends must use the same frequency, bandwidth, spreading factor and coding rate, or they don't hear each other. The nest's existing village interface stays as it is. <span class="st nt" data-ui="nt">not yet tested</span></p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then each nest</span></div><pre><code># Not yet tested. ---- On the admin laptop, while it has Internet: flash each board once ----
+python3 -m venv ~/rns &amp;&amp; ~/rns/bin/pip install rns
+~/rns/bin/rnodeconf --autoinstall            # pick the board (e.g. LilyGO T3S3, SX1262) and 868 MHz
+~/rns/bin/rnodeconf /dev/ttyACM0 --info      # firmware version, board, frequency range
+&#32;
+# ---- On each nest: the board on USB, readable by the rns user ----
+ls -l /dev/serial/by-id/                     # a stable name for the board
+sudo usermod -aG dialout rns
+# Add under [interfaces] in /var/lib/reticulum/config. The SAME radio values at both ends.
+  [[LoRa flyway]]
+    type = RNodeInterface
+    enabled = yes
+    port = /dev/serial/by-id/&lt;the board&gt;
+    frequency = 869525000         # middle of 869.4-869.65 MHz: 500 mW ERP, 10 % of the time
+    bandwidth = 125000
+    spreadingfactor = 9           # about 1.7 kbit/s. Higher = farther and slower
+    codingrate = 5
+    txpower = 17                  # dBm on the board. ERP = txpower + antenna dBi - cable loss - 2.15, max 27
+    airtime_limit_long = 9        # % of the time over the long window: under the 10 % of the law
+    airtime_limit_short = 33      # % over the short window: bursts allowed, the long limit still holds
+&#32;
+# Apply and verify on the nest
+sudo systemctl restart rnsd lxmd
+sudo -u rns /opt/reticulum/bin/rnstatus --config /var/lib/reticulum   # "LoRa flyway" Up, its airtime and channel load
+journalctl -u rnsd -n 50                                              # no serial error
+# From a laptop in this village: the other village's nest is reachable over LoRa
+rnpath &lt;lxmd address of the other nest&gt;      # a path, 2 or more hops
+rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and SNR (needs respond_to_probes = Yes there)
+&#32;
+# Undo on the nest: enabled = no on that block (or delete it), then
+sudo systemctl restart rnsd lxmd</code></pre></div>
+<p class="note" lang="en">It keeps the hard rule "Standalone": no Internet and no company on the link. LoRa itself is not encrypted, but Reticulum encrypts every packet. The board and the antenna on a public building need the owner's agreement.</p>
 <h3 id="growing"><span lang="en">How this page grows</span></h3>
 <ul lang="en">
   <li><strong>One file.</strong> No outside font, script or image, so a Pi can serve it on the mesh as it is.</li>
   <li><strong>A new idea</strong> goes in Part IV with the <span class="st idea" data-ui="idea">idea</span> mark. When it is decided it moves up with its date. When it has run on the bench it earns <span class="st ok" data-ui="ok">tested</span>.</li>
   <li><strong>A new language:</strong> add its code to <code>LANGS</code> and its short labels to <code>UI</code> in the script at the bottom, then add a sibling block with <code>lang="xx"</code> next to each block of the other languages. A block with no <code>lang</code> attribute shows in every language: use that for anything not translated yet.</li>
   <li><strong>Code appears once.</strong> A translation never touches a command. The OpenWrt image files are shown straight from the <code>sparrows-openwrt</code> build tree, so the page and the images can't drift apart.</li>
-  <li><strong>One handbook.</strong> This page is the only document: no separate how-to. The <code>README.md</code> at the top of the repository is this page too, in English: <code>build.py</code> writes it from the same source, so never edit it by hand (decided 2026-11-20). Whatever is decided or learned goes here. The scripts stay separate files beside it, and the page prints them as they are.</li>
+  <li><strong>One handbook.</strong> This page is the only document: no separate how-to, no README. Whatever is decided or learned goes here. The scripts stay separate files beside it, and the page prints them as they are.</li>
   <li><strong>A new kind of station</strong> gets a name from the places and things of birds, and an entry in the glossary with its hardware as an example.</li>
 </ul>
 <h2 id="glossary"><span lang="en">Glossary</span></h2>
@@ -2575,6 +3004,10 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
   <dd lang="en">A peer that sends router advertisements, serves the on-ramp, and relays and stores for Layer 1. All nests are equal. A store nest also keeps files. Example: Raspberry Pi, mini PC, old laptop.</dd>
   <dt id="g-tree"><span lang="en">Tree</span><span class="tr" lang="en">FR arbre</span></dt>
   <dd lang="en">A relay that only does Layer 1 (Reticulum transport), with no on-ramp. Sparrows gather in a tree and call to each other: a tree passes on what it hears. Anyone can plant one. Example: any Linux machine or laptop left on.</dd>
+  <dt id="g-wire"><span lang="en">Wire</span><span class="tr" lang="en">FR fil</span></dt>
+  <dd lang="en">What a station's Ethernet ports do: a cable to the site's switch, part of the village segment. Sparrows sit on wires.</dd>
+  <dt id="g-join"><span lang="en">Join</span><span class="tr" lang="en">FR rejoindre</span></dt>
+  <dd lang="en">What a radio does when it is a client of the <code>Sparrows</code> Wi-Fi, like a phone: a tree joins. Never bridged, so nothing hangs behind it.</dd>
   <dt id="g-station"><span lang="en">Station</span></dt>
   <dd lang="en">Any of the above. A user device is not a station: it belongs to a person and holds their key. Nor is a neighbour's page node: it is a user device that publishes.</dd>
 </dl>
@@ -2594,6 +3027,10 @@ sudo systemctl restart rnsd lxmd</code></pre></div>
   <dd lang="en">The radar rule on 5 GHz channels 52 to 140: listen 60 s before transmitting, and leave the channel if a radar shows up.</dd>
   <dt><span lang="en">EIRP</span></dt>
   <dd lang="en">Radiated power with the antenna gain included. It is what the law limits.</dd>
+  <dt id="g-erp"><span lang="en">ERP</span></dt>
+  <dd lang="en">Radiated power compared with a simple dipole antenna: EIRP minus 2.15 dB. The LoRa limits are given in ERP.</dd>
+  <dt><span lang="en">Fresnel zone</span></dt>
+  <dd lang="en">The fat oval of space around the straight line between two antennas. Most of the signal travels through it, so trees or roofs inside it weaken a link even when each end can see the other.</dd>
   <dt>TPC</dt>
   <dd lang="en">Transmit power control: a radio that can lower its power on its own. On 5 GHz channels 100 to 140, a radio without it is allowed 3 dB less.</dd>
   <dt>SAE</dt>

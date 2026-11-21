@@ -1,5 +1,8 @@
 # Sparrows-Network: hardware that can take each role.
-# One line per device. To support another device, add a line: nothing else changes.
+# One line per device and role. To support another device, add a line: nothing else changes.
+#
+# role = a role of uses.txt (perch, feeder, hedge, tree, nest), or several joined with +, e.g. tree+feeder:
+#   what each port and radio does comes from uses.txt. The unit is named after it (tree-feeder-26de).
 #
 # tx2 / tx5 = power set at the radio, in dBm = legal EIRP limit (FR) - antenna gain.
 #   2.4 GHz: 20 dBm EIRP.
@@ -9,16 +12,27 @@
 # ui = the web interface (LuCI) may go in this image, when the build asks for it (UI=1, or w in the menu).
 # "-" = never: 8 MB of flash or 64 MB of RAM is too small (Sparrows Tao, Hard rules). No column = "-".
 #
-# profile = the OpenWrt profile name, or a folder in devices/ for a device that needs more than a
-#   line (another OpenWrt profile, firmware to fetch, its own first-boot file). See devices/*/device.conf.
+# uses = manual mode, for a special device: what each interface does, instead of a role's preset.
+#   uses=<ports>,<2.4 GHz>,<5 GHz>,<services>   e.g. uses=wire,feeder,flyway,-
+#   The role column is then only a name for the unit (letters, digits, -). Needs the ui column before it.
+#   The menu writes these lines for you (n, then m). Uses are explained in uses.txt.
 #
-# role   target          profile                    tx2  tx5  ui
-perch    ath79/generic   tplink_cpe510-v3           -    17   -
-feeder   ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
-feeder   ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
-hedge    ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
-hedge    ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+# profile = the OpenWrt profile name, or a folder in devices/ for a device that needs more than a
+#   line (another OpenWrt profile, firmware to fetch, what its radios can do, its own first-boot
+#   file). See devices/*/device.conf.
+#
+# role    target          profile                    tx2  tx5  ui  uses
+perch     ath79/generic   tplink_cpe510-v3           -    17   -
+feeder    ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+feeder    ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
+hedge     ath79/generic   tplink_eap225-outdoor-v1   17   23   ui
+hedge     ath79/generic   tplink_eap225-outdoor-v3   17   23   ui
 # Pi Zero 2 W: 2.4 GHz only, with a USB Ethernet adapter for the village cable. Not yet tested.
-feeder   bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+feeder    bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
 # Same Pi Zero 2 W as a tree: a Wi-Fi client of the village running Reticulum. No adapter needed.
-tree     bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+tree      bcm27xx/bcm2710 rpi-zero-2-w               17   -    ui
+# Both at once: its Wi-Fi serves Sparrows, Reticulum runs on the cable (USB adapter). Not yet tested.
+tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
+# Pi 4 as a nest, its own Wi-Fi as Sparrows Wi-Fi (2.4 GHz: its chip has no radar check for 5 GHz
+# outdoor channels). Replaces the Debian nest once it passes the same checks. Not yet tested.
+nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui

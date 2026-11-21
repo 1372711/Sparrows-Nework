@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+# Sparrows-Network nest: LXMF propagation node (keeps messages for people who are away), as user rns.
+# It uses the rnsd started just before it (shared instance). First run writes /etc/lxmd/config.
+
+START=96
+STOP=09
+USE_PROCD=1
+
+start_service() {
+	procd_open_instance
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME=/etc/lxmd
+	procd_set_param command /usr/bin/python3 -m LXMF.Utilities.lxmd --config /etc/lxmd --rnsconfig /etc/reticulum -p
+	procd_set_param user rns
+	procd_set_param respawn 3600 10 0
+	procd_close_instance
+}

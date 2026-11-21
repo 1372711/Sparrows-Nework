@@ -1,0 +1,149 @@
+#!/bin/sh
+# Sparrows-Network: what each port and radio of this station does. One file for every role.
+# build.sh writes the uses in /etc/sparrows/station, from uses.txt (or a manual line of profiles.txt):
+#   PORTS = wire | off              USE2, USE5 = uses of the 2.4 / 5 GHz radio: off, or a list of
+#   RETICULUM, NEST = 1 | 0         feeder (open Wi-Fi), flyway (batman-adv link), join (Wi-Fi client)
+# Bridge only: no IPv4, no DHCP, no RA, no firewall (base in 10-sparrows-common). A nest adds its
+# services after this file (91-sparrows-nest).
+# Runs once at first boot (and again after `firstboot && reboot`).
+# Status: NOT YET TESTED. Replaces the per-role files (2026-11-21), with the same radio settings.
+
+. /etc/sparrows/station
+
+SSID='Sparrows'                  # the open Wi-Fi, for people's devices
+FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
+FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
+MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
+MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
+FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
+FEED_CH5='132'                   # 5 GHz feeder: outdoor DFS, VHT40 = 132+136. Far from 108
+
+has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
+ALL="$USE2 $USE5"
+
+# A radio key: 8-63 printable ASCII, or SAE never links (seen on the flyway 2026-11-14, Pitfalls).
+# build.sh already refuses a bad key; this only catches a hand-edited one.
+key() {
+	chmod 600 "/etc/sparrows/$1"
+	K=$(cat "/etc/sparrows/$1")
+	printf '%s' "$K" | LC_ALL=C grep -qxE '[ -~]{8,63}' || \
+		logger -p daemon.err -t sparrows "$1 is not 8-63 printable ASCII: this flyway will not link"
+	printf '%s' "$K"
+}
+
+# --- Ports: wire = in the village bridge (the image's default); off = out of it ---
+BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
+[ "$PORTS" != off ] || uci -q delete network.$BR.ports
+
+# --- Flyway: batman-adv, bridged with the rest in br-lan ---
+if has "$ALL" flyway; then
+	uci set network.bat0=interface
+	uci set network.bat0.proto='batadv'
+	uci set network.bat0.routing_algo='BATMAN_IV'
+	uci set network.bat0.bridge_loop_avoidance='1'   # a site switch with 2 batman nodes = two paths;
+	                                                 # BLA must be on all of them
+	uci set network.mesh0=interface
+	uci set network.mesh0.proto='batadv_hardif'
+	uci set network.mesh0.master='bat0'
+	uci set network.mesh0.mtu='1536'                 # batman header, avoids fragmentation
+	uci -q del_list network.$BR.ports='bat0'
+	uci add_list network.$BR.ports='bat0'
+fi
+
+# --- Join: the Wi-Fi client is an interface of its own, address by SLAAC from the nests' RAs ---
+if has "$ALL" join; then
+	uci set network.wsta=interface
+	uci set network.wsta.proto='dhcpv6'
+	uci set network.wsta.reqaddress='none'
+	uci set network.wsta.reqprefix='no'
+fi
+uci commit network
+
+# --- Radios: the first radio of each band takes that band's uses, any other is off ---
+[ -s /etc/config/wireless ] || wifi config
+DONE=''
+for r in $(uci show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-device$/\1/p'); do
+	uci -q delete wireless.default_$r
+	B=$(uci -q get wireless.$r.band)
+	case "$B" in
+		2g) U=$USE2; TX=$TX2 ;;
+		5g) U=$USE5; TX=$TX5 ;;
+		*)  U=''; TX='-' ;;
+	esac
+	if [ "$TX" = '-' ] || [ -z "$U" ] || [ "$U" = off ] || has "$DONE" "$B"; then
+		uci set wireless.$r.disabled='1'
+		continue
+	fi
+	DONE="$DONE $B"
+	uci set wireless.$r.disabled='0'
+	uci set wireless.$r.country='FR'
+	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
+	uci set wireless.$r.txpower="$TX"
+
+	# Channel: a flyway fixes it; a client follows its AP; a feeder alone uses the feeder's
+	if [ "$B" = 2g ]; then
+		HT='HT20'
+		if has "$U" flyway; then CH=$MESH_CH; elif has "$U" join; then CH='auto'; else CH=$FEED_CH2; fi
+	else
+		if has "$U" flyway; then CH=$FLYWAY_CH; HT='HT20'
+		elif has "$U" join; then CH='auto'; HT='VHT40'
+		else CH=$FEED_CH5; HT='VHT40'; fi
+	fi
+	uci set wireless.$r.channel="$CH"
+	uci set wireless.$r.htmode="$HT"
+
+	if has "$U" flyway && [ "$B" = 5g ]; then
+		uci set wireless.flyway=wifi-iface       # the perch tool works on this one
+		uci set wireless.flyway.device="$r"
+		uci set wireless.flyway.mode='sta'       # safe default: a client only transmits after hearing its AP
+		uci set wireless.flyway.ssid="$FLYWAY_SSID"
+		uci set wireless.flyway.encryption='sae'
+		uci set wireless.flyway.key="$(key flyway.key)"
+		uci set wireless.flyway.network='mesh0'
+	fi
+	if has "$U" flyway && [ "$B" = 2g ]; then
+		uci set wireless.mesh_$r=wifi-iface
+		uci set wireless.mesh_$r.device="$r"
+		uci set wireless.mesh_$r.mode='mesh'
+		uci set wireless.mesh_$r.mesh_id="$MESH_ID"
+		uci set wireless.mesh_$r.encryption='sae'
+		uci set wireless.mesh_$r.key="$(key hedge.key)"
+		uci set wireless.mesh_$r.mesh_fwding='0'     # batman-adv does the routing, not 802.11s
+		uci set wireless.mesh_$r.network='mesh0'
+	fi
+	if has "$U" feeder; then
+		uci set wireless.ap_$r=wifi-iface
+		uci set wireless.ap_$r.device="$r"
+		uci set wireless.ap_$r.mode='ap'
+		uci set wireless.ap_$r.ssid="$SSID"
+		uci set wireless.ap_$r.encryption='none'         # on-ramp: anyone can join
+		uci set wireless.ap_$r.network='lan'
+		uci set wireless.ap_$r.isolate='0'               # phones must reach each other (Reticulum, P3)
+		uci set wireless.ap_$r.multicast_to_unicast_all='1'  # RAs + Reticulum discovery reach clients reliably
+	fi
+	if has "$U" join; then
+		uci set wireless.wsta=wifi-iface
+		uci set wireless.wsta.device="$r"
+		uci set wireless.wsta.mode='sta'
+		uci set wireless.wsta.ssid="$SSID"
+		uci set wireless.wsta.encryption='none'          # the open on-ramp Wi-Fi, like any phone
+		uci set wireless.wsta.network='wsta'
+		uci set wireless.wsta.ifname='wsta'              # fixed name: the Reticulum config uses it
+	fi
+done
+uci commit wireless
+
+# --- Reticulum: on the Wi-Fi client if a radio joins, else on the village bridge ---
+if [ "$RETICULUM" = 1 ]; then
+	if has "$ALL" join; then DEV='wsta'; else DEV='br-lan'; fi
+	sed -i "s|@RNSDEV@|$DEV|" /etc/reticulum/config
+	. /lib/functions.sh
+	group_add rns 1500 2>/dev/null
+	user_add rns 1500 1500 rns /etc/reticulum /bin/false 2>/dev/null   # its own user, never root
+	sed -i "s|@NAME@|$(uci -q get system.@system[0].hostname)|" /etc/nomadnetwork/config
+	chown -R rns:rns /etc/reticulum /etc/nomadnetwork
+	/etc/init.d/rnsd enable
+	/etc/init.d/nomadnet enable
+fi
+
+exit 0

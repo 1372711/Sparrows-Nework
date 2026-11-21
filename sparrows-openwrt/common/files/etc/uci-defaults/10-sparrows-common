@@ -1,11 +1,11 @@
 #!/bin/sh
-# Sparrows-Network: base shared by every OpenWrt station (perch, feeder, hedge, tree).
-# No IPv4, no DHCP, no RA, no firewall, SSH keys only. Perch, feeder and hedge are a Layer 2 bridge
-# with no Reticulum; the tree adds its Wi-Fi client and Reticulum (90-sparrows-tree).
+# Sparrows-Network: base shared by every OpenWrt station, whatever its role.
+# No IPv4, no DHCP, no RA (except on a nest: 91-sparrows-nest), no firewall, SSH keys only. The ports and radios get their uses in
+# 90-sparrows-station, from /etc/sparrows/station.
 # Runs once at first boot (and again after `firstboot && reboot`).
 # Status: NOT YET TESTED.
 
-. /etc/sparrows/station          # ROLE, TX2, TX5 (written by build.sh from profiles.txt)
+. /etc/sparrows/station          # ROLE, TX2, TX5, PORTS, USE2, USE5, RETICULUM, NEST (written by build.sh)
 
 # --- Name: <role>-<last 4 hex of the MAC>, e.g. perch-3fa2. Same image on every unit ---
 # MACDEV (in /etc/sparrows/station) = where the fixed MAC is: eth0 on most units; phy0 (the radio)
@@ -22,15 +22,20 @@ uci set system.@system[0].cronloglevel='9'
 uci commit system
 
 # --- Login text: /etc/sparrows/banner (edit it in the build tree), filled in for this unit ---
-case "$ROLE" in
-	perch)  WHAT='perch: backbone radio, one end of a flyway'; HINT='perch status   perch ap | perch sta' ;;
-	feeder) WHAT='feeder: open Wi-Fi for people, bridged to the village'; HINT='iw dev   logread | grep -i cac' ;;
-	hedge)  WHAT='hedge: open Wi-Fi + 2.4 GHz mesh to the other hedges'; HINT='batctl n   batctl o' ;;
-	tree)   WHAT='tree: Reticulum relay + the Sparrows page, on the village Wi-Fi'; HINT='rns status   /etc/init.d/nomadnet status' ;;
-	*)      WHAT=$ROLE; HINT='' ;;
-esac
+# What it does, from its uses, e.g. "hedge: ports wire, 2.4 GHz flyway+feeder, 5 GHz feeder".
+# No | in these texts: sed below uses it as its separator
+use() { [ -z "$1" ] || [ "$1" = off ] && echo off || echo "$1" | tr ' ' '+'; }
+WHAT="$ROLE: ports $PORTS, 2.4 GHz $(use "$USE2"), 5 GHz $(use "$USE5")"
+[ "$RETICULUM" != 1 ] || WHAT="$WHAT, Reticulum"
+[ "${NEST:-0}" != 1 ] || WHAT="$WHAT, nest (RAs, DNS, welcome page, message store)"
+HINT=''
+case " $USE5 " in *" flyway "*) HINT="$HINT  perch status  perch ap" ;; esac
+case " $USE2 $USE5 " in *" flyway "*) HINT="$HINT  batctl n  batctl o" ;; esac
+case " $USE2 $USE5 " in *" feeder "*|*" join "*) HINT="$HINT  iw dev" ;; esac
+[ "$RETICULUM" != 1 ] || HINT="$HINT  rns status"
+[ "${NEST:-0}" != 1 ] || HINT="$HINT  logread -e odhcpd  /etc/init.d/lxmd status"
 REL=$( [ -f /etc/openwrt_release ] && . /etc/openwrt_release; echo "${DISTRIB_DESCRIPTION:-OpenWrt}")
-[ -z "$HINT" ] || HINT="Useful here: $HINT"
+[ -z "$HINT" ] || HINT="Useful here:${HINT# }"
 sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
 	/etc/sparrows/banner > /etc/banner
 

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Build the Sparrows-Network OpenWrt images (perch, feeder, hedge, tree) with the OpenWrt Image Builder.
+# Build the Sparrows-Network OpenWrt images with the OpenWrt Image Builder.
 # One image per role and device: the same image goes on every unit of that role.
+# What each port and radio does comes from the role (uses.txt), or from a manual line (profiles.txt).
 # Runs on x86_64 Linux. Needs: wget, zstd, make, gcc, python3, perl, rsync (see OpenWrt IB docs), gpgv.
 #
 # Usage: ./build.sh              -> in a terminal: a menu to pick the devices (Enter = all of them)
 #                                   without a terminal (a script, cron): every line of profiles.txt
 #        ./build.sh all          -> every line of profiles.txt, no menu
-#        ./build.sh perch        -> perches only (or: feeder, hedge, tree), no menu
+#        ./build.sh perch        -> every line with that role, alone or combined (or: feeder, hedge,
+#                                   tree, or a manual line's name), no menu
+#        ./build.sh uses         -> what each port and radio of every line will do, nothing built
 #        VER=25.12.x ./build.sh  -> another 25.12 release
 #        UI=1 ./build.sh all     -> with the web interface (LuCI), only where profiles.txt says "ui"
 #        ./build.sh sd [image]   -> write a Raspberry Pi image (.img.gz) to an SD card: asks which
@@ -19,20 +22,21 @@
 #                                 https://openwrt.org/docs/guide-user/security/signatures, add it there)
 #   CHECK_RULES=0 ./build.sh   -> don't check the image's package list against the hard rules
 #
-# The menu lists the devices already in profiles.txt (several can be picked at once), can change
-# the release, can turn the web interface on or off, and can add a new device: it searches the
-# Image Builder for the model, asks the role, the radio power and whether the web interface fits,
-# and adds the line to profiles.txt marked "not yet tested".
+# The menu lists the devices already in profiles.txt with what their interfaces do (several can be
+# picked at once), can change the release, can turn the web interface on or off, and can add a new
+# device: it searches the Image Builder for the model, asks the role (or the uses of each interface,
+# in manual mode), the radio power and whether the web interface fits, shows what each interface
+# will do, and adds the line to profiles.txt marked "not yet tested".
 # Web interface: LuCI, listening on the unit itself only (ui/files, reached through SSH). Never on a
 # device marked "-" (8 MB flash / 64 MB RAM); there the image is built without it, and says so.
 #
 # Before the first build:
 #   keys/*.pub           admin SSH public keys (root password is locked)
-#   secrets/flyway.key   the flyway SAE passphrase (perch only)
-#   secrets/hedge.key    the hedge mesh SAE passphrase (hedge only)
+#   secrets/flyway.key   the 5 GHz flyway SAE passphrase (images with a 5 GHz flyway: perch)
+#   secrets/hedge.key    the 2.4 GHz flyway SAE passphrase (images with a 2.4 GHz flyway: hedge)
 #                        Each: one line of 8 to 63 printable ASCII characters, ideally letters/digits only.
 #                        Generate one: head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32
-#                        Perch and hedge images contain their key: never publish them.
+#                        Images with a flyway contain its key: never publish them.
 set -euo pipefail
 
 VER="${VER:-25.12.6}"     # 2026-10-18, security fixes. Check https://downloads.openwrt.org/releases/ for the latest 25.12.x
@@ -41,16 +45,21 @@ CHECK_SIG="${CHECK_SIG:-1}"
 CHECK_RULES="${CHECK_RULES:-1}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/build/images"
-ROLES="perch feeder hedge tree"
+# The Image Builder's Makefiles break on a path with a space in it (seen 2026-11-21: "/home/me/00 - x"
+# was cut at the first space, and "make info" failed). Then it works in a folder of its own, outside
+# the tree; the images still land in build/images. SPARROWS_BUILD=<folder> chooses another one.
+BUILD="${SPARROWS_BUILD:-$HERE/build}"
+case "$BUILD" in *[[:space:]]*) BUILD="${XDG_CACHE_HOME:-$HOME/.cache}/sparrows-build" ;; esac
 
-# Every role: no DHCP/RA server, no firewall, no PPP, no web UI (perch, feeder and hedge only bridge)
+# Every image: no DHCP/RA server, no firewall, no PPP, no web UI (a station only bridges)
 BASE="-dnsmasq -odhcpd-ipv6only -firewall4 -nftables -kmod-nft-offload -ppp -ppp-mod-pppoe -luci -luci-ssl"
-PKG_perch="$BASE -wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
-PKG_feeder="$BASE"
-PKG_hedge="$BASE -wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
-# Tree: a Wi-Fi client running Reticulum and the Sparrows page (Nomad Network). Python and the
-# libraries Reticulum asks for; Reticulum and Nomad Network come as pinned wheels (tree/role.conf). Needs room: SD-card devices, not 8-16 MB flash.
-PKG_tree="$BASE python3 python3-cryptography python3-pyserial iw"
+# ...plus what its uses need
+PKG_flyway="-wpad-basic-mbedtls wpad-mesh-mbedtls kmod-batman-adv batctl-default iw"
+PKG_join="iw"
+# A nest keeps odhcpd and dnsmasq (RA and DNS, no DHCP) and adds uhttpd: PKG_nest, in nest/role.conf.
+# Reticulum: Python and the libraries Reticulum asks for; Reticulum and Nomad Network come as pinned
+# wheels (tree/role.conf). Needs room: SD-card devices, not 8-16 MB flash.
+PKG_reticulum="python3 python3-cryptography python3-pyserial iw"
 # LuCI = luci-light minus its firewall and PPP pages. luci-light itself would bring firewall4 and
 # nftables back (luci-app-firewall needs a firewall): no firewall is a hard rule. No HTTPS: it only
 # listens on 127.0.0.1 and ::1
@@ -62,25 +71,157 @@ FORBIDDEN_NO_UI="luci-base uhttpd"     # ...and no web interface unless it was a
 
 die() { echo "$*" >&2; exit 1; }
 
-# The device lines of profiles.txt: role target profile tx2 tx5 [ui]. A # starts a comment anywhere
+# The device lines of profiles.txt: role target profile tx2 tx5 [ui] [uses=...]. A # starts a comment anywhere
 profiles() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/profiles.txt"; }
+
+# ---------------------------------------------------------------- uses of each interface
+
+# The role presets of uses.txt: role ports 2.4GHz 5GHz services
+presets() { awk '{ sub(/#.*/, "") } NF { $1 = $1; print }' "$HERE/uses.txt"; }
+ROLES=$(presets | awk '{ printf "%s ", $1 }'); ROLES=${ROLES% }
+
+has() { case " $1 " in *" $2 "*) return 0 ;; esac; return 1; }
+
+# What a device's radios can do: CAN2 / CAN5 in devices/<profile>/device.conf, else everything
+can() (
+	CAN2='feeder flyway join' CAN5='feeder flyway join'
+	if [ -f "$HERE/devices/$1/device.conf" ]; then
+		# shellcheck source=/dev/null
+		. "$HERE/devices/$1/device.conf"
+	fi
+	echo "$CAN2|$CAN5"
+)
+
+# The uses of a device line, as PORTS|USE2|USE5|RETICULUM|NEST (e.g. wire|flyway feeder|feeder|0|0),
+# or why it can't be built (and returns 1). A role's preset is lenient (a band set to - is simply
+# off); a manual uses= line is strict (it says exactly what it wants).
+uses_of() {
+	local R=$1 P=$2 X2=$3 X5=$4 SPEC=${5:-} PORTS='' U2='' U5='' S='' RNS=0 NEST=0 MANUAL=0
+	local PART L A B C D W X C2 C5 N
+	if [ -n "$SPEC" ]; then
+		MANUAL=1
+		IFS=, read -r PORTS U2 U5 S X <<<"${SPEC#uses=}"
+		{ [ -n "$S" ] && [ -z "$X" ]; } || { echo "uses= needs 4 fields: ports,2.4GHz,5GHz,services"; return 1; }
+		U2=${U2//+/ } U5=${U5//+/ }
+		[ "$S" != - ] || S=''
+		S=${S//+/ }
+	else
+		for PART in ${R//+/ }; do
+			L=$(presets | awk -v r="$PART" '$1 == r')
+			[ -n "$L" ] || { echo "unknown role '$PART' (roles: $ROLES)"; return 1; }
+			read -r _ A B C D <<<"$L"
+			[ "$A" != wire ] || PORTS=wire
+			[ "$B" = off ] || U2="$U2 ${B//+/ }"
+			[ "$C" = off ] || U5="$U5 ${C//+/ }"
+			[ "$D" = - ] || S="$S $D"
+		done
+		[ -n "$PORTS" ] || PORTS=off
+	fi
+	case "$PORTS" in wire|off) ;; *) echo "ports '$PORTS' is not wire or off"; return 1 ;; esac
+	for W in $U2 $U5; do
+		case "$W" in feeder|flyway|join|off) ;; *) echo "'$W' is not a use (feeder, flyway, join, off)"; return 1 ;; esac
+	done
+	for W in $S; do
+		case "$W" in
+			reticulum) RNS=1 ;;
+			nest) NEST=1 RNS=1 ;;      # a nest relays and stores for Reticulum too
+			*) echo "'$W' is not a service (reticulum, nest, or -)"; return 1 ;;
+		esac
+	done
+	# Each use once, always in the same order; off means nothing
+	N=''; for W in flyway feeder join; do if has "$U2" "$W"; then N="$N $W"; fi; done; U2=${N# }
+	N=''; for W in flyway feeder join; do if has "$U5" "$W"; then N="$N $W"; fi; done; U5=${N# }
+
+	# A band set to - is off
+	if [ "$X2" = - ] && [ -n "$U2" ]; then
+		[ "$MANUAL" = 0 ] || { echo "uses on 2.4 GHz, but its power is -"; return 1; }
+		U2=''
+	fi
+	if [ "$X5" = - ] && [ -n "$U5" ]; then
+		[ "$MANUAL" = 0 ] || { echo "uses on 5 GHz, but its power is -"; return 1; }
+		U5=''
+	fi
+	# What the chip can do (device.conf)
+	IFS='|' read -r C2 C5 <<<"$(can "$P")"
+	for W in $U2; do has "$C2" "$W" || { echo "this device's 2.4 GHz radio can't do '$W' (devices/$P/device.conf)"; return 1; }; done
+	for W in $U5; do has "$C5" "$W" || { echo "this device's 5 GHz radio can't do '$W' (devices/$P/device.conf)"; return 1; }; done
+
+	# A nest never joins: it serves the village, its radios don't hang on someone else's
+	if [ "$NEST" = 1 ]; then U2=${U2% join}; U2=${U2%join}; U5=${U5% join}; U5=${U5%join}; fi
+	# A radio that joins does nothing else: when it has another use, it doesn't join
+	# (Reticulum then runs on the village bridge). And only one radio joins: the 2.4 GHz one
+	if has "$U2" join && [ "$U2" != join ]; then U2=${U2% join}; fi
+	if has "$U5" join && [ "$U5" != join ]; then U5=${U5% join}; fi
+	if [ "$U2" = join ] && [ "$U5" = join ]; then U5=''; fi
+	# One 5 GHz radio can't hold a flyway (ch 108) and a feeder (ch 132)
+	if has "$U5" flyway && has "$U5" feeder; then
+		echo "5 GHz: a flyway (ch 108) and a feeder (ch 132) can't share one radio"; return 1
+	fi
+	if [ -z "$U2$U5" ] && [ "$RNS" = 0 ]; then
+		echo "with these bands, this unit would do nothing"; return 1
+	fi
+	echo "$PORTS|${U2:-off}|${U5:-off}|$RNS|$NEST"
+}
+
+# One line: "ports wire | 2.4 flyway+feeder | 5 feeder | Reticulum"
+uses_short() {
+	local PORTS U2 U5 RNS NEST
+	IFS='|' read -r PORTS U2 U5 RNS NEST <<<"$1"
+	printf 'ports %s | 2.4 %s | 5 %s%s' "$PORTS" "${U2// /+}" "${U5// /+}" \
+		"$( if [ "$NEST" = 1 ]; then echo ' | nest'; elif [ "$RNS" = 1 ]; then echo ' | Reticulum'; fi )"
+}
+
+# What each interface will do, in words
+uses_long() {
+	local PORTS U2 U5 RNS NEST B U W T FIRST
+	IFS='|' read -r PORTS U2 U5 RNS NEST <<<"$1"
+	if [ "$PORTS" = wire ]; then
+		printf '    %-10s %s\n' 'Ethernet' "wire: cable to the site's switch, part of the village (bridged)"
+	else
+		printf '    %-10s %s\n' 'Ethernet' "off: not in the village bridge"
+	fi
+	for B in 2.4 5; do
+		if [ "$B" = 2.4 ]; then U=$U2; else U=$U5; fi
+		if [ "$U" = off ]; then printf '    %-10s %s\n' "$B GHz" 'off'; continue; fi
+		FIRST="$B GHz"
+		for W in $U; do
+			case "$W:$B" in
+				feeder:*)  T='feeder: the open Sparrows Wi-Fi, for people'"'"'s devices' ;;
+				flyway:5)  T='flyway: link to other perches, AP or client (perch ap), SAE, ch 108, batman-adv' ;;
+				flyway:*)  T='flyway: mesh to the other units on ch 1 (802.11s, SAE), batman-adv' ;;
+				join:*)    T='join: client of the Sparrows Wi-Fi, like a phone (not bridged)' ;;
+			esac
+			printf '    %-10s %s\n' "$FIRST" "$T"
+			FIRST=''
+		done
+	done
+	if [ "$RNS" = 1 ]; then
+		if has "$U2 $U5" join; then W='wsta, the Wi-Fi client'; else W='br-lan, the village bridge'; fi
+		printf '    %-10s %s\n' 'Services' "Reticulum relay + the Sparrows page, on $W"
+	fi
+	if [ "$NEST" = 1 ]; then
+		printf '    %-10s %s\n' '' 'nest: router advertisements, DNS (sparrows.lan, catch-all), the welcome page,'
+		printf '    %-10s %s\n' '' '      the message store (lxmd), on a fixed village address from the MAC'
+	fi
+}
 
 # Why a device line can't be built (nothing if it can): caught here, not on a mast
 bad_line() {
-	local R=$1 T=${2:-} P=${3:-} X2=${4:-} X5=${5:-} U=${6:--} REST=${7:-} X
-	case " $ROLES " in *" $R "*) ;; *) echo "unknown role '$R'"; return ;; esac
+	local R=$1 T=${2:-} P=${3:-} X2=${4:-} X5=${5:-} U=${6:--} SPEC=${7:-} REST=${8:-} X MAP
+	if [ -n "$SPEC" ]; then
+		[[ "$SPEC" =~ ^uses= ]] || { echo "7th column '$SPEC' is not uses=..."; return; }
+		[[ "$R" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "name '$R' (manual line): letters, digits and - only"; return; }
+	else
+		[[ "$R" =~ ^[a-z][a-z0-9+]*$ ]] || { echo "role '$R' is not a role or roles joined with +"; return; }
+	fi
 	[[ "$T" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "target '$T' is not name/subtarget"; return; }
 	[ -n "$P" ] || { echo "no profile"; return; }
 	for X in "$X2" "$X5"; do
 		[[ "$X" =~ ^(-|[0-9]|[12][0-9]|30)$ ]] || { echo "radio power '$X' is not - or 0 to 30 dBm"; return; }
 	done
-	case "$R" in
-		perch) [ "$X5" != '-' ] || { echo "a perch needs its 5 GHz radio"; return; } ;;
-		hedge) { [ "$X2" != '-' ] && [ "$X5" != '-' ]; } || { echo "a hedge needs both bands (2.4 GHz mesh, 5 GHz Wi-Fi)"; return; } ;;
-		*)     { [ "$X2" != '-' ] || [ "$X5" != '-' ]; } || { echo "a $R needs at least one band"; return; } ;;
-	esac
-	[[ "$U" =~ ^(ui|-)$ ]] || { echo "last column '$U' is not ui or -"; return; }
-	[ -z "$REST" ] || echo "too many columns"
+	[[ "$U" =~ ^(ui|-)$ ]] || { echo "6th column '$U' is not ui or -"; return; }
+	[ -z "$REST" ] || { echo "too many columns"; return; }
+	MAP=$(uses_of "$R" "$P" "$X2" "$X5" "$SPEC") || echo "$MAP"
 }
 
 ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
@@ -89,7 +230,7 @@ ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
 # the download isn't broken; the signature proves it is OpenWrt's, whatever server or mirror it came
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
 check_sig() {
-	local FILE=$1 SIG=$2 KR="$HERE/build/trust.gpg" GH="$HERE/build/gnupg" STATUS ID
+	local FILE=$1 SIG=$2 KR="$BUILD/trust.gpg" GH="$BUILD/gnupg" STATUS ID
 	command -v gpgv >/dev/null || { echo "gpgv is missing (Debian/Ubuntu: apt install gpgv), or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	compgen -G "$HERE/trust/*.asc" >/dev/null || { echo "No OpenWrt public key in trust/*.asc, or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	mkdir -p "$GH" && chmod 700 "$GH"
@@ -129,7 +270,7 @@ get_ib() (
 	TARGET=$1
 	IB=$(ib_name "$TARGET")
 	URL="https://downloads.openwrt.org/releases/${VER}/targets/${TARGET}"
-	mkdir -p "$HERE/build" && cd "$HERE/build" || exit 1
+	mkdir -p "$BUILD" && cd "$BUILD" || exit 1
 	[ -d "$IB" ] && exit 0
 	echo "Downloading the Image Builder for $TARGET ($VER)..." >&2
 	wget -q -O "$IB.sha256sums" "$URL/sha256sums" || { echo "No $VER release for $TARGET" >&2; exit 1; }
@@ -150,13 +291,17 @@ get_ib() (
 )
 
 # A device left out of this build: said now, and again in the summary at the end
-skip() { echo "$*" >&2; echo "$*" >> "$HERE/build/.skipped"; exit 0; }
+skip() { echo "$*" >&2; echo "$*" >> "$BUILD/.skipped"; exit 0; }
 
 # Build one image. Runs in a subshell: "exit 0" skips this device, any error stops the build.
 build_one() (
-	ROLE=$1 TARGET=$2 PROFILE=$3 TX2=$4 TX5=$5 UIOK=${6:--}
-	[ -d "$HERE/$ROLE/files" ] || die "Unknown role '$ROLE' in profiles.txt"
-	WITH_UI=0 NAME="sparrows-$ROLE"
+	ROLE=$1 TARGET=$2 PROFILE=$3 TX2=$4 TX5=$5 UIOK=${6:--} SPEC=${7:-}
+	MAP=$(uses_of "$ROLE" "$PROFILE" "$TX2" "$TX5" "$SPEC") || die "$ROLE $PROFILE: $MAP"
+	IFS='|' read -r PORTS USE2 USE5 RNS NEST <<<"$MAP"
+	[ "$USE2" != off ] || USE2=''
+	[ "$USE5" != off ] || USE5=''
+	NAMEROLE=${ROLE//+/-}            # tree+feeder -> tree-feeder: in the unit's name and the image's
+	WITH_UI=0 NAME="sparrows-$NAMEROLE"
 
 	# --- A device that needs more than a line: devices/<name>/device.conf (see profiles.txt) ---
 	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES=''
@@ -169,36 +314,38 @@ build_one() (
 	fi
 	if [ "$UI" = 1 ]; then
 		if [ "$UIOK" = ui ]; then
-			WITH_UI=1 NAME="sparrows-$ROLE-ui"
+			WITH_UI=1 NAME="sparrows-$NAMEROLE-ui"
 		else
 			echo "$ROLE $PROFILE: too small for the web interface (profiles.txt), built without it" >&2
 		fi
 	fi
 
-	# --- SAE passphrase for roles that carry a backbone link ---
-	case "$ROLE" in
-		perch) KEYF='flyway.key' ;;
-		hedge) KEYF='hedge.key' ;;
-		*)     KEYF='' ;;
-	esac
-	if [ -n "$KEYF" ]; then
-		[ -s "$HERE/secrets/$KEYF" ] || die "Put the SAE passphrase in secrets/$KEYF first"
+	# --- SAE passphrase for each flyway: 5 GHz (perch) and 2.4 GHz (hedge) ---
+	KEYS=''
+	if has "$USE5" flyway; then KEYS="$KEYS flyway.key"; fi
+	if has "$USE2" flyway; then KEYS="$KEYS hedge.key"; fi
+	for KEYF in $KEYS; do
+		[ -s "$HERE/secrets/$KEYF" ] || die "$ROLE $PROFILE: put the SAE passphrase in secrets/$KEYF first"
 		# Seen 2026-11-14: a key outside 8-63 printable ASCII never links (see Sparrows Tao, Pitfalls).
 		# The whole file is checked, as the unit reads it: one line (a final newline is fine)
 		( LC_ALL=C; K=$(<"$HERE/secrets/$KEYF"); RE='^[ -~]{8,63}$'; [[ $K =~ $RE ]] ) || \
 			die "secrets/$KEYF must be one line of 8 to 63 printable ASCII characters (no accents)"
-	fi
+	done
 
-	# --- Files for this role + device: common base, role files, keys, radio limits ---
-	F="$HERE/build/files-$ROLE-$PROFILE"
+	# --- Files for this unit: common base, the uses, keys, what the uses need, radio limits ---
+	F="$BUILD/files-$NAMEROLE-$PROFILE"
 	rm -rf "$F"
 	cp -a "$HERE/common/files" "$F"
-	cp -a "$HERE/$ROLE/files/." "$F/"
+	cp -a "$HERE/station/files/." "$F/"
+	if has "$USE5" flyway; then cp -a "$HERE/perch/files/." "$F/"; fi      # the perch tool
+	if [ "$RNS" = 1 ]; then cp -a "$HERE/tree/files/." "$F/"; fi          # Reticulum + the page
+	if [ "$NEST" = 1 ]; then cp -a "$HERE/nest/files/." "$F/"; fi         # RA, DNS, welcome page, lxmd
 	install -d -m 700 "$F/etc/dropbear"
 	cat "$HERE"/keys/*.pub > "$F/etc/dropbear/authorized_keys"
 	chmod 600 "$F/etc/dropbear/authorized_keys"
 	install -d -m 755 "$F/etc/sparrows"
-	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\n" "$ROLE" "$TX2" "$TX5" > "$F/etc/sparrows/station"
+	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
+		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" > "$F/etc/sparrows/station"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" >> "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" >> "$F/etc/sparrows/station"
 	if [ -n "$DEV" ] && [ -d "$DEV/files" ]; then
@@ -206,7 +353,7 @@ build_one() (
 	fi
 	# Firmware the device needs and OpenWrt doesn't ship: fetched once, checked file by file
 	if [ -n "$FW_FILES" ]; then
-		C="$HERE/build/firmware/$PROFILE"
+		C="$BUILD/firmware/$PROFILE"
 		mkdir -p "$C" "$F/$FW_DIR"
 		while read -r SUM FILE; do
 			[ -n "$FILE" ] || continue
@@ -218,9 +365,9 @@ build_one() (
 			install -m 644 "$C/$FILE" "$F/$FW_DIR/$FILE"
 		done <<<"$FW_FILES"
 	fi
-	if [ -n "$KEYF" ]; then
+	for KEYF in $KEYS; do
 		install -m 600 "$HERE/secrets/$KEYF" "$F/etc/sparrows/$KEYF"
-	fi
+	done
 	if [ "$WITH_UI" = 1 ]; then
 		cp -a "$HERE/ui/files/." "$F/"
 	fi
@@ -229,14 +376,18 @@ build_one() (
 		if [ -d "$F/$D" ]; then chmod 755 "$F/$D"/*; fi
 	done
 
-	# --- Python wheels the role needs (role.conf): fetched once, checked, unpacked into the image ---
-	WHEELS='' HANDBOOK_TO=''
-	if [ -f "$HERE/$ROLE/role.conf" ]; then
+	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
+	WHEELS='' HANDBOOK_TO='' PKG_nest=''
+	if [ "$RNS" = 1 ]; then
 		# shellcheck source=/dev/null
-		. "$HERE/$ROLE/role.conf"
+		. "$HERE/tree/role.conf"
+	fi
+	if [ "$NEST" = 1 ]; then
+		# shellcheck source=/dev/null
+		. "$HERE/nest/role.conf"
 	fi
 	if [ -n "$WHEELS" ]; then
-		C="$HERE/build/wheels"
+		C="$BUILD/wheels"
 		mkdir -p "$C" "$F/usr/lib/sparrows/python"
 		while read -r SUM URL; do
 			[ -n "$URL" ] || continue
@@ -249,33 +400,43 @@ build_one() (
 			python3 -I -m zipfile -e "$W" "$F/usr/lib/sparrows/python/"
 		done <<<"$WHEELS"
 	fi
-	# The built handbook, when the role offers it (the tree's page node)
+	# The built handbook: offered by the page node, and the welcome page of a nest
 	if [ -n "$HANDBOOK_TO" ]; then
 		if [ -f "$HERE/../tao/index.html" ]; then
-			install -D -m 644 "$HERE/../tao/index.html" "$F/$HANDBOOK_TO"
+			for H in $HANDBOOK_TO; do install -D -m 644 "$HERE/../tao/index.html" "$F/$H"; done
 		else
 			echo "$ROLE $PROFILE: no ../tao/index.html next to the build tree, so no handbook file in the image" >&2
 		fi
 	fi
 
 	get_ib "$TARGET" || die "No Image Builder for $TARGET"
-	cd "$HERE/build/$(ib_name "$TARGET")"
-	# grep without -q: -q stops reading early, make dies of SIGPIPE and pipefail skips a valid profile
-	make info | grep "^$IB_PROFILE:" >/dev/null || skip "$ROLE $PROFILE: no profile $IB_PROFILE in OpenWrt $VER $TARGET"
-	PKG="PKG_$ROLE"
-	PACKAGES="${!PKG} $DEV_PACKAGES"
+	cd "$BUILD/$(ib_name "$TARGET")"
+	# The profile list. A failing Image Builder is said as such, not taken for a missing profile
+	INFO=$(make info 2>&1) || die "$ROLE $PROFILE: the Image Builder doesn't run (make info):"$'\n'"$(printf '%s\n' "$INFO" | tail -n 4)"
+	printf '%s\n' "$INFO" | grep -q "^$IB_PROFILE:" || skip "$ROLE $PROFILE: no profile $IB_PROFILE in OpenWrt $VER $TARGET"
+	# The packages: the base, then what the uses need, each package once
+	PACKAGES="$BASE"
+	if [ "$NEST" = 1 ]; then PACKAGES=$(printf '%s\n' $BASE | grep -v -x -e -dnsmasq -e -odhcpd-ipv6only | tr '\n' ' '); fi
+	if has "$USE2 $USE5" flyway; then PACKAGES="$PACKAGES $PKG_flyway"; fi
+	if has "$USE2 $USE5" join; then PACKAGES="$PACKAGES $PKG_join"; fi
+	if [ "$RNS" = 1 ]; then PACKAGES="$PACKAGES $PKG_reticulum"; fi
+	PACKAGES="$PACKAGES $PKG_nest $DEV_PACKAGES"
+	[ "$WITH_UI" = 0 ] || PACKAGES="$PACKAGES $PKG_ui"
+	PACKAGES=$(printf '%s\n' $PACKAGES | awk '!seen[$0]++' | tr '\n' ' ')
 	[ -z "$DEV" ] || NAME="$NAME-$PROFILE"       # e.g. sparrows-feeder-rpi-zero-2-w-...-rpi-3-...
 	# Image names: openwrt-<release>-<NAME>-<target>-<profile>-squashfs-factory.bin. Matched exactly, so
 	# sparrows-feeder never picks up sparrows-feeder-ui, and no image of an earlier run passes for this one
 	STEM="$NAME-${TARGET/\//-}-$IB_PROFILE"
 	rm -f bin/targets/"$TARGET"/*-"$STEM"-*
-	[ "$WITH_UI" = 0 ] || PACKAGES="$PACKAGES $PKG_ui"
 	# The hard rules, checked by the machine: the Image Builder lists every package the image would
 	# hold, dependencies included, before building it. Seen 2026-11-20: luci-light brought a firewall back
 	if [ "$CHECK_RULES" = 1 ]; then
 		MANIFEST=$(make manifest PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" STRIP_ABI=1) || \
 			die "$ROLE $PROFILE: the Image Builder can't put these packages together (make manifest)"
 		NO="$FORBIDDEN"; [ "$WITH_UI" = 1 ] || NO="$NO $FORBIDDEN_NO_UI"
+		# A nest is the one unit that sends RAs and answers DNS (no DHCP), and serves the page.
+		# Still no firewall, no PPP, no DHCPv6 server
+		if [ "$NEST" = 1 ]; then NO=$(printf '%s\n' $NO | grep -v -x -e dnsmasq -e odhcpd-ipv6only -e uhttpd | tr '\n' ' '); fi
 		BAD=$(printf '%s\n' "$MANIFEST" | awk -v no="$NO" 'BEGIN { split(no, a); for (i in a) f[a[i]] = 1 }
 			($1 in f) { printf "%s ", $1 }')
 		[ -z "$BAD" ] || die "$ROLE $PROFILE: the image would hold ${BAD}against the hard rules (no DHCP, RA, firewall or PPP on a station; no web interface unless asked). Fix the package lists in build.sh, or CHECK_RULES=0 to build it anyway"
@@ -297,9 +458,9 @@ build_one() (
 	done
 	[ "${#IMGS[@]}" -gt 0 ] || die "$ROLE $PROFILE: make image gave no .bin or .img.gz"
 	# They replace this device's earlier images (any release, with or without -ui). Other devices' stay
-	rm -f "$OUT"/*-"sparrows-$ROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
+	rm -f "$OUT"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
 	cp "${IMGS[@]}" "$OUT/"
-	printf '%s\n' "${IMGS[@]##*/}" >> "$HERE/build/.built"
+	printf '%s\n' "${IMGS[@]##*/}" >> "$BUILD/.built"
 )
 
 # ---------------------------------------------------------------- menu (terminal only)
@@ -316,16 +477,29 @@ ask_tx() {
 	done
 }
 
+# Manual mode: the use of each interface, asked one by one. Prints uses=ports,2.4,5,services
+ask_uses() {
+	local P U2 U5 S
+	echo "Manual mode. Uses: wire, feeder (open Wi-Fi), flyway (link carrying batman-adv)," >&2
+	echo "join (client of the Sparrows Wi-Fi), off. Several on one radio with +, e.g. flyway+feeder." >&2
+	echo "Services: nest (RAs, DNS, welcome page, message store, Reticulum), reticulum, or none." >&2
+	P=$(ask "Ethernet ports (wire or off): ")
+	U2=$(ask "2.4 GHz radio (e.g. feeder, flyway+feeder, join, off): ")
+	U5=$(ask "5 GHz radio (e.g. feeder, flyway, join, off): ")
+	S=$(ask "Services (nest, reticulum, or Enter for none; both need an SD-card device): ")
+	printf 'uses=%s,%s,%s,%s' "${P:-wire}" "${U2:-off}" "${U5:-off}" "${S:--}"
+}
+
 # Find a device in the Image Builder of its target, then add it to profiles.txt
 add_device() {
-	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' i
+	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' SPEC='' MAP i
 	echo
 	echo "The target is on the device's page of the OpenWrt Table of Hardware, e.g. ath79/generic, bcm27xx/bcm2711."
 	TARGET=$(ask "Target: ")
 	[[ "$TARGET" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "Not a target (form: name/subtarget)."; return; }
 	get_ib "$TARGET" || return 0
 	WORD=$(ask "Part of the model name, e.g. cpe510, eap225, rpi-4: ")
-	mapfile -t FOUND < <(cd "$HERE/build/$(ib_name "$TARGET")" && make info 2>/dev/null \
+	mapfile -t FOUND < <(cd "$BUILD/$(ib_name "$TARGET")" && make info 2>/dev/null \
 		| sed -n 's/^\([A-Za-z0-9_.,-]*\):$/\1/p' | grep -i -F -- "$WORD" || true)
 	[ "${#FOUND[@]}" -gt 0 ] || { echo "No model matching '$WORD' in $TARGET ($VER)."; return; }
 	for i in "${!FOUND[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${FOUND[$i]}"; done
@@ -333,11 +507,14 @@ add_device() {
 	[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#FOUND[@]}" ]] || { echo "Nothing added."; return; }
 	PROFILE=${FOUND[$((N - 1))]}
 
-	RS=$(ask "Role(s) for this device ($ROLES, several with spaces): ")
+	echo "Roles: $ROLES. Join roles with + to have both on one unit (e.g. tree+feeder)."
+	RS=$(ask "Role(s) for this device (several with spaces), or m for manual mode: ")
 	[ -n "$RS" ] || { echo "Nothing added."; return; }
-	for R in $RS; do
-		case " $ROLES " in *" $R "*) ;; *) echo "Unknown role '$R'. Nothing added."; return ;; esac
-	done
+	if [ "$RS" = m ]; then
+		RS=$(ask "A name for this kind of unit (letters, digits, -), e.g. garden: ")
+		[[ "$RS" =~ ^[a-z][a-z0-9-]*$ ]] || { echo "Not a name. Nothing added."; return; }
+		SPEC=$(ask_uses)
+	fi
 
 	echo "Power to set at the radio = legal EIRP (FR) - antenna gain. 2.4 GHz: 20 dBm EIRP."
 	echo "5 GHz outdoor (ch 100-140): 30 dBm EIRP with TPC, 27 dBm without. - = band not used."
@@ -348,7 +525,7 @@ add_device() {
 	esac
 
 	for R in $RS; do
-		WHY=$(bad_line "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK")
+		WHY=$(bad_line "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK" "$SPEC")
 		if [ -n "$WHY" ]; then
 			echo "  $R not added: $WHY."
 			continue
@@ -357,8 +534,11 @@ add_device() {
 			echo "  $R $PROFILE is already in profiles.txt: left as it is."
 			continue
 		fi
-		LINE=$(printf '%-8s %-15s %-26s %-4s %-4s %s' "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK")
-		NEW="$NEW$LINE"$'\n'
+		MAP=$(uses_of "$R" "$PROFILE" "$TX2" "$TX5" "$SPEC")
+		echo "  $R on $PROFILE:"
+		uses_long "$MAP"
+		LINE=$(printf '%-9s %-15s %-26s %-4s %-4s %-3s %s' "$R" "$TARGET" "$PROFILE" "$TX2" "$TX5" "$UIOK" "$SPEC")
+		NEW="$NEW${LINE% }"$'\n'
 	done
 	[ -n "$NEW" ] || return 0
 	printf '\nTo add to profiles.txt:\n%s' "$NEW"
@@ -368,19 +548,23 @@ add_device() {
 	echo "Added. It is now in the list."
 }
 
+# The lines whose role is R, alone or joined with +, or the manual line named R
+lines_of_role() { awk -v r="$1" '{ n = split($1, p, "+"); for (i = 1; i <= n; i++) if (p[i] == r) { print; next } }'; }
+
 # Sets CHOSEN to the picked device lines (and VER, if the release was changed)
 menu() {
-	local LINES CH T i R T2 P X2 X5 U PICK OK
+	local LINES CH T i R P X2 X5 U S PICK OK MAP
 	while :; do
 		mapfile -t LINES < <(profiles)
 		echo
 		echo "Sparrows images, OpenWrt $VER, web interface $( [ "$UI" = 1 ] && echo ON || echo off ). Devices in profiles.txt:"
 		for i in "${!LINES[@]}"; do
-			read -r R T2 P X2 X5 U <<<"${LINES[$i]}"
-			[ "${U:--}" = ui ] && U='web interface possible' || U=''
-			printf '  %2d) %-7s %-28s 2.4 GHz: %-3s 5 GHz: %-3s %s\n' $((i + 1)) "$R" "$P" "$X2" "$X5" "$U"
+			read -r R _ P X2 X5 U S <<<"${LINES[$i]}"
+			[ "${U:--}" = ui ] && U=' +web' || U=''
+			if MAP=$(uses_of "$R" "$P" "$X2" "$X5" "${S:-}"); then MAP=$(uses_short "$MAP"); else MAP="CAN'T BUILD: $MAP"; fi
+			printf '  %2d) %-11s %-26s %s%s\n' $((i + 1)) "$R" "$P" "$MAP" "$U"
 		done
-		echo "   n) add a device that is not in the list"
+		echo "   n) add a device that is not in the list (m there: manual mode, the use of each interface)"
 		echo "   v) another OpenWrt release"
 		echo "   w) web interface on/off (only where it fits)"
 		echo "   s) write a Raspberry Pi image to an SD card (no build)"
@@ -400,11 +584,8 @@ menu() {
 		for T in $CH; do
 			if [[ "$T" =~ ^[0-9]+$ ]] && [ "$T" -ge 1 ] && [ "$T" -le "${#LINES[@]}" ]; then
 				PICK+=("${LINES[$((T - 1))]}")
-			elif [[ " $ROLES " == *" $T "* ]]; then
-				for i in "${!LINES[@]}"; do
-					read -r R _ <<<"${LINES[$i]}"
-					if [ "$R" = "$T" ]; then PICK+=("${LINES[$i]}"); fi
-				done
+			elif S=$(printf '%s\n' "${LINES[@]}" | lines_of_role "$T") && [ -n "$S" ]; then
+				mapfile -t -O "${#PICK[@]}" PICK <<<"$S"
 			else
 				echo "'$T' is not in the list."; OK=0
 			fi
@@ -478,8 +659,8 @@ write_sd() {
 	[ "$(ask "To go on, type the disk name (${DEV#/dev/}): ")" = "${DEV#/dev/}" ] || { echo "Cancelled, nothing written."; return 0; }
 
 	# OpenWrt puts its metadata after the gzip data: gzip warns "trailing garbage" and exits 2
-	RAW="$HERE/build/sd-card.img"
-	mkdir -p "$HERE/build"           # absent in a fresh copy of the kit, with an image from elsewhere
+	RAW="$BUILD/sd-card.img"
+	mkdir -p "$BUILD"           # absent in a fresh copy of the kit, with an image from elsewhere
 	echo "Unpacking..."
 	gzip -dc "$IMG" > "$RAW" 2>/dev/null || [ $? -eq 2 ] || die "Cannot unpack $IMG"
 	BYTES=$(stat -c %s "$RAW")
@@ -511,25 +692,35 @@ MENU=0
 CHOSEN=''
 case "$ARG" in
 	'')    if [ "$MENU" = 1 ]; then menu; else CHOSEN=$(profiles); fi ;;
-	all)   CHOSEN=$(profiles) ;;
-	perch|feeder|hedge|tree) CHOSEN=$(profiles | awk -v r="$ARG" '$1 == r') ;;
+	all|uses) CHOSEN=$(profiles) ;;
 	sd)    write_sd "${2:-}"; exit 0 ;;
-	*)     die "Usage: ./build.sh [all|perch|feeder|hedge|tree] | ./build.sh sd [image.img.gz]" ;;
+	-*|*/*) die "Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz]" ;;
+	*)     CHOSEN=$(profiles | lines_of_role "$ARG")
+	       [ -n "$CHOSEN" ] || die "No line with role '$ARG' in profiles.txt (roles: $ROLES). Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz]" ;;
 esac
 [ -n "$CHOSEN" ] || die "Nothing to build."
 
 # Every chosen line checked before anything is downloaded
 BAD=''
-while read -r ROLE TARGET PROFILE TX2 TX5 UIOK REST; do
-	WHY=$(bad_line "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "$REST")
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC REST; do
+	WHY=$(bad_line "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "${SPEC:-}" "${REST:-}")
 	[ -z "$WHY" ] || BAD="$BAD  $ROLE $TARGET $PROFILE: $WHY"$'\n'
 done <<<"$CHOSEN"
 [ -z "$BAD" ] || die "profiles.txt, line(s) to fix first:"$'\n'"${BAD%$'\n'}"
 
+# What each port and radio will do, shown before anything is built
 echo
-echo "OpenWrt $VER. To build:"
-printf '%s\n' "$CHOSEN" | awk -v ui="$UI" '{ w = (ui == 1 && $6 == "ui") ? "  + web interface" : ""
-	printf "  %-7s %s (%s)%s\n", $1, $3, $2, w }'
+echo "OpenWrt $VER. To build, and what each interface will do:"
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC; do
+	W=''; [ "$UI" = 1 ] && [ "${UIOK:--}" = ui ] && W='  + web interface'
+	echo "  $ROLE on $PROFILE ($TARGET)${SPEC:+, manual}$W"
+	uses_long "$(uses_of "$ROLE" "$PROFILE" "$TX2" "$TX5" "${SPEC:-}")"
+done <<<"$CHOSEN"
+# Every nest image gets the same village address scheme: say so once
+if printf '%s\n' "$CHOSEN" | lines_of_role nest | grep -q . ; then
+	echo "  Nests: Android needs a non-ULA prefix; the image uses 2001:db8:1::/64, the BENCH range (nest/files)."
+fi
+[ "$ARG" != uses ] || exit 0
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
 if [ "$MENU" = 1 ]; then
@@ -542,31 +733,33 @@ for C in wget zstd tar make gcc perl rsync python3 sha256sum $( [ "$CHECK_SIG" =
 	command -v "$C" >/dev/null || MISSING="$MISSING $C"
 done
 [ -z "$MISSING" ] || die "Missing on this machine:$MISSING (the Image Builder needs them; see its page on openwrt.org)"
-mkdir -p "$HERE/build" "$OUT"
-: > "$HERE/build/.built"; : > "$HERE/build/.skipped"
+mkdir -p "$BUILD" "$OUT"
+case "$BUILD" in *[[:space:]]*) die "The build folder $BUILD has a space in its path, which the Image Builder can't handle. Set SPARROWS_BUILD=<a folder without spaces>" ;; esac
+[ "$BUILD" = "$HERE/build" ] || echo "This folder's path has a space: the Image Builder works in $BUILD (images still go to $OUT)."
+: > "$BUILD/.built"; : > "$BUILD/.skipped"
 
-while read -r ROLE TARGET PROFILE TX2 TX5 UIOK; do
-	build_one "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" </dev/null
+while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC; do
+	build_one "$ROLE" "$TARGET" "$PROFILE" "$TX2" "$TX5" "${UIOK:--}" "${SPEC:-}" </dev/null
 done <<<"$CHOSEN"
 
 echo
-if [ -s "$HERE/build/.skipped" ]; then
+if [ -s "$BUILD/.skipped" ]; then
 	echo "Skipped:"
-	sed 's/^/  /' "$HERE/build/.skipped"
+	sed 's/^/  /' "$BUILD/.skipped"
 	echo
 fi
-[ -s "$HERE/build/.built" ] || die "No image was built."
+[ -s "$BUILD/.built" ] || die "No image was built."
 echo "Built now, in $OUT:"
-( cd "$OUT" && while read -r I; do sha256sum -- "$I"; done < "$HERE/build/.built" )
+( cd "$OUT" && while read -r I; do sha256sum -- "$I"; done < "$BUILD/.built" )
 
-if grep -q -e '-ui-' "$HERE/build/.built"; then
+if grep -q -e '-ui-' "$BUILD/.built"; then
 	echo
 	echo "Web interface (images with -ui): it only listens on the unit itself. From your laptop:"
 	echo "  ssh -N -L 8080:127.0.0.1:80 root@<station address>    then open http://localhost:8080"
 	echo "  The first time, set the root password over SSH:  passwd   (SSH itself stays keys only)"
 fi
 
-if [ "$MENU" = 1 ] && grep -q '\.img\.gz$' "$HERE/build/.built"; then
+if [ "$MENU" = 1 ] && grep -q '\.img\.gz$' "$BUILD/.built"; then
 	echo
 	case "$(ask "Write a Raspberry Pi image to an SD card now? [y/N] ")" in [yY]*) write_sd ;; esac
 fi

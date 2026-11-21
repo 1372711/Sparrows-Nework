@@ -1,0 +1,89 @@
+#!/bin/sh
+# Sparrows-Network: nest services, on OpenWrt (decided 2026-11-21: one system on every unit).
+# The same on-ramp as the Debian nest, with OpenWrt's own tools:
+#   a fixed village address, built from the MAC (EUI-64), so every nest has its own: nests are equal
+#   odhcpd   router advertisements: SLAAC only, the router flag, the DNS server and domain inside
+#   dnsmasq  DNS only, no DHCP: sparrows.lan and every other name -> this nest (catch-all)
+#   uhttpd   the welcome page (this handbook) on the village address
+#   rnsd + lxmd   Reticulum relay and the message store (propagation node)
+# Still never: IPv4, DHCP, a firewall, a link to the Internet. Runs after 90-sparrows-station.
+# Status: NOT YET TESTED.
+
+. /etc/sparrows/station
+
+ULA='fd7e:4c1a:9b20:1'           # the village prefix, as on the Debian nest
+NONULA='2001:db8:1'              # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
+                                 # The real one is not decided yet
+
+# --- Interface ID from the MAC, the same rule as every station: flip bit 2 of byte 1, ff:fe inside ---
+case "${MACDEV:-eth0}" in
+	phy*) MAC=$(cat "/sys/class/ieee80211/$MACDEV/macaddress" 2>/dev/null) ;;
+	*)    MAC=$(cat "/sys/class/net/${MACDEV:-eth0}/address" 2>/dev/null) ;;
+esac
+OLDIFS=$IFS; IFS=':'
+# shellcheck disable=SC2086
+set -- $MAC
+IFS=$OLDIFS
+IID=$(printf '%02x%s:%sff:fe%s:%s%s' $((0x$1 ^ 2)) "$2" "$3" "$4" "$5" "$6")
+ADDR="$ULA:$IID"
+ADDR2="$NONULA:$IID"
+echo "ADDR='$ADDR'" >> /etc/sparrows/station
+
+# --- The village bridge gets fixed addresses instead of SLAAC: a nest sends RAs, it doesn't take them ---
+uci set network.lan.proto='static'
+uci -q delete network.lan.reqaddress
+uci -q delete network.lan.reqprefix
+uci -q delete network.lan.ip6addr
+uci add_list network.lan.ip6addr="$ADDR/64"
+uci add_list network.lan.ip6addr="$ADDR2/64"
+uci commit network
+
+# --- Router advertisements (odhcpd). Nothing else from it: no DHCPv4, no DHCPv6 ---
+uci set dhcp.odhcpd.maindhcp='0'
+uci set dhcp.lan=dhcp
+uci set dhcp.lan.interface='lan'
+uci set dhcp.lan.ignore='1'               # dnsmasq: no DHCPv4 here
+uci set dhcp.lan.dhcpv4='disabled'
+uci set dhcp.lan.dhcpv6='disabled'        # SLAAC only (Android ignores DHCPv6 anyway)
+uci set dhcp.lan.ra='server'
+uci set dhcp.lan.ra_flags='none'          # no managed / other-config flag
+uci set dhcp.lan.ra_slaac='1'
+uci set dhcp.lan.ra_default='2'           # announce a default router though there is no route out:
+                                          # Android drops a network without one. Nothing is forwarded:
+                                          # this nest has no other network to forward to
+uci set dhcp.lan.ra_maxinterval='60'      # RA every 60 s at most
+uci set dhcp.lan.ra_lifetime='1800'       # router lifetime 1800 s, as on the Debian nest
+uci -q delete dhcp.lan.dns
+uci add_list dhcp.lan.dns="$ADDR2"        # non-ULA first: some Android versions drop a ULA DNS server
+uci add_list dhcp.lan.dns="$ADDR"
+uci -q delete dhcp.lan.domain
+uci add_list dhcp.lan.domain='sparrows.lan'
+
+# --- DNS (dnsmasq): no upstream, sparrows.lan and every other name -> this nest ---
+uci set dhcp.@dnsmasq[0].noresolv='1'
+uci set dhcp.@dnsmasq[0].domainneeded='1'
+uci set dhcp.@dnsmasq[0].domain='sparrows.lan'
+uci set dhcp.@dnsmasq[0].local='/sparrows.lan/'
+uci set dhcp.@dnsmasq[0].logqueries='0'   # never log who asks for what
+uci -q delete dhcp.@dnsmasq[0].address
+uci add_list dhcp.@dnsmasq[0].address="/#/$ADDR"   # captive: any name -> the welcome page
+uci commit dhcp
+
+# --- Welcome page (uhttpd), on the village addresses only. LuCI, if any, stays on 127.0.0.1 ---
+uci set uhttpd.sparrows=uhttpd
+uci -q delete uhttpd.sparrows.listen_http
+uci add_list uhttpd.sparrows.listen_http="[$ADDR]:80"
+uci add_list uhttpd.sparrows.listen_http="[$ADDR2]:80"
+uci set uhttpd.sparrows.home='/www/sparrows'
+uci set uhttpd.sparrows.error_page='/index.html'   # any unknown path (phones' checks) -> the page
+uci set uhttpd.sparrows.rfc1918_filter='0'
+uci set uhttpd.sparrows.max_requests='10'
+# No web interface in this image (its first-boot file is absent): the default instance goes
+[ -f /etc/uci-defaults/95-sparrows-ui ] || uci -q delete uhttpd.main
+uci commit uhttpd
+
+# --- Message store: lxmd as propagation node, as user rns (made in 90-sparrows-station) ---
+mkdir -p /etc/lxmd && chown rns:rns /etc/lxmd
+/etc/init.d/lxmd enable
+
+exit 0
