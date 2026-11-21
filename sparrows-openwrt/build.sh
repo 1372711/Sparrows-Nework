@@ -237,6 +237,25 @@ bad_line() {
 
 ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
 
+# The kit: the project's public files in one archive, which trees and nests offer for download
+# (KIT_TO in tree/ and nest/role.conf), so anyone on the village can get what builds it. Made from git:
+# only committed files, so keys/, secrets/ and build/ can't be in it. Made once per version, then
+# checked for a private key. Prints the archive's path.
+make_kit() {
+	local K="$BUILD/kit/sparrows-kit-$VERSION.tar.gz" TOP
+	if [ ! -s "$K" ]; then
+		TOP=$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null) || { echo "Not a git checkout: no kit" >&2; return 1; }
+		mkdir -p "$BUILD/kit"
+		git -C "$TOP" archive --format=tar.gz --prefix=sparrows/ -o "$K.part" HEAD || { rm -f "$K.part"; return 1; }
+		# A real key block starts its own line (this script only names the words, inside quotes)
+		if tar -xzOf "$K.part" | grep -a -q -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY( BLOCK)?-----'; then
+			rm -f "$K.part"; echo "The kit would hold a private key: not made. Check what is committed" >&2; return 1
+		fi
+		mv "$K.part" "$K"
+	fi
+	echo "$K"
+}
+
 # OpenWrt's signature on a file, checked with the public keys kept in trust/. The checksums only prove
 # the download isn't broken; the signature proves it is OpenWrt's, whatever server or mirror it came
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
@@ -405,7 +424,7 @@ build_one() (
 	done
 
 	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
-	WHEELS='' HANDBOOK_TO='' PKG_nest=''
+	WHEELS='' HANDBOOK_TO='' KIT_TO='' PKG_nest=''
 	if [ "$RNS" = 1 ]; then
 		# shellcheck source=/dev/null
 		. "$HERE/tree/role.conf"
@@ -430,6 +449,17 @@ build_one() (
 			for H in $HANDBOOK_TO; do install -D -m 644 "$HERE/../tao/index.html" "$F/$H"; done
 		else
 			echo "$ROLE $PROFILE: no ../tao/index.html next to the build tree, so no handbook file in the image" >&2
+		fi
+	fi
+	# The kit, next to the handbook, with its checksum (the line sha256sum -c reads)
+	if [ -n "$KIT_TO" ]; then
+		if K=$(make_kit); then
+			for H in $KIT_TO; do
+				install -D -m 644 "$K" "$F/$H"
+				printf '%s  %s\n' "$(sha256sum "$K" | cut -d' ' -f1)" "${H##*/}" > "$F/$H.sha256"
+			done
+		else
+			echo "$ROLE $PROFILE: no kit in this image" >&2
 		fi
 	fi
 

@@ -37,3 +37,4 @@ Stations are named after birds:
 
 Plant a tree, put up a feeder, or bring a mast. Everything is in the handbook.
 `[Download the handbook (HTML file)`:/file/sparrows-tao.html]
+`[Download the kit: scripts and sources to build the stations (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[its SHA-256`:/file/sparrows-kit.tar.gz.sha256]

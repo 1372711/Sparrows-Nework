@@ -37,3 +37,4 @@ Las estaciones llevan nombres de pájaros:
 
 Planta un árbol, pon un comedero o trae un mástil. Todo está en el manual.
 `[Descargar el manual (archivo HTML)`:/file/sparrows-tao.html]
+`[Descargar el kit: scripts y fuentes para construir las estaciones (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[su SHA-256`:/file/sparrows-kit.tar.gz.sha256]

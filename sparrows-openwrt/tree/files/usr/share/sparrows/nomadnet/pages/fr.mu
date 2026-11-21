@@ -37,3 +37,4 @@ Les stations portent des noms d'oiseaux :
 
 Plantez un arbre, posez une mangeoire, ou apportez un mât. Tout est dans le manuel.
 `[Télécharger le manuel (fichier HTML)`:/file/sparrows-tao.html]
+`[Télécharger le kit : scripts et sources pour construire les stations (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[son SHA-256`:/file/sparrows-kit.tar.gz.sha256]
