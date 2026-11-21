@@ -38,7 +38,7 @@ VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
 CHECK_SIG=0 ./build.sh all    # skip the check of OpenWrt's signature (new OpenWrt key? add it to trust/)
 CHECK_RULES=0 ./build.sh all  # skip the check of each image's packages against the hard rules
-ls build/images/              # the images. The build ends with the sha256 of those it made, and what it skipped
+ls build/images/latest/       # the images of the newest version (one folder per version, with SHA256SUMS)
 ### web-ui-access
 # On your laptop: a tunnel through SSH, with your admin key. Leave it open.
 ssh -N -L 8080:127.0.0.1:80 root@<station address>
@@ -55,7 +55,7 @@ curl -m 5 'http://[<station address>]/'
 /etc/init.d/uhttpd disable && /etc/init.d/uhttpd stop
 ### sd-write
 # On the admin laptop, after building a Raspberry Pi image (or s in the menu)
-./build.sh sd                          # the factory .img.gz in build/images (asks which, if several)
+./build.sh sd                          # the factory .img.gz in build/images/latest (asks which, if several)
 ./build.sh sd path/to/image.img.gz     # any other image
 # It lists only removable, USB and MMC disks, never one that holds / /boot /home /usr /var or swap.
 # It shows what is on the card, asks you to TYPE its name, writes, then reads the card back.
@@ -106,7 +106,7 @@ firstboot && reboot     # back to the image's defaults
 ### perch-migrate
 # Not yet tested. Do it on the bench, the client end (old node2) first, the AP end (old node1) last.
 # LOCK-OUT RISK: after this the perch takes SSH keys only, and its old fixed address is gone.
-scp -O build/images/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
+scp -O build/images/latest/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
 ssh root@fd7e:4c1a:9b20:1::43
 sysupgrade -T /tmp/fw.bin          # checks the image, flashes nothing
 sysupgrade -n -v /tmp/fw.bin       # -n drops the old config, so the image's first-boot defaults run
@@ -220,7 +220,7 @@ ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
 cliclientd stopcs        # signature check off until the next reboot: flash right away
 
 # 3. On the laptop: a short file name (long ones are refused), and check the hash
-cp build/images/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin && sha256sum firmware.bin
+cp build/images/latest/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin && sha256sum firmware.bin
 #    Web UI -> System -> Firmware Upgrade -> firmware.bin
 #    "bad file" = stopcs was not run. If it fails once, upload again.
 
@@ -702,3 +702,27 @@ ping 192.168.1.1                  # must FAIL (no IPv4)
 # On an Android phone: "connected / no Internet", an fd7e: and a 2001:db8: address, the page opens
 
 # Undo: put the Debian SD card back in the Pi
+### versions
+# On the admin laptop, in the git checkout: the version the next build will carry
+git describe --tags --always --dirty        # e.g. v2026.11.21-3-g1f59fc3 ; "-dirty" = changes not committed
+git status --short                          # what is not committed yet
+git commit -am "What changed, why, and tested or not"   # one change per commit, then build
+
+# After a build: one folder per version, latest -> the newest, a SHA256SUMS in each
+ls -l build/images/
+cat build/images/latest/SHA256SUMS
+
+# On a unit: the version it runs (also in the login text)
+cat /etc/sparrows/version                   # SPARROWS_VERSION, OPENWRT, BUILT, LINE (its line of profiles.txt)
+
+# Back on the laptop: what changed since the version a unit runs
+git log --oneline <its version>..           # the commits, one line each
+git diff --stat <its version>.. -- sparrows-openwrt/     # the files
+
+# A version that passed the bench gets a tag: its message says what was tested
+git tag -a v2026.11.21 -m "Pi 4 nest+feeder: RAs, DNS and Wi-Fi tested on the bench"
+git push origin v2026.11.21
+
+# Undo: flash the images of an earlier version, from its folder
+ls build/images/<earlier version>/
+

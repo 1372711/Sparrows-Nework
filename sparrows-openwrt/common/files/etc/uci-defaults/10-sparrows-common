@@ -35,6 +35,10 @@ case " $USE2 $USE5 " in *" feeder "*|*" join "*) HINT="$HINT  iw dev" ;; esac
 [ "$RETICULUM" != 1 ] || HINT="$HINT  rns status"
 [ "${NEST:-0}" != 1 ] || HINT="$HINT  logread -e odhcpd  /etc/init.d/lxmd status"
 REL=$( [ -f /etc/openwrt_release ] && . /etc/openwrt_release; echo "${DISTRIB_DESCRIPTION:-OpenWrt}")
+# The build tree's version this image was made from (build.sh: git describe). On the admin laptop,
+# "git log <version>.." shows what changed since
+SPARROWS_VERSION=$( [ -f /etc/sparrows/version ] && . /etc/sparrows/version; echo "${SPARROWS_VERSION:-unversioned}")
+REL="$REL, Sparrows $SPARROWS_VERSION"
 [ -z "$HINT" ] || HINT="Useful here:${HINT# }"
 sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
 	/etc/sparrows/banner > /etc/banner

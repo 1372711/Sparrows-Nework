@@ -795,7 +795,7 @@ VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
 CHECK_SIG=0 ./build.sh all    # skip the check of OpenWrt's signature (new OpenWrt key? add it to trust/)
 CHECK_RULES=0 ./build.sh all  # skip the check of each image's packages against the hard rules
-ls build/images/              # the images. The build ends with the sha256 of those it made, and what it skipped</code></pre></div>
+ls build/images/latest/       # the images of the newest version (one folder per version, with SHA256SUMS)</code></pre></div>
 <div class="code"><div class="hd"><span class="file">profiles.txt</span></div><pre><code># Sparrows-Network: hardware that can take each role.
 # One line per device and role. To support another device, add a line: nothing else changes.
 #
@@ -850,7 +850,11 @@ nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui</code></pre></
 #        UI=1 ./build.sh all     -&gt; with the web interface (LuCI), only where profiles.txt says "ui"
 #        ./build.sh sd [image]   -&gt; write a Raspberry Pi image (.img.gz) to an SD card: asks which
 #                                   reader, shows what is on it, and asks you to type its name first
-# A build replaces the images of the devices it builds and keeps the others in build/images.
+# Versions: each build is stamped with the build tree's git version (git describe: the last tag, the
+# commits since, the commit; "-dirty" when files are changed and not committed). The images go to
+# build/images/&lt;version&gt;/, with a SHA256SUMS file; build/images/latest points to the newest. Older
+# versions stay, to go back to. On a unit, /etc/sparrows/version and the login text say which
+# version it runs, and on the admin laptop  git log &lt;that version&gt;..  shows what changed since.
 #
 # Two checks, each can be skipped when needed:
 #   CHECK_SIG=0 ./build.sh     -&gt; don't check OpenWrt's signature on the Image Builder's checksums
@@ -885,6 +889,9 @@ CHECK_SIG="${CHECK_SIG:-1}"
 CHECK_RULES="${CHECK_RULES:-1}"
 HERE="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
 OUT="$HERE/build/images"
+# The version of this build tree. Without git (a copy of the kit): "unversioned"
+VERSION=$(git -C "$HERE" describe --tags --always --dirty 2&gt;/dev/null || echo unversioned)
+VERSION=${VERSION//\//-}
 # The Image Builder's Makefiles break on a path with a space in it (seen 2026-11-21: "/home/me/00 - x"
 # was cut at the first space, and "make info" failed). Then it works in a folder of its own, outside
 # the tree; the images still land in build/images. SPARROWS_BUILD=&lt;folder&gt; chooses another one.
@@ -1205,6 +1212,8 @@ build_one() (
 	install -d -m 755 "$F/etc/sparrows"
 	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
 		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" &gt; "$F/etc/sparrows/station"
+	printf "SPARROWS_VERSION='%s'\nOPENWRT='%s'\nBUILT='%s'\nLINE='%s'\n" "$VERSION" "$VER" "$(date -u +%F)" \
+		"$ROLE $TARGET $PROFILE $TX2 $TX5 $UIOK${SPEC:+ $SPEC}" &gt; "$F/etc/sparrows/version"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" &gt;&gt; "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" &gt;&gt; "$F/etc/sparrows/station"
 	if [ -n "$DEV" ] &amp;&amp; [ -d "$DEV/files" ]; then
@@ -1317,8 +1326,11 @@ build_one() (
 	done
 	[ "${#IMGS[@]}" -gt 0 ] || die "$ROLE $PROFILE: make image gave no .bin or .img.gz"
 	# They replace this device's earlier images (any release, with or without -ui). Other devices' stay
-	rm -f "$OUT"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
-	cp "${IMGS[@]}" "$OUT/"
+	# Into this version's folder. A rebuild of the same version replaces this device's images there
+	V="$OUT/$VERSION"
+	mkdir -p "$V"
+	rm -f "$V"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
+	cp "${IMGS[@]}" "$V/"
 	printf '%s\n' "${IMGS[@]##*/}" &gt;&gt; "$BUILD/.built"
 )
 &#32;
@@ -1485,14 +1497,14 @@ write_sd() {
 		IMGS=("$1")
 	else
 		shopt -s nullglob
-		IMGS=("$OUT"/*factory*.img.gz)
-		[ "${#IMGS[@]}" -gt 0 ] || IMGS=("$OUT"/*.img.gz)
+		IMGS=("$OUT"/latest/*factory*.img.gz)
+		[ "${#IMGS[@]}" -gt 0 ] || IMGS=("$OUT"/*/*factory*.img.gz "$OUT"/*.img.gz)
 		shopt -u nullglob
 	fi
-	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT: build a Raspberry Pi image first."; return 0; }
+	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT/latest: build a Raspberry Pi image first."; return 0; }
 	IMG=${IMGS[0]}
 	if [ "${#IMGS[@]}" -gt 1 ]; then
-		for i in "${!IMGS[@]}"; do printf '  %2d) %s\n' $((i + 1)) "$(basename "${IMGS[$i]}")"; done
+		for i in "${!IMGS[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${IMGS[$i]#"$OUT"/}"; done
 		N=$(ask "Which image? ")
 		[[ "$N" =~ ^[0-9]+$ &amp;&amp; "$N" -ge 1 &amp;&amp; "$N" -le "${#IMGS[@]}" ]] || { echo "Cancelled, nothing written."; return 0; }
 		IMG=${IMGS[$((N - 1))]}
@@ -1573,6 +1585,11 @@ if printf '%s\n' "$CHOSEN" | lines_of_role nest | grep -q . ; then
 	echo "  Nests: Android needs a non-ULA prefix; the image uses 2001:db8:1::/64, the BENCH range (nest/files)."
 fi
 [ "$ARG" != uses ] || exit 0
+echo "  Version: $VERSION"
+case "$VERSION" in
+	*-dirty) echo "  Files are changed and not committed: these images can't be found in git later. Commit first to give them a version." ;;
+	unversioned) echo "  Not a git checkout: these images have no version." ;;
+esac
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
 if [ "$MENU" = 1 ]; then
@@ -1601,8 +1618,11 @@ if [ -s "$BUILD/.skipped" ]; then
 	echo
 fi
 [ -s "$BUILD/.built" ] || die "No image was built."
-echo "Built now, in $OUT:"
-( cd "$OUT" &amp;&amp; while read -r I; do sha256sum -- "$I"; done &lt; "$BUILD/.built" )
+# This version's checksums, for the kit and for anyone who checks an image: SHA256SUMS in its folder
+( cd "$OUT/$VERSION" &amp;&amp; shopt -s nullglob &amp;&amp; IMGS=(*.bin *.img.gz) &amp;&amp; sha256sum -- "${IMGS[@]}" &gt; SHA256SUMS )
+ln -sfn "$VERSION" "$OUT/latest"
+echo "Built now, version $VERSION, in $OUT/$VERSION (also $OUT/latest):"
+( cd "$OUT/$VERSION" &amp;&amp; while read -r I; do sha256sum -- "$I"; done &lt; "$BUILD/.built" )
 &#32;
 if grep -q -e '-ui-' "$BUILD/.built"; then
 	echo
@@ -1615,6 +1635,30 @@ if [ "$MENU" = 1 ] &amp;&amp; grep -q '\.img\.gz$' "$BUILD/.built"; then
 	echo
 	case "$(ask "Write a Raspberry Pi image to an SD card now? [y/N] ")" in [yY]*) write_sd ;; esac
 fi</code></pre></div>
+<h4 id="versions"><span lang="en">Versions</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Added on 2026-11-21. The build tree lives in git, and each build carries the version git gives it: the last tag, the number of commits since, and the commit, like <code>v2026.11.21-3-g1f59fc3</code>. With changes that are not committed, the version ends in <code>-dirty</code> and the build says so: such images can't be found in git later, so commit first. The images go to <code>build/images/&lt;version&gt;/</code>, with a <code>SHA256SUMS</code> file, and <code>build/images/latest</code> points to the newest. Older versions stay, to go back to. On a unit, <code>/etc/sparrows/version</code> and the login text give the version it runs, so <code>git log &lt;that version&gt;..</code> on the admin laptop shows exactly what changed since. A version that passed the bench gets a tag whose message says what was tested. Each change is one commit, and its message says what changed, why, and whether it was tested. Tried on 2026-11-21 against a stand-in Image Builder; not yet on a unit.</p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then a unit</span></div><pre><code># On the admin laptop, in the git checkout: the version the next build will carry
+git describe --tags --always --dirty        # e.g. v2026.11.21-3-g1f59fc3 ; "-dirty" = changes not committed
+git status --short                          # what is not committed yet
+git commit -am "What changed, why, and tested or not"   # one change per commit, then build
+&#32;
+# After a build: one folder per version, latest -&gt; the newest, a SHA256SUMS in each
+ls -l build/images/
+cat build/images/latest/SHA256SUMS
+&#32;
+# On a unit: the version it runs (also in the login text)
+cat /etc/sparrows/version                   # SPARROWS_VERSION, OPENWRT, BUILT, LINE (its line of profiles.txt)
+&#32;
+# Back on the laptop: what changed since the version a unit runs
+git log --oneline &lt;its version&gt;..           # the commits, one line each
+git diff --stat &lt;its version&gt;.. -- sparrows-openwrt/     # the files
+&#32;
+# A version that passed the bench gets a tag: its message says what was tested
+git tag -a v2026.11.21 -m "Pi 4 nest+feeder: RAs, DNS and Wi-Fi tested on the bench"
+git push origin v2026.11.21
+&#32;
+# Undo: flash the images of an earlier version, from its folder
+ls build/images/&lt;earlier version&gt;/</code></pre></div>
 <h4 id="web-ui"><span lang="en">Web interface, optional</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en">Added on 2026-11-18. Off by default. With <code>w</code> in the menu (or <code>UI=1</code>), images get LuCI, OpenWrt's web interface: radios, signal, clients and logs in a browser, with no commands to learn. Only on devices marked <code>ui</code> in <code>profiles.txt</code>: small ones (8 MB of flash, 64 MB of RAM, like the CPE510) are built without it and the build says so (hard rule). If an image comes out too big for the flash, that one is skipped and the others are built. Images with it have <code>-ui</code> in their name. It comes without LuCI's firewall page: the usual LuCI bundle (<code>luci-light</code>) would bring the firewall back, which the hard rules forbid (found 2026-11-20), so the image takes LuCI's parts without it.</p>
 <p lang="en">It listens on the unit itself only, never on the open Wi-Fi: you reach it through SSH with your admin key (first lines of the file below). LuCI asks for the root password, which every image locks, so set one once over SSH with <code>passwd</code>. SSH itself stays keys only, so the password is useless without the key. A change made in LuCI is a test, as on the command line: to keep it, put it in the build tree and rebuild.</p>
@@ -1662,7 +1706,7 @@ exit 0</code></pre></div>
 <p lang="en">Added on 2026-11-18. A Pi takes its system from an SD card, not from flash. <code>./build.sh sd</code> (or <code>s</code> in the menu, or yes after a build that made a Pi image) writes the image to a card: it asks which reader holds the card, shows what is on it, and writes nothing until you type the disk's name. Writing the image is also the formatting: the partitions come with the image, and everything that was on the card is gone. Then it reads the card back and compares it with the image. Tried on 2026-11-18 on a stand-in disk (a loop device), not yet on a real card. OpenWrt makes two kinds of Pi image, squashfs and ext4; the build keeps only squashfs, because going back to the image's defaults (<code>firstboot</code>) only works with it.</p>
 <p class="note" lang="en">Erase risk: only removable, USB and MMC disks are offered, never one that holds the laptop's system. Still, read the size and the model before typing the name. A 1 TB "card" is your backup disk.</p>
 <div class="code"><div class="hd"><span class="file">admin laptop, SD card in a reader</span></div><pre><code># On the admin laptop, after building a Raspberry Pi image (or s in the menu)
-./build.sh sd                          # the factory .img.gz in build/images (asks which, if several)
+./build.sh sd                          # the factory .img.gz in build/images/latest (asks which, if several)
 ./build.sh sd path/to/image.img.gz     # any other image
 # It lists only removable, USB and MMC disks, never one that holds / /boot /home /usr /var or swap.
 # It shows what is on the card, asks you to TYPE its name, writes, then reads the card back.
@@ -1712,6 +1756,10 @@ case " $USE2 $USE5 " in *" feeder "*|*" join "*) HINT="$HINT  iw dev" ;; esac
 [ "$RETICULUM" != 1 ] || HINT="$HINT  rns status"
 [ "${NEST:-0}" != 1 ] || HINT="$HINT  logread -e odhcpd  /etc/init.d/lxmd status"
 REL=$( [ -f /etc/openwrt_release ] &amp;&amp; . /etc/openwrt_release; echo "${DISTRIB_DESCRIPTION:-OpenWrt}")
+# The build tree's version this image was made from (build.sh: git describe). On the admin laptop,
+# "git log &lt;version&gt;.." shows what changed since
+SPARROWS_VERSION=$( [ -f /etc/sparrows/version ] &amp;&amp; . /etc/sparrows/version; echo "${SPARROWS_VERSION:-unversioned}")
+REL="$REL, Sparrows $SPARROWS_VERSION"
 [ -z "$HINT" ] || HINT="Useful here:${HINT# }"
 sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
 	/etc/sparrows/banner &gt; /etc/banner
@@ -1831,7 +1879,7 @@ firstboot &amp;&amp; reboot     # back to the image's defaults</code></pre></div
 <p class="note" lang="en">Lock-out risk: after the flash the perch accepts SSH keys only and answers on its MAC-based addresses only. Check that your key is in <code>keys/</code> before building, and do it with the unit on a cable.</p>
 <div class="code"><div class="hd"><span class="file">laptop, perch, nest</span></div><pre><code># Not yet tested. Do it on the bench, the client end (old node2) first, the AP end (old node1) last.
 # LOCK-OUT RISK: after this the perch takes SSH keys only, and its old fixed address is gone.
-scp -O build/images/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
+scp -O build/images/latest/*sparrows-perch*cpe510-v3*sysupgrade.bin 'root@[fd7e:4c1a:9b20:1::43]:/tmp/fw.bin'
 ssh root@fd7e:4c1a:9b20:1::43
 sysupgrade -T /tmp/fw.bin          # checks the image, flashes nothing
 sysupgrade -n -v /tmp/fw.bin       # -n drops the old config, so the image's first-boot defaults run
@@ -2352,7 +2400,7 @@ ssh -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
 cliclientd stopcs        # signature check off until the next reboot: flash right away
 &#32;
 # 3. On the laptop: a short file name (long ones are refused), and check the hash
-cp build/images/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin &amp;&amp; sha256sum firmware.bin
+cp build/images/latest/*sparrows-hedge*eap225-outdoor-v3*factory.bin firmware.bin &amp;&amp; sha256sum firmware.bin
 #    Web UI -&gt; System -&gt; Firmware Upgrade -&gt; firmware.bin
 #    "bad file" = stopcs was not run. If it fails once, upload again.
 &#32;

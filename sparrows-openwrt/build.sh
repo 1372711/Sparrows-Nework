@@ -14,7 +14,11 @@
 #        UI=1 ./build.sh all     -> with the web interface (LuCI), only where profiles.txt says "ui"
 #        ./build.sh sd [image]   -> write a Raspberry Pi image (.img.gz) to an SD card: asks which
 #                                   reader, shows what is on it, and asks you to type its name first
-# A build replaces the images of the devices it builds and keeps the others in build/images.
+# Versions: each build is stamped with the build tree's git version (git describe: the last tag, the
+# commits since, the commit; "-dirty" when files are changed and not committed). The images go to
+# build/images/<version>/, with a SHA256SUMS file; build/images/latest points to the newest. Older
+# versions stay, to go back to. On a unit, /etc/sparrows/version and the login text say which
+# version it runs, and on the admin laptop  git log <that version>..  shows what changed since.
 #
 # Two checks, each can be skipped when needed:
 #   CHECK_SIG=0 ./build.sh     -> don't check OpenWrt's signature on the Image Builder's checksums
@@ -49,6 +53,9 @@ CHECK_SIG="${CHECK_SIG:-1}"
 CHECK_RULES="${CHECK_RULES:-1}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/build/images"
+# The version of this build tree. Without git (a copy of the kit): "unversioned"
+VERSION=$(git -C "$HERE" describe --tags --always --dirty 2>/dev/null || echo unversioned)
+VERSION=${VERSION//\//-}
 # The Image Builder's Makefiles break on a path with a space in it (seen 2026-11-21: "/home/me/00 - x"
 # was cut at the first space, and "make info" failed). Then it works in a folder of its own, outside
 # the tree; the images still land in build/images. SPARROWS_BUILD=<folder> chooses another one.
@@ -369,6 +376,8 @@ build_one() (
 	install -d -m 755 "$F/etc/sparrows"
 	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
 		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" > "$F/etc/sparrows/station"
+	printf "SPARROWS_VERSION='%s'\nOPENWRT='%s'\nBUILT='%s'\nLINE='%s'\n" "$VERSION" "$VER" "$(date -u +%F)" \
+		"$ROLE $TARGET $PROFILE $TX2 $TX5 $UIOK${SPEC:+ $SPEC}" > "$F/etc/sparrows/version"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" >> "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" >> "$F/etc/sparrows/station"
 	if [ -n "$DEV" ] && [ -d "$DEV/files" ]; then
@@ -481,8 +490,11 @@ build_one() (
 	done
 	[ "${#IMGS[@]}" -gt 0 ] || die "$ROLE $PROFILE: make image gave no .bin or .img.gz"
 	# They replace this device's earlier images (any release, with or without -ui). Other devices' stay
-	rm -f "$OUT"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
-	cp "${IMGS[@]}" "$OUT/"
+	# Into this version's folder. A rebuild of the same version replaces this device's images there
+	V="$OUT/$VERSION"
+	mkdir -p "$V"
+	rm -f "$V"/*-"sparrows-$NAMEROLE"{,-ui}"${DEV:+-$PROFILE}-${TARGET/\//-}-$IB_PROFILE"-*
+	cp "${IMGS[@]}" "$V/"
 	printf '%s\n' "${IMGS[@]##*/}" >> "$BUILD/.built"
 )
 
@@ -649,14 +661,14 @@ write_sd() {
 		IMGS=("$1")
 	else
 		shopt -s nullglob
-		IMGS=("$OUT"/*factory*.img.gz)
-		[ "${#IMGS[@]}" -gt 0 ] || IMGS=("$OUT"/*.img.gz)
+		IMGS=("$OUT"/latest/*factory*.img.gz)
+		[ "${#IMGS[@]}" -gt 0 ] || IMGS=("$OUT"/*/*factory*.img.gz "$OUT"/*.img.gz)
 		shopt -u nullglob
 	fi
-	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT: build a Raspberry Pi image first."; return 0; }
+	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT/latest: build a Raspberry Pi image first."; return 0; }
 	IMG=${IMGS[0]}
 	if [ "${#IMGS[@]}" -gt 1 ]; then
-		for i in "${!IMGS[@]}"; do printf '  %2d) %s\n' $((i + 1)) "$(basename "${IMGS[$i]}")"; done
+		for i in "${!IMGS[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${IMGS[$i]#"$OUT"/}"; done
 		N=$(ask "Which image? ")
 		[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#IMGS[@]}" ]] || { echo "Cancelled, nothing written."; return 0; }
 		IMG=${IMGS[$((N - 1))]}
@@ -737,6 +749,11 @@ if printf '%s\n' "$CHOSEN" | lines_of_role nest | grep -q . ; then
 	echo "  Nests: Android needs a non-ULA prefix; the image uses 2001:db8:1::/64, the BENCH range (nest/files)."
 fi
 [ "$ARG" != uses ] || exit 0
+echo "  Version: $VERSION"
+case "$VERSION" in
+	*-dirty) echo "  Files are changed and not committed: these images can't be found in git later. Commit first to give them a version." ;;
+	unversioned) echo "  Not a git checkout: these images have no version." ;;
+esac
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
 if [ "$MENU" = 1 ]; then
@@ -765,8 +782,11 @@ if [ -s "$BUILD/.skipped" ]; then
 	echo
 fi
 [ -s "$BUILD/.built" ] || die "No image was built."
-echo "Built now, in $OUT:"
-( cd "$OUT" && while read -r I; do sha256sum -- "$I"; done < "$BUILD/.built" )
+# This version's checksums, for the kit and for anyone who checks an image: SHA256SUMS in its folder
+( cd "$OUT/$VERSION" && shopt -s nullglob && IMGS=(*.bin *.img.gz) && sha256sum -- "${IMGS[@]}" > SHA256SUMS )
+ln -sfn "$VERSION" "$OUT/latest"
+echo "Built now, version $VERSION, in $OUT/$VERSION (also $OUT/latest):"
+( cd "$OUT/$VERSION" && while read -r I; do sha256sum -- "$I"; done < "$BUILD/.built" )
 
 if grep -q -e '-ui-' "$BUILD/.built"; then
 	echo
