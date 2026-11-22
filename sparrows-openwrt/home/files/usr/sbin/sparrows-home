@@ -1,0 +1,194 @@
+#!/bin/sh
+# sparrows-home: the locked /home of a Pi unit (Sparrows Tao, "Kept data: a locked /home").
+#   sparrows-home status       what is there: the partition, the lock, what lives on it
+#   sparrows-home setup        make it: LUKS, a filesystem inside, then move the kept data into it.
+#                              The passphrase comes from ./build.sh home <unit> (stdin), or is typed
+#   sparrows-home open         open it (passphrase on stdin, or typed) and start what waits for it.
+#                              sparrows-unlock does the same
+#   sparrows-home close        stop what uses it, then lock it
+#   sparrows-home check-image <image.img.gz>   would this image reach /home? (before a sysupgrade)
+# For the system itself:
+#   sparrows-home ensure       first boot and after each update: find /home by its label and put its
+#                              partition entry back if an update dropped it, or make an empty one
+#   sparrows-home dir <name>   the folder a service keeps its data in (/etc/<name> or /home/<name>);
+#                              fails while /home is there but locked: the service then waits
+# What lives on /home: the message store (lxmd) and the Sparrows page node (nomadnetwork). rnsd's own
+# identity stays on the system side, so the unit relays even while /home is locked.
+# The passphrase is never written on the card. Status: NOT YET TESTED (written 2026-11-22).
+
+. /etc/sparrows/station          # HOME_START_MB: where /home starts on the card (devices/*/device.conf)
+
+LABEL='sparrows-home'            # in the LUKS header, readable without the key
+MAP='sparrows-home'              # /dev/mapper/sparrows-home once open
+KEPT='lxmd nomadnetwork'
+
+log() { logger -t sparrows-home "$*"; echo "$*"; }
+die() { echo "$*" >&2; exit 1; }
+
+# The card: the disk that holds the root partition (root=/dev/mmcblk0p2 on a Pi)
+ROOT=$(sed -n 's/.*root=\([^ ]*\).*/\1/p' /proc/cmdline)
+case "$ROOT" in
+	/dev/mmcblk*p[0-9]*) DISK=${ROOT%p[0-9]*} ;;
+	*) DISK=/dev/mmcblk0 ;;
+esac
+P3="${DISK}p3"
+START=$(( ${HOME_START_MB:-0} * 2048 ))          # in 512-byte sectors
+
+has_home() { [ -b "$P3" ] && [ "$(blkid -p -s LABEL -o value "$P3" 2>/dev/null)" = "$LABEL" ]; }
+is_open() { grep -q " /home " /proc/mounts; }
+services() {                    # start or stop what keeps its data on /home, where it is enabled
+	for S in nomadnet lxmd; do
+		if [ -x "/etc/init.d/$S" ] && /etc/init.d/$S enabled; then /etc/init.d/$S "$1"; fi
+	done
+}
+
+ensure() {
+	[ "$START" -gt 0 ] || return 0
+	mkdir -p /home
+	[ -b "$P3" ] && return 0
+	if [ "$(blkid -p -O $((START * 512)) -s LABEL -o value "$DISK" 2>/dev/null)" = "$LABEL" ]; then
+		# An update wrote a new partition table: /home is still there, only its entry is gone
+		if printf 'start=%s, type=83\n' "$START" | sfdisk --append --no-reread --no-tell-kernel --wipe-partitions never -q "$DISK" && partx -a -n 3 "$DISK"; then
+			log "/home found at ${HOME_START_MB} MiB, its partition entry put back"
+		else
+			log "ERROR: /home found at ${HOME_START_MB} MiB, but its partition entry could not be put back"
+		fi
+		return 0
+	fi
+	# No /home yet: an empty partition from HOME_START_MB to the end of the card, only if nothing is there
+	if [ "$(sfdisk -d "$DISK" 2>/dev/null | grep -c '^/dev/')" -ge 3 ]; then
+		log "partition 3 or more already on $DISK, not ours: no /home made"; return 0
+	fi
+	END2=$(( $(cat "/sys/class/block/${DISK#/dev/}p2/start") + $(cat "/sys/class/block/${DISK#/dev/}p2/size") ))
+	SIZE=$(cat "/sys/block/${DISK#/dev/}/size")
+	[ "$END2" -le "$START" ] || { log "ERROR: the system partition reaches past ${HOME_START_MB} MiB: no /home"; return 0; }
+	[ "$SIZE" -ge $((START + 1048576)) ] || { log "card too small for /home (less than 512 MiB after ${HOME_START_MB} MiB)"; return 0; }
+	printf 'start=%s, type=83\n' "$START" | sfdisk --append --no-reread --no-tell-kernel --wipe-partitions never -q "$DISK" && partx -a -n 3 "$DISK" &&
+		log "empty partition made for /home: set it up from the admin laptop with ./build.sh home <this unit>"
+}
+
+# The passphrase: from stdin (build.sh, over SSH), or typed twice on a terminal. Never written anywhere
+read_key() {
+	if [ -t 0 ]; then
+		stty -echo; printf 'Passphrase for /home: '; read -r KEY; printf '\nAgain: '; read -r K2; stty echo; echo
+		[ "$KEY" = "$K2" ] || die "Not the same. Nothing done."
+	else
+		read -r KEY
+	fi
+	[ "${#KEY}" -ge 20 ] || die "Passphrase too short (at least 20 characters). Nothing done."
+}
+
+mount_home() {
+	e2fsck -p "/dev/mapper/$MAP" >/dev/null 2>&1
+	mount -t ext4 -o noatime,nodev,nosuid "/dev/mapper/$MAP" /home
+}
+
+# The kept data, from the system side into /home. The old copies are deleted: on an SD card a deleted
+# file can survive in the card's spare space, which only LUKS protects
+move() {
+	if [ -d /etc/lxmd ] && [ ! -e /home/lxmd ]; then
+		cp -a /etc/lxmd /home/lxmd && rm -rf /etc/lxmd && log "message store moved to /home/lxmd"
+	fi
+	mkdir -p /home/nomadnetwork
+	if [ -d /etc/nomadnetwork/storage ] && [ ! -e /home/nomadnetwork/storage ]; then
+		cp -a /etc/nomadnetwork/storage /home/nomadnetwork/storage && rm -rf /etc/nomadnetwork/storage &&
+			log "page node identity moved to /home/nomadnetwork"
+	fi
+	for N in $KEPT; do mkdir -p "/home/$N"; chown -R rns:rns "/home/$N"; done
+}
+
+setup() {
+	[ "$START" -gt 0 ] || die "This device has no place for /home (no HOME_START_MB in its image)."
+	ensure >/dev/null
+	[ -b "$P3" ] || die "No partition for /home: card too small, or something else is on it (logread -e sparrows-home)."
+	[ "$(cat "/sys/class/block/${P3#/dev/}/start")" = "$START" ] || die "Partition 3 doesn't start at ${HOME_START_MB} MiB: not ours, left alone."
+	if cryptsetup isLuks "$P3" 2>/dev/null; then
+		die "/home is already set up. Open it with sparrows-unlock. To start over (destroys it): sparrows-home close; cryptsetup erase $P3"
+	fi
+	read_key
+	printf '%s' "$KEY" | cryptsetup luksFormat --type luks2 --label "$LABEL" --pbkdf argon2id \
+		--pbkdf-memory 131072 --batch-mode --key-file=- "$P3" || die "LUKS setup failed."
+	printf '%s' "$KEY" | cryptsetup open --key-file=- "$P3" "$MAP" || die "Can't open the new /home."
+	KEY='' K2=''
+	mkfs.ext4 -q -L home-data "/dev/mapper/$MAP" || die "mkfs failed."
+	mount_home || die "Can't mount /home."
+	services stop
+	move
+	services start
+	log "/home is set up and open. After each reboot it stays locked until: sparrows-unlock"
+}
+
+open() {
+	has_home || die "No /home set up on this unit (sparrows-home status)."
+	if ! [ -b "/dev/mapper/$MAP" ]; then
+		if [ -t 0 ]; then
+			cryptsetup open "$P3" "$MAP" || die "Not opened."
+		else
+			read -r KEY
+			printf '%s' "$KEY" | cryptsetup open --key-file=- "$P3" "$MAP" || die "Not opened: wrong passphrase?"
+			KEY=''
+		fi
+	fi
+	is_open || mount_home || die "Opened, but can't mount /home."
+	services start
+	log "/home is open"
+}
+
+close() {
+	services stop
+	! is_open || umount /home || die "/home is busy: not locked."
+	[ ! -b "/dev/mapper/$MAP" ] || cryptsetup close "$MAP"
+	log "/home is locked"
+}
+
+dir() {
+	[ -n "$1" ] || die "Usage: sparrows-home dir <name>"
+	if ! has_home; then echo "/etc/$1"; return 0; fi
+	is_open || return 1
+	mkdir -p "/home/$1" && chown rns:rns "/home/$1"
+	echo "/home/$1"
+}
+
+status() {
+	echo "card $DISK, /home from ${HOME_START_MB:-?} MiB"
+	if ! [ -b "$P3" ]; then echo "no partition for /home"; return 0; fi
+	if ! has_home; then echo "partition $P3 is there, not set up yet: ./build.sh home <this unit> on the admin laptop"; return 0; fi
+	if is_open; then
+		echo "/home is OPEN"
+		df -h /home | tail -n 1
+		for N in $KEPT; do [ ! -d "/home/$N" ] || echo "  /home/$N"; done
+	else
+		echo "/home is LOCKED: sparrows-unlock to open it. Waiting meanwhile: the message store, the Sparrows page"
+	fi
+}
+
+# The end of the image's last partition, from its partition table, against HOME_START_MB
+check_image() {
+	[ -f "$1" ] || die "Usage: sparrows-home check-image <image.img.gz>"
+	[ "$START" -gt 0 ] || { echo "no /home on this device: nothing to check"; return 0; }
+	E=$(python3 -I -c '
+import gzip, struct, sys
+with gzip.open(sys.argv[1]) as f:
+    mbr = f.read(512)
+end = 0
+for i in range(4):
+    e = mbr[446 + 16 * i: 462 + 16 * i]
+    start, count = struct.unpack("<II", e[8:16])
+    if e[4] and count:
+        end = max(end, start + count)
+print(-(-end * 512 // 1048576))
+' "$1") || die "Can't read the partition table of $1"
+	[ "$E" -le "$HOME_START_MB" ] || die "REFUSED: this image ends at $E MiB, past the start of /home (${HOME_START_MB} MiB). Don't flash it."
+	echo "OK: the image ends at $E MiB, /home starts at ${HOME_START_MB} MiB"
+}
+
+case "${1:-}" in
+	status) status ;;
+	setup) setup ;;
+	open) open ;;
+	close) close ;;
+	ensure) ensure ;;
+	dir) dir "${2:-}" ;;
+	check-image) check_image "${2:-}" ;;
+	*) sed -n '2,15s/^# \{0,1\}//p' "$0"; exit 1 ;;
+esac

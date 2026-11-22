@@ -1332,6 +1332,7 @@ cd sparrows-openwrt &amp;&amp; mkdir -p keys secrets</code></pre></div>
 #          sparrows-openwrt/build.sh       ./build.sh [all|uses|&lt;role&gt;], ./build.sh sd
 #          sparrows-openwrt/common/ station/   files for every unit: base, ports and radios
 #          sparrows-openwrt/perch/ tree/ nest/ files only some units need (perch tool, Reticulum, nest)
+#          sparrows-openwrt/home/          the locked /home of a Pi that runs Reticulum
 #          sparrows-openwrt/ui/ devices/   web interface files, devices that need more than a line
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
@@ -1761,6 +1762,65 @@ ping 192.168.1.1                  # must FAIL (no IPv4)
 
 # Undo: put the previous card back in the Pi</code></pre></div>
 
+<h4 id="home-setup"><span lang="en">Locked /home on a Pi (nest, tree)</span><span lang="fr">/home verrouillé sur un Pi (nid, arbre)</span><span lang="es">/home cerrado en una Pi (nido, árbol)</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Added on 2026-11-22 (the why is in <a href="#home">Part IV</a>). A Pi that runs Reticulum keeps what people know it by on a third partition of its card, <code>/home</code>, locked with <a class="term" href="#g-luks">LUKS</a>: the message store (<code>lxmd</code>) and the identity of its Sparrows page. <code>rnsd</code>'s own identity stays on the system side, so the unit relays even while <code>/home</code> is locked. Only the message store and the page wait for it.</p>
+<p lang="fr">Ajouté le 2026-11-22 (le pourquoi est dans la <a href="#home">partie IV</a>). Un Pi qui fait tourner Reticulum garde ce par quoi les gens le connaissent sur une troisième partition de sa carte, <code>/home</code>, verrouillée avec <a class="term" href="#g-luks">LUKS</a> : le stock de messages (<code>lxmd</code>) et l'identité de sa page Sparrows. L'identité de <code>rnsd</code> reste côté système : le boîtier relaie même quand <code>/home</code> est verrouillé. Seuls le stock de messages et la page l'attendent.</p>
+<p lang="es">Añadido el 2026-11-22 (el porqué está en la <a href="#home">parte IV</a>). Una Pi que ejecuta Reticulum guarda aquello por lo que la gente la conoce en una tercera partición de su tarjeta, <code>/home</code>, cerrada con <a class="term" href="#g-luks">LUKS</a>: el almacén de mensajes (<code>lxmd</code>) y la identidad de su página Sparrows. La identidad de <code>rnsd</code> se queda en el lado del sistema: la unidad reenvía aunque <code>/home</code> esté cerrado. Solo el almacén de mensajes y la página lo esperan.</p>
+<ul lang="en">
+  <li><strong>The place.</strong> <code>/home</code> starts at <code>HOME_START_MB</code> (2048 MiB on the Pis) and runs to the end of the card: a card of 4 GB or more. At first boot the unit makes an empty partition there if nothing is there yet.</li>
+  <li><strong>Setting it up</strong> is done once per unit, from the admin laptop: <code>./build.sh home</code> makes the unit's passphrase (or takes yours, 20 characters or more), shows it once, keeps it in <code>secrets/home/&lt;unit&gt;.key</code> and sends it over SSH. The unit locks the partition, moves the message store and the page's identity into it, and deletes the old copies.</li>
+  <li><strong>After each reboot</strong> <code>/home</code> stays locked until someone opens it: <code>./build.sh unlock</code> from the admin laptop, or <code>sparrows-unlock</code> on the unit, which asks for the passphrase. Later, an approver's yes over Reticulum.</li>
+  <li><strong>Updates</strong> keep it: <code>sysupgrade</code> and <code>./build.sh sd</code> stop before <code>/home</code>, and first boot puts its partition entry back.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>La place.</strong> <code>/home</code> commence à <code>HOME_START_MB</code> (2048 Mio sur les Pi) et va jusqu'au bout de la carte : une carte de 4 Go ou plus. Au premier démarrage, le boîtier y fait une partition vide s'il n'y a encore rien.</li>
+  <li><strong>La mise en place</strong> se fait une fois par boîtier, depuis le portable d'admin : <code>./build.sh home</code> fait la phrase de passe du boîtier (ou prend la vôtre, 20 caractères ou plus), l'affiche une fois, la garde dans <code>secrets/home/&lt;boîtier&gt;.key</code> et l'envoie par SSH. Le boîtier verrouille la partition, y déplace le stock de messages et l'identité de la page, et supprime les anciennes copies.</li>
+  <li><strong>Après chaque redémarrage</strong> <code>/home</code> reste verrouillé jusqu'à ce que quelqu'un l'ouvre : <code>./build.sh unlock</code> depuis le portable d'admin, ou <code>sparrows-unlock</code> sur le boîtier, qui demande la phrase de passe. Plus tard, le oui d'un approbateur par Reticulum.</li>
+  <li><strong>Les mises à jour</strong> le gardent : <code>sysupgrade</code> et <code>./build.sh sd</code> s'arrêtent avant <code>/home</code>, et le premier démarrage remet son entrée de partition.</li>
+</ul>
+<ul lang="es">
+  <li><strong>El sitio.</strong> <code>/home</code> empieza en <code>HOME_START_MB</code> (2048 MiB en las Pi) y llega hasta el final de la tarjeta: una tarjeta de 4 GB o más. En el primer arranque la unidad hace allí una partición vacía si todavía no hay nada.</li>
+  <li><strong>La preparación</strong> se hace una vez por unidad, desde el portátil de administración: <code>./build.sh home</code> crea la frase de paso de la unidad (o toma la tuya, 20 caracteres o más), la muestra una vez, la guarda en <code>secrets/home/&lt;unidad&gt;.key</code> y la envía por SSH. La unidad cierra la partición, mueve a ella el almacén de mensajes y la identidad de la página, y borra las copias antiguas.</li>
+  <li><strong>Tras cada reinicio</strong> <code>/home</code> sigue cerrado hasta que alguien lo abre: <code>./build.sh unlock</code> desde el portátil de administración, o <code>sparrows-unlock</code> en la unidad, que pide la frase de paso. Más adelante, el sí de un aprobador por Reticulum.</li>
+  <li><strong>Las actualizaciones</strong> lo conservan: <code>sysupgrade</code> y <code>./build.sh sd</code> se detienen antes de <code>/home</code>, y el primer arranque vuelve a poner su entrada de partición.</li>
+</ul>
+<p class="note" lang="en">Loss risk: without the passphrase, <code>/home</code> and the messages in it are gone for good. Save it away from the laptop when <code>./build.sh home</code> shows it. The old copies are deleted, but an SD card can keep them in its spare space: set <code>/home</code> up before the unit holds real messages.</p>
+<p class="note" lang="fr">Risque de perte : sans la phrase de passe, <code>/home</code> et les messages qu'il contient sont perdus pour de bon. La sauvegarder loin du portable quand <code>./build.sh home</code> l'affiche. Les anciennes copies sont supprimées, mais une carte SD peut les garder dans sa réserve : mettre <code>/home</code> en place avant que le boîtier ne garde de vrais messages.</p>
+<p class="note" lang="es">Riesgo de pérdida: sin la frase de paso, <code>/home</code> y los mensajes que contiene se pierden para siempre. Guardarla lejos del portátil cuando <code>./build.sh home</code> la muestre. Las copias antiguas se borran, pero una tarjeta SD puede conservarlas en su reserva: preparar <code>/home</code> antes de que la unidad guarde mensajes reales.</p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then the unit</span></div><pre><code># Not yet tested. ---- On the admin laptop: a Pi image built from 2026-11-22 (nest, tree) ----
+./build.sh nest                          # or tree: the image carries sparrows-home and the LUKS tools
+./build.sh sd                            # a card of 4 GB or more: /home starts at 2048 MiB
+
+# ---- First boot made an empty partition for /home. On the unit ----
+sparrows-home status                     # "partition /dev/mmcblk0p3 is there, not set up yet"
+
+# ---- Once per unit, from the admin laptop: its passphrase, shown once, then sent over SSH ----
+./build.sh home &lt;unit address&gt;           # Enter = a random passphrase; type "saved" once it is saved
+ls secrets/home/                         # &lt;unit name&gt;.key: back it up offline with secrets/
+
+# Verify on the unit
+sparrows-home status                     # /home is OPEN, with /home/lxmd and /home/nomadnetwork
+blkid /dev/mmcblk0p3; df -h /home          # LABEL="sparrows-home" TYPE="crypto_LUKS"; mounted on /home
+ls /etc/lxmd /etc/nomadnetwork/storage 2&gt;&amp;1  # gone: the data lives on /home now
+/etc/init.d/lxmd status; /etc/init.d/nomadnet status   # running
+
+# After a reboot: locked, the relay works, the message store and the page wait
+reboot
+sparrows-home status                     # LOCKED
+logread | grep 'waits for /home'         # lxmd and nomadnet wait
+./build.sh unlock &lt;unit address&gt;         # from the admin laptop, or on the unit: sparrows-unlock
+
+# Before an update: would the image reach /home? (build.sh checks its own images too)
+sparrows-home check-image /tmp/fw.bin
+
+# Lock it by hand (stops the message store and the page first)
+sparrows-home close
+
+# Undo, back to /etc (the data on /home is lost: copy it out first while it is open)
+sparrows-home close
+dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=16   # wipes the lock and its label: /home is gone for good
+reboot                                   # lxmd and nomadnet start fresh in /etc</code></pre></div>
+
 <h4 id="flash-eap"><span lang="en">6. Flash an EAP225-Outdoor from TP-Link stock firmware</span><span lang="fr">6. Flasher un EAP225-Outdoor depuis le firmware TP-Link d'origine</span><span lang="es">6. Flashear un EAP225-Outdoor desde el firmware original de TP-Link</span> <span class="st ok" data-ui="ok">tested</span></h4>
 <p lang="en">Tested on 2026-11-14 on a v3 (hardware 3.0, stock firmware 5.1.0) with the hedge image. The v1 is not yet tested; the OpenWrt wiki gives the same method. The same steps serve the feeder image.</p>
 <p lang="fr">Testé le 2026-11-14 sur un v3 (matériel 3.0, firmware d'origine 5.1.0) avec l'image de haie. Le v1 n'est pas encore testé ; le wiki OpenWrt donne la même méthode. Les mêmes étapes servent pour l'image de mangeoire.</p>
@@ -1801,7 +1861,10 @@ scp -O &lt;image&gt;-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]
 # On the station
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
 sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
-# Kept: the config, the identities, a perch's `perch ap`. From the new image: the admin keys, the radios</code></pre></div>
+# Kept: the config, the identities, a perch's `perch ap`. From the new image: the admin keys, the radios
+# A Pi with a locked /home: check the image first, and open /home again after the reboot
+sparrows-home check-image /tmp/fw.bin   # OK, or REFUSED if it would reach /home
+./build.sh unlock &lt;unit address&gt;        # on the admin laptop, once the unit is back</code></pre></div>
 
 <h4><span lang="en">Bench plan with the three units</span><span lang="fr">Plan de banc avec les trois boîtiers</span><span lang="es">Plan de banco con las tres unidades</span></h4>
 <ol lang="en">
@@ -1859,9 +1922,9 @@ sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s
 <p lang="en">On Android: install Sideband, connect through local Wi-Fi (AutoInterface), restart the app, then pick the nest as propagation node. The test that matters: two phones swap addresses, phone B is switched off, A sends a message, B comes back on the village. The message must arrive through the nest.</p>
 <p lang="fr">Sur Android : installer Sideband, se connecter par le Wi-Fi local (AutoInterface), redémarrer l'appli, puis choisir le nid comme nœud de propagation. Le test qui compte : deux téléphones échangent leurs adresses, le téléphone B est éteint, A envoie un message, B revient sur le village. Le message doit arriver par le nid.</p>
 <p lang="es">En Android: instalar Sideband, conectarse por el Wi-Fi local (AutoInterface), reiniciar la app, y elegir el nido como nodo de propagación. La prueba que importa: dos teléfonos se intercambian las direcciones, el teléfono B se apaga, A envía un mensaje, B vuelve al pueblo. El mensaje debe llegar a través del nido.</p>
-<p lang="en">The identities are the addresses: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> and, on a nest, <code>/etc/lxmd/</code>. <code>sysupgrade</code> keeps them (they are listed in <code>/lib/upgrade/keep.d/</code>), but writing a card again erases them: copy them to the admin laptop first. Later they live on the locked <code>/home</code> (<a href="#home">Part IV</a>).</p>
-<p lang="fr">Les identités sont les adresses : <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> et, sur un nid, <code>/etc/lxmd/</code>. <code>sysupgrade</code> les garde (elles sont listées dans <code>/lib/upgrade/keep.d/</code>), mais réécrire une carte les efface : les copier d'abord sur le portable d'admin. Plus tard elles vivront sur le <code>/home</code> verrouillé (<a href="#home">partie IV</a>).</p>
-<p lang="es">Las identidades son las direcciones: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> y, en un nido, <code>/etc/lxmd/</code>. <code>sysupgrade</code> las conserva (están en <code>/lib/upgrade/keep.d/</code>), pero volver a escribir una tarjeta las borra: copiarlas antes en el portátil de administración. Más adelante vivirán en el <code>/home</code> cerrado (<a href="#home">parte IV</a>).</p>
+<p lang="en">The identities are the addresses: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> and, on a nest, <code>/etc/lxmd/</code>. <code>sysupgrade</code> keeps them (they are listed in <code>/lib/upgrade/keep.d/</code>), but writing a card again erases them: copy them to the admin laptop first. On a Pi whose locked <code>/home</code> is set up, the message store and the page node's identity live there instead, and <code>rnsd</code>'s stays here (<a href="#home-setup">Locked /home</a>).</p>
+<p lang="fr">Les identités sont les adresses : <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> et, sur un nid, <code>/etc/lxmd/</code>. <code>sysupgrade</code> les garde (elles sont listées dans <code>/lib/upgrade/keep.d/</code>), mais réécrire une carte les efface : les copier d'abord sur le portable d'admin. Sur un Pi dont le <code>/home</code> verrouillé est en place, le stock de messages et l'identité du nœud de pages vivent là à la place, et celle de <code>rnsd</code> reste ici (<a href="#home-setup">/home verrouillé</a>).</p>
+<p lang="es">Las identidades son las direcciones: <code>/etc/reticulum/storage/</code>, <code>/etc/nomadnetwork/storage/identity</code> y, en un nido, <code>/etc/lxmd/</code>. <code>sysupgrade</code> las conserva (están en <code>/lib/upgrade/keep.d/</code>), pero volver a escribir una tarjeta las borra: copiarlas antes en el portátil de administración. En una Pi cuyo <code>/home</code> cerrado está preparado, el almacén de mensajes y la identidad del nodo de páginas viven allí, y la de <code>rnsd</code> se queda aquí (<a href="#home-setup">/home cerrado</a>).</p>
 
 <h3 id="unnamed"><span lang="en">Staying unnamed</span><span lang="fr">Rester sans nom</span><span lang="es">Quedarse sin nombre</span></h3>
 <p lang="en">The hard rule <a href="#limits">Nobody is named</a>, in practice. The network itself keeps nothing about people: no account, addresses by SLAAC instead of DHCP leases, no DNS log, radios that log warnings only, logs in RAM only and small. Most leaks come from the people who build and run it. <code>build.sh</code> catches what a machine can; the rest is a habit.</p>
@@ -1968,6 +2031,7 @@ dmesg | tail -n 30
 perch status; batctl if; batctl n; batctl o # flyways (perch, hedge)
 iw dev wsta link; rns status                # tree: joined to Sparrows, Reticulum interface up
 /etc/init.d/lxmd status; logread -e odhcpd | tail -n 20   # nest: message store, RAs
+sparrows-home status                        # Pi nest or tree: is /home open? (sparrows-unlock opens it)
 
 # Stuck: back to the image's defaults (the role stays, changes by hand are gone)
 firstboot &amp;&amp; reboot</code></pre></div>
@@ -1980,6 +2044,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>A flyway doesn't come up.</strong> <code>perch status</code> on both ends: exactly one <code>perch ap</code> per flyway, the same <code>secrets/flyway.key</code> in both images, and 60 s of radar check before the AP transmits.</li>
   <li><strong>A phone joins but gets no page.</strong> From a laptop on the same Wi-Fi: <code>rdisc6</code>, then <code>dig AAAA sparrows.lan @&lt;nest address&gt;</code>. Both answer only when a nest is up.</li>
   <li><strong>On a tree, <code>rns status</code> shows the interface down.</strong> <code>iw dev wsta link</code>: the tree must first be joined to <code>Sparrows</code>.</li>
+  <li><strong>After a reboot, a nest keeps no messages or a tree shows no page.</strong> Its <code>/home</code> is locked: <code>sparrows-home status</code>, then <code>./build.sh unlock</code> (<a href="#home-setup">Locked /home</a>).</li>
   <li><strong>The build stops.</strong> It says why; the known causes are in <a href="#pitfalls">Pitfalls</a>.</li>
 </ul>
 <ul lang="fr">
@@ -1990,6 +2055,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>Une voie ne monte pas.</strong> <code>perch status</code> aux deux bouts : un seul <code>perch ap</code> par voie, la même <code>secrets/flyway.key</code> dans les deux images, et 60 s de vérification radar avant que l'AP émette.</li>
   <li><strong>Un téléphone rejoint mais n'a pas de page.</strong> Depuis un portable sur le même Wi-Fi : <code>rdisc6</code>, puis <code>dig AAAA sparrows.lan @&lt;adresse du nid&gt;</code>. Les deux ne répondent que si un nid tourne.</li>
   <li><strong>Sur un arbre, <code>rns status</code> montre l'interface coupée.</strong> <code>iw dev wsta link</code> : l'arbre doit d'abord avoir rejoint <code>Sparrows</code>.</li>
+  <li><strong>Après un redémarrage, un nid ne garde plus de messages ou un arbre n'a plus de page.</strong> Son <code>/home</code> est verrouillé : <code>sparrows-home status</code>, puis <code>./build.sh unlock</code> (<a href="#home-setup">/home verrouillé</a>).</li>
   <li><strong>Le build s'arrête.</strong> Il dit pourquoi ; les causes connues sont dans <a href="#pitfalls">Pièges</a>.</li>
 </ul>
 <ul lang="es">
@@ -2000,6 +2066,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>Una ruta no se levanta.</strong> <code>perch status</code> en los dos extremos: un solo <code>perch ap</code> por ruta, la misma <code>secrets/flyway.key</code> en las dos imágenes, y 60 s de comprobación de radar antes de que el AP emita.</li>
   <li><strong>Un teléfono se une pero no ve la página.</strong> Desde un portátil en el mismo Wi-Fi: <code>rdisc6</code>, luego <code>dig AAAA sparrows.lan @&lt;dirección del nido&gt;</code>. Los dos solo responden si hay un nido en marcha.</li>
   <li><strong>En un árbol, <code>rns status</code> muestra la interfaz caída.</strong> <code>iw dev wsta link</code>: el árbol primero tiene que estar unido a <code>Sparrows</code>.</li>
+  <li><strong>Tras un reinicio, un nido ya no guarda mensajes o un árbol no muestra su página.</strong> Su <code>/home</code> está cerrado: <code>sparrows-home status</code>, luego <code>./build.sh unlock</code> (<a href="#home-setup">/home cerrado</a>).</li>
   <li><strong>La construcción se detiene.</strong> Dice por qué; las causas conocidas están en <a href="#pitfalls">Trampas</a>.</li>
 </ul>
 
@@ -2608,9 +2675,9 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 <p class="note" lang="es">Respeta la regla firme «Autónoma»: ni Internet ni empresa en el enlace. LoRa en sí no va cifrado, pero Reticulum cifra cada paquete. La placa y la antena en un edificio público necesitan el permiso del dueño.</p>
 
 <h3 id="home"><span lang="en">Kept data: a locked /home</span><span lang="fr">Les données gardées : un /home verrouillé</span><span lang="es">Los datos guardados: un /home cerrado</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
-<p lang="en">Decided on 2026-11-21. Nothing is built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the identities people know (the unit's address, its message store, its Sparrows page) and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and opens in one of two ways: a person approves a request the unit sends over Reticulum, or the admin types the passphrase over SSH. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
-<p lang="fr">Décidé le 2026-11-21. Rien n'est encore construit. Sur les boîtiers à carte SD (nids et arbres sur Pi), ce qui doit survivre à chaque mise à jour vit sur une troisième partition, <code>/home</code>, créée au premier démarrage dans le reste vide de la carte : les identités que les gens connaissent (l'adresse du boîtier, sa boîte aux lettres, sa page Sparrows) et les choix propres au boîtier. Elle est verrouillée avec <a href="#g-luks">LUKS</a>, et s'ouvre de deux façons : une personne accepte une demande que le boîtier envoie par Reticulum, ou l'admin tape la phrase de passe par SSH. Les boîtiers à mémoire flash seule (CPE510, EAP225) n'ont pas la place, et rien à eux à garder.</p>
-<p lang="es">Decidido el 2026-11-21. Aún no hay nada construido. En las unidades con tarjeta SD (nidos y árboles en Pi), lo que debe sobrevivir a cada actualización vive en una tercera partición, <code>/home</code>, creada en el primer arranque en el resto vacío de la tarjeta: las identidades que la gente conoce (la dirección de la unidad, su buzón, su página Sparrows) y las elecciones propias de la unidad. Está cerrada con <a href="#g-luks">LUKS</a>, y se abre de dos maneras: una persona acepta una petición que la unidad envía por Reticulum, o el administrador teclea la frase de paso por SSH. Las unidades con solo memoria flash (CPE510, EAP225) no tienen sitio, ni nada propio que guardar.</p>
+<p lang="en">Decided on 2026-11-21. Started on 2026-11-22: the partition, the lock, opening it by hand and the update guard are written, not yet tested (<a href="#home-setup">Locked /home</a>). The request over Reticulum is not built yet. On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the identities people know (the unit's address, its message store, its Sparrows page) and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and opens in one of two ways: a person approves a request the unit sends over Reticulum, or the admin types the passphrase over SSH. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
+<p lang="fr">Décidé le 2026-11-21. Commencé le 2026-11-22 : la partition, le verrou, l'ouverture à la main et la protection des mises à jour sont écrits, pas encore testés (<a href="#home-setup">/home verrouillé</a>). La demande par Reticulum n'est pas encore construite. Sur les boîtiers à carte SD (nids et arbres sur Pi), ce qui doit survivre à chaque mise à jour vit sur une troisième partition, <code>/home</code>, créée au premier démarrage dans le reste vide de la carte : les identités que les gens connaissent (l'adresse du boîtier, sa boîte aux lettres, sa page Sparrows) et les choix propres au boîtier. Elle est verrouillée avec <a href="#g-luks">LUKS</a>, et s'ouvre de deux façons : une personne accepte une demande que le boîtier envoie par Reticulum, ou l'admin tape la phrase de passe par SSH. Les boîtiers à mémoire flash seule (CPE510, EAP225) n'ont pas la place, et rien à eux à garder.</p>
+<p lang="es">Decidido el 2026-11-21. Empezado el 2026-11-22: la partición, el cierre, la apertura a mano y la protección de las actualizaciones están escritos, aún sin probar (<a href="#home-setup">/home cerrado</a>). La petición por Reticulum aún no está construida. En las unidades con tarjeta SD (nidos y árboles en Pi), lo que debe sobrevivir a cada actualización vive en una tercera partición, <code>/home</code>, creada en el primer arranque en el resto vacío de la tarjeta: las identidades que la gente conoce (la dirección de la unidad, su buzón, su página Sparrows) y las elecciones propias de la unidad. Está cerrada con <a href="#g-luks">LUKS</a>, y se abre de dos maneras: una persona acepta una petición que la unidad envía por Reticulum, o el administrador teclea la frase de paso por SSH. Las unidades con solo memoria flash (CPE510, EAP225) no tienen sitio, ni nada propio que guardar.</p>
 
 <h4><span lang="en">How it opens: a request over Reticulum</span><span lang="fr">Comment elle s'ouvre : une demande par Reticulum</span><span lang="es">Cómo se abre: una petición por Reticulum</span></h4>
 <ul lang="en">
@@ -2646,19 +2713,19 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 <h4><span lang="en">Updates never touch it</span><span lang="fr">Les mises à jour n'y touchent jamais</span><span lang="es">Las actualizaciones nunca lo tocan</span></h4>
 <ul lang="en">
   <li>The partition is found by the label in its LUKS header, <code>sparrows-home</code>, which can be read without the key. The first-boot script runs again after every <code>sysupgrade</code>: it looks for that label first, and creates a partition only when there is none.</li>
-  <li><code>sysupgrade</code> rewrites only the boot and system partitions, as long as their size stays the same. So <code>ROOTFS_MB</code> never changes; the unit and <code>build.sh</code> refuse an image that would run into <code>/home</code>.</li>
+  <li><code>sysupgrade</code> rewrites only the boot and system partitions, as long as their size stays the same. So <code>/home</code> starts at a fixed place, <code>HOME_START_MB</code> in the device's <code>device.conf</code> (2048 MiB on the Pis), which never changes. <code>build.sh</code> refuses an image that would reach it; on the unit, <code>sparrows-home check-image</code> says so before an update. An update drops <code>/home</code>'s entry from the partition table: first boot finds it again by its label and puts it back.</li>
   <li><code>build.sh sd</code> sees <code>sparrows-home</code> on a card and offers to rewrite the system only, keeping the card's partition table. Erasing everything still needs the disk name typed, with a warning that <code>/home</code> is lost.</li>
   <li>With the identities on <code>/home</code>, a Pi can update with <code>sysupgrade -n</code> (the NixOS card in <a href="#ideas">Ideas</a>) and lose nothing it needs.</li>
 </ul>
 <ul lang="fr">
   <li>La partition se reconnaît à l'étiquette de son en-tête LUKS, <code>sparrows-home</code>, lisible sans la clé. Le script de premier démarrage repasse après chaque <code>sysupgrade</code> : il cherche d'abord cette étiquette, et ne crée une partition que s'il n'y en a pas.</li>
-  <li><code>sysupgrade</code> ne réécrit que les partitions de démarrage et de système, tant que leur taille ne change pas. Donc <code>ROOTFS_MB</code> ne change jamais ; le boîtier et <code>build.sh</code> refusent une image qui empiéterait sur <code>/home</code>.</li>
+  <li><code>sysupgrade</code> ne réécrit que les partitions de démarrage et de système, tant que leur taille ne change pas. Donc <code>/home</code> commence à une place fixe, <code>HOME_START_MB</code> dans le <code>device.conf</code> de l'appareil (2048 Mio sur les Pi), qui ne change jamais. <code>build.sh</code> refuse une image qui l'atteindrait ; sur le boîtier, <code>sparrows-home check-image</code> le dit avant une mise à jour. Une mise à jour efface l'entrée de <code>/home</code> dans la table de partitions : le premier démarrage le retrouve par son étiquette et la remet.</li>
   <li><code>build.sh sd</code> voit <code>sparrows-home</code> sur une carte et propose de ne réécrire que le système, en gardant la table de partitions de la carte. Tout effacer demande toujours de taper le nom du disque, avec un avertissement : <code>/home</code> sera perdu.</li>
   <li>Avec les identités sur <code>/home</code>, un Pi peut se mettre à jour avec <code>sysupgrade -n</code> (la carte NixOS dans les <a href="#ideas">Idées</a>) sans rien perdre de ce dont il a besoin.</li>
 </ul>
 <ul lang="es">
   <li>La partición se reconoce por la etiqueta de su cabecera LUKS, <code>sparrows-home</code>, que se lee sin la clave. El script de primer arranque vuelve a ejecutarse tras cada <code>sysupgrade</code>: busca primero esa etiqueta, y solo crea una partición si no hay ninguna.</li>
-  <li><code>sysupgrade</code> solo reescribe las particiones de arranque y de sistema, mientras su tamaño no cambie. Así que <code>ROOTFS_MB</code> no cambia nunca; la unidad y <code>build.sh</code> rechazan una imagen que invadiría <code>/home</code>.</li>
+  <li><code>sysupgrade</code> solo reescribe las particiones de arranque y de sistema, mientras su tamaño no cambie. Así que <code>/home</code> empieza en un sitio fijo, <code>HOME_START_MB</code> en el <code>device.conf</code> del aparato (2048 MiB en las Pi), que no cambia nunca. <code>build.sh</code> rechaza una imagen que lo alcanzaría; en la unidad, <code>sparrows-home check-image</code> lo dice antes de una actualización. Una actualización borra la entrada de <code>/home</code> en la tabla de particiones: el primer arranque lo encuentra por su etiqueta y la vuelve a poner.</li>
   <li><code>build.sh sd</code> ve <code>sparrows-home</code> en una tarjeta y ofrece reescribir solo el sistema, conservando la tabla de particiones de la tarjeta. Borrarlo todo sigue pidiendo teclear el nombre del disco, con un aviso: <code>/home</code> se pierde.</li>
   <li>Con las identidades en <code>/home</code>, una Pi puede actualizarse con <code>sysupgrade -n</code> (la tarjeta NixOS en <a href="#ideas">Ideas</a>) sin perder nada de lo que necesita.</li>
 </ul>

@@ -24,6 +24,7 @@ cd sparrows-openwrt && mkdir -p keys secrets
 #          sparrows-openwrt/build.sh       ./build.sh [all|uses|<role>], ./build.sh sd
 #          sparrows-openwrt/common/ station/   files for every unit: base, ports and radios
 #          sparrows-openwrt/perch/ tree/ nest/ files only some units need (perch tool, Reticulum, nest)
+#          sparrows-openwrt/home/          the locked /home of a Pi that runs Reticulum
 #          sparrows-openwrt/ui/ devices/   web interface files, devices that need more than a line
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
@@ -240,6 +241,9 @@ scp -O <image>-sysupgrade.bin 'root@[fd7e:4c1a:9b20:1:1e61:b4ff:febd:26de]:/tmp/
 sysupgrade -T /tmp/fw.bin       # checks the image, flashes nothing
 sysupgrade -v /tmp/fw.bin       # keeps the config and the role, reboots (+ 60 s of radar check on 5 GHz)
 # Kept: the config, the identities, a perch's `perch ap`. From the new image: the admin keys, the radios
+# A Pi with a locked /home: check the image first, and open /home again after the reboot
+sparrows-home check-image /tmp/fw.bin   # OK, or REFUSED if it would reach /home
+./build.sh unlock <unit address>        # on the admin laptop, once the unit is back
 ### kit
 # On the village, no Internet needed: from a nest (or the Sparrows page of a tree, in Nomad Network)
 wget http://sparrows.lan/kit/sparrows-kit.tar.gz http://sparrows.lan/kit/sparrows-kit.tar.gz.sha256
@@ -454,6 +458,41 @@ dmesg | tail -n 30
 perch status; batctl if; batctl n; batctl o # flyways (perch, hedge)
 iw dev wsta link; rns status                # tree: joined to Sparrows, Reticulum interface up
 /etc/init.d/lxmd status; logread -e odhcpd | tail -n 20   # nest: message store, RAs
+sparrows-home status                        # Pi nest or tree: is /home open? (sparrows-unlock opens it)
 
 # Stuck: back to the image's defaults (the role stays, changes by hand are gone)
 firstboot && reboot
+### home-setup
+# Not yet tested. ---- On the admin laptop: a Pi image built from 2026-11-22 (nest, tree) ----
+./build.sh nest                          # or tree: the image carries sparrows-home and the LUKS tools
+./build.sh sd                            # a card of 4 GB or more: /home starts at 2048 MiB
+
+# ---- First boot made an empty partition for /home. On the unit ----
+sparrows-home status                     # "partition /dev/mmcblk0p3 is there, not set up yet"
+
+# ---- Once per unit, from the admin laptop: its passphrase, shown once, then sent over SSH ----
+./build.sh home <unit address>           # Enter = a random passphrase; type "saved" once it is saved
+ls secrets/home/                         # <unit name>.key: back it up offline with secrets/
+
+# Verify on the unit
+sparrows-home status                     # /home is OPEN, with /home/lxmd and /home/nomadnetwork
+blkid /dev/mmcblk0p3; df -h /home          # LABEL="sparrows-home" TYPE="crypto_LUKS"; mounted on /home
+ls /etc/lxmd /etc/nomadnetwork/storage 2>&1  # gone: the data lives on /home now
+/etc/init.d/lxmd status; /etc/init.d/nomadnet status   # running
+
+# After a reboot: locked, the relay works, the message store and the page wait
+reboot
+sparrows-home status                     # LOCKED
+logread | grep 'waits for /home'         # lxmd and nomadnet wait
+./build.sh unlock <unit address>         # from the admin laptop, or on the unit: sparrows-unlock
+
+# Before an update: would the image reach /home? (build.sh checks its own images too)
+sparrows-home check-image /tmp/fw.bin
+
+# Lock it by hand (stops the message store and the page first)
+sparrows-home close
+
+# Undo, back to /etc (the data on /home is lost: copy it out first while it is open)
+sparrows-home close
+dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=16   # wipes the lock and its label: /home is gone for good
+reboot                                   # lxmd and nomadnet start fresh in /etc

@@ -1,0 +1,4 @@
+#!/bin/sh
+# sparrows-unlock: open this unit's locked /home over SSH, typing its passphrase (or on stdin).
+# The same as: sparrows-home open
+exec /usr/sbin/sparrows-home open

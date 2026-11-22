@@ -13,7 +13,11 @@
 #        VER=25.12.x ./build.sh  -> another 25.12 release
 #        UI=1 ./build.sh all     -> with the web interface (LuCI), only where profiles.txt says "ui"
 #        ./build.sh sd [image]   -> write a Raspberry Pi image (.img.gz) to an SD card: asks which
-#                                   reader, shows what is on it, and asks you to type its name first
+#                                   reader, shows what is on it, and asks you to type its name first.
+#                                   A card with a locked /home: rewrite the system only, /home kept
+#        ./build.sh home <unit>  -> set up the locked /home of a Pi unit (a nest, a tree), over SSH:
+#                                   makes its passphrase, shows it once, keeps it in secrets/home/
+#        ./build.sh unlock <unit> -> open a unit's /home with its passphrase from secrets/home/
 # Versions: each build is stamped with the build tree's git version (git describe: the last tag, the
 # commits since, the commit; "-dirty" when files are changed and not committed). The images go to
 # build/images/<version>/, with a SHA256SUMS file; build/images/latest points to the newest. Older
@@ -25,6 +29,7 @@
 #                                 (its public keys are in trust/; a new key: check its fingerprint on
 #                                 https://openwrt.org/docs/guide-user/security/signatures, add it there)
 #   CHECK_RULES=0 ./build.sh   -> don't check the image's package list against the hard rules
+# One check is never skipped: an SD-card image must end before the locked /home (HOME_START_MB).
 #
 # Downloads are kept and checked by their sha256, so each is fetched once: build/dl (OpenWrt's Image
 # Builders and their signed checksums), build/firmware, build/wheels. Nothing there is deleted; remove a
@@ -45,6 +50,7 @@
 #                        Each: one line of 8 to 63 printable ASCII characters, ideally letters/digits only.
 #                        Generate one: head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32
 #                        Images with a flyway contain its key: never publish them.
+#   secrets/home/        made by ./build.sh home: one passphrase per unit's /home. Never in an image
 set -euo pipefail
 
 VER="${VER:-25.12.6}"     # 2026-10-18, security fixes. Check https://downloads.openwrt.org/releases/ for the latest 25.12.x
@@ -71,6 +77,9 @@ PKG_join="iw"
 # Reticulum: Python and the libraries Reticulum asks for; Reticulum and Nomad Network come as pinned
 # wheels (tree/role.conf). Needs room: SD-card devices, not 8-16 MB flash.
 PKG_reticulum="python3 python3-cryptography python3-pyserial iw"
+# The locked /home (SD-card devices with HOME_START_MB in device.conf, on units that run Reticulum):
+# LUKS, a filesystem inside it, and the tools that find its partition again after an update
+PKG_home="cryptsetup kmod-crypto-xts kmod-fs-ext4 e2fsprogs sfdisk partx-utils blkid"
 # LuCI = luci-light minus its firewall and PPP pages. luci-light itself would bring firewall4 and
 # nftables back (luci-app-firewall needs a firewall): no firewall is a hard rule. No HTTPS: it only
 # listens on 127.0.0.1 and ::1
@@ -97,7 +106,7 @@ identity_check() {
 	fi
 	# An e-mail address in a file that goes into the images (the project's shared contact is fine)
 	HITS=$(grep -rInE '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}' \
-		"$HERE/common" "$HERE/station" "$HERE/perch" "$HERE/tree" "$HERE/nest" "$HERE/ui" "$HERE/devices" \
+		"$HERE/common" "$HERE/station" "$HERE/perch" "$HERE/tree" "$HERE/nest" "$HERE/home" "$HERE/ui" "$HERE/devices" \
 		2>/dev/null | grep -v -e 'sparrows-network@riseup\.net' || true)
 	if [ -n "$HITS" ]; then
 		echo "  Identity: an e-mail address in a file that goes into the images. Is it someone's?"
@@ -262,6 +271,25 @@ bad_line() {
 
 ib_name() { echo "openwrt-imagebuilder-${VER}-${1/\//-}.Linux-x86_64"; }
 
+# The end of an SD-card image's last partition, in MiB, read from its partition table (MBR). OpenWrt's
+# .img.gz has metadata after the gzip data: only the first 512 bytes are read
+img_end_mb() {
+	python3 -I -c '
+import gzip, struct, sys
+with gzip.open(sys.argv[1]) as f:
+    mbr = f.read(512)
+if len(mbr) < 512 or mbr[510:512] != b"\x55\xaa":
+    sys.exit("no partition table")
+end = 0
+for i in range(4):
+    e = mbr[446 + 16 * i: 462 + 16 * i]
+    start, count = struct.unpack("<II", e[8:16])
+    if e[4] and count:
+        end = max(end, start + count)
+print(-(-end * 512 // 1048576))
+' "$1"
+}
+
 # The kit: the project's public files in one archive, which trees and nests offer for download
 # (KIT_TO in tree/ and nest/role.conf), so anyone on the village can get what builds it. Made from git:
 # only committed files, so keys/, secrets/ and build/ can't be in it. Made once per version, then
@@ -378,7 +406,7 @@ build_one() (
 	WITH_UI=0 NAME="sparrows-$NAMEROLE"
 
 	# --- A device that needs more than a line: devices/<name>/device.conf (see profiles.txt) ---
-	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES='' ROOTFS_MB=''
+	IB_PROFILE=$PROFILE DEV_PACKAGES='' MACDEV='' CH2='' FW_URL='' FW_DIR='' FW_FILES='' ROOTFS_MB='' HOME_START_MB=''
 	DEV="$HERE/devices/$PROFILE"
 	if [ -f "$DEV/device.conf" ]; then
 		# shellcheck source=/dev/null
@@ -393,6 +421,10 @@ build_one() (
 			echo "$ROLE $PROFILE: too small for the web interface (profiles.txt), built without it" >&2
 		fi
 	fi
+	# The locked /home: on SD-card devices that say where it starts, for units that keep identities
+	# (Reticulum: the message store, the Sparrows page node)
+	LOCKED_HOME=0
+	if [ -n "$HOME_START_MB" ] && [ "$RNS" = 1 ]; then LOCKED_HOME=1; fi
 
 	# --- SAE passphrase for each flyway: 5 GHz (perch) and 2.4 GHz (hedge) ---
 	KEYS=''
@@ -414,6 +446,7 @@ build_one() (
 	if has "$USE5" flyway; then cp -a "$HERE/perch/files/." "$F/"; fi      # the perch tool
 	if [ "$RNS" = 1 ]; then cp -a "$HERE/tree/files/." "$F/"; fi          # Reticulum + the page
 	if [ "$NEST" = 1 ]; then cp -a "$HERE/nest/files/." "$F/"; fi         # RA, DNS, welcome page, lxmd
+	if [ "$LOCKED_HOME" = 1 ]; then cp -a "$HERE/home/files/." "$F/"; fi  # the locked /home
 	install -d -m 700 "$F/etc/dropbear"
 	# Type and key only: the comment at the end of a .pub file (often user@laptop) would name the admin
 	# to anyone who reads the card
@@ -427,6 +460,7 @@ build_one() (
 		"$ROLE $TARGET $PROFILE $TX2 $TX5 $UIOK${SPEC:+ $SPEC}" > "$F/etc/sparrows/version"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" >> "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" >> "$F/etc/sparrows/station"
+	[ "$LOCKED_HOME" = 0 ] || printf "HOME_START_MB='%s'\n" "$HOME_START_MB" >> "$F/etc/sparrows/station"
 	if [ -n "$DEV" ] && [ -d "$DEV/files" ]; then
 		cp -a "$DEV/files/." "$F/"
 	fi
@@ -507,6 +541,7 @@ build_one() (
 	if has "$USE2 $USE5" flyway; then PACKAGES="$PACKAGES $PKG_flyway"; fi
 	if has "$USE2 $USE5" join; then PACKAGES="$PACKAGES $PKG_join"; fi
 	if [ "$RNS" = 1 ]; then PACKAGES="$PACKAGES $PKG_reticulum"; fi
+	if [ "$LOCKED_HOME" = 1 ]; then PACKAGES="$PACKAGES $PKG_home"; fi
 	PACKAGES="$PACKAGES $PKG_nest $DEV_PACKAGES"
 	[ "$WITH_UI" = 0 ] || PACKAGES="$PACKAGES $PKG_ui"
 	PACKAGES=$(printf '%s\n' $PACKAGES | awk '!seen[$0]++' | tr '\n' ' ')
@@ -530,7 +565,7 @@ build_one() (
 	fi
 	# SD-card devices: the root partition's size, which holds the system and, after it, the space where
 	# the unit keeps its changes and data. OpenWrt's default is small (104 MB on a Pi): device.conf can
-	# ask for more with ROOTFS_MB. The rest of the card stays unused either way
+	# ask for more with ROOTFS_MB, up to the locked /home (HOME_START_MB)
 	SIZE=()
 	[ -z "$ROOTFS_MB" ] || SIZE=(ROOTFS_PARTSIZE="$ROOTFS_MB")
 	if ! make image PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" FILES="$F" EXTRA_IMAGE_NAME="$NAME" "${SIZE[@]}"; then
@@ -547,6 +582,15 @@ build_one() (
 		case "$I" in *-ext4-*|*-initramfs-*) ;; *) IMGS+=("$I") ;; esac
 	done
 	[ "${#IMGS[@]}" -gt 0 ] || die "$ROLE $PROFILE: make image gave no .bin or .img.gz"
+	# Never past the locked /home: an update writes the whole image, and must stop before HOME_START_MB.
+	# Checked on every image of a device that has one, whatever its role (a unit may change role)
+	if [ -n "$HOME_START_MB" ]; then
+		for I in "${IMGS[@]}"; do
+			case "$I" in *.img.gz) ;; *) continue ;; esac
+			E=$(img_end_mb "$I") || die "$ROLE $PROFILE: can't read the partition table of ${I##*/}"
+			[ "$E" -le "$HOME_START_MB" ] || die "$ROLE $PROFILE: ${I##*/} ends at $E MiB, past the start of the locked /home ($HOME_START_MB MiB, devices/$PROFILE/device.conf). An update with it would overwrite /home: make ROOTFS_MB smaller"
+		done
+	fi
 	# They replace this device's earlier images (any release, with or without -ui). Other devices' stay
 	# Into this version's folder. A rebuild of the same version replaces this device's images there
 	V="$OUT/$VERSION"
@@ -559,6 +603,8 @@ build_one() (
 # ---------------------------------------------------------------- menu (terminal only)
 
 ask() { local a; read -r -p "$1" a </dev/tty; printf '%s' "$a"; }
+# The same, without showing what is typed
+ask_secret() { local a; read -r -s -p "$1" a </dev/tty; echo >&2; printf '%s' "$a"; }
 
 # Power at the radio: "-" (band off) or a whole number of dBm, 0 to 30 (no leading zero: 08 is octal)
 ask_tx() {
@@ -713,8 +759,10 @@ for d in json.load(sys.stdin)["blockdevices"]:
 }
 
 # Write an SD-card image (.img.gz) to a card. Asks for the image, the reader, then the disk name.
+# A card with a locked /home (label sparrows-home in its LUKS header, readable without the key) can
+# have its system rewritten alone: /home and its partition entry stay as they were.
 write_sd() {
-	local IMGS DISKS N IMG DEV SIZE MODEL BYTES P i
+	local IMGS DISKS N IMG DEV SIZE MODEL BYTES P L HSTART='' HSIZE='' KEEP=0 i
 	[ -t 0 ] || die "Writing an SD card needs a terminal: it asks before erasing anything."
 	if [ -n "${1:-}" ]; then
 		IMGS=("$1")
@@ -746,8 +794,32 @@ write_sd() {
 	[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#DISKS[@]}" ]] || { echo "Cancelled, nothing written."; return 0; }
 	IFS=$'\t' read -r DEV SIZE MODEL <<<"${DISKS[$((N - 1))]}"
 
+	# A locked /home on this card? Read from the partitions themselves (sudo: lsblk's labels come from
+	# udev, which doesn't always know them). Its place, in 512-byte sectors
+	echo "Looking at the card (sudo asks for your password)..."
+	while read -r P L; do
+		[ "$L" = part ] || continue
+		[ "$(sudo blkid -p -s LABEL -o value "$P" 2>/dev/null)" = sparrows-home ] || continue
+		HSTART=$(cat "/sys/class/block/${P#/dev/}/start") HSIZE=$(cat "/sys/class/block/${P#/dev/}/size")
+	done < <(lsblk -lnpo NAME,TYPE "$DEV")
+
 	echo
-	echo "EVERYTHING on $DEV ($SIZE, $MODEL) will be erased:"
+	if [ -n "$HSTART" ]; then
+		echo "This card holds a locked /home (sparrows-home, from $((HSTART / 2048)) MiB): the unit's"
+		echo "identities and the messages it keeps for people."
+		echo "   k) keep it: rewrite the system only (the usual choice)"
+		echo "   e) erase the whole card: /home and everything on it is lost for good"
+		case "$(ask "k or e? (Enter = cancel): ")" in
+			k) KEEP=1 ;;
+			e) ;;
+			*) echo "Cancelled, nothing written."; return 0 ;;
+		esac
+	fi
+	if [ "$KEEP" = 1 ]; then
+		echo "The system on $DEV ($SIZE, $MODEL) will be rewritten, /home kept:"
+	else
+		echo "EVERYTHING on $DEV ($SIZE, $MODEL) will be erased:"
+	fi
 	lsblk -po NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT "$DEV"
 	echo "and replaced by: $(basename "$IMG")"
 	[ "$(ask "To go on, type the disk name (${DEV#/dev/}): ")" = "${DEV#/dev/}" ] || { echo "Cancelled, nothing written."; return 0; }
@@ -757,18 +829,98 @@ write_sd() {
 	unpack() { gzip -dc "$IMG" 2>/dev/null || [ $? -eq 2 ]; }
 	BYTES=$(unpack | wc -c) || die "Cannot unpack $IMG"
 	[ "$BYTES" -gt 0 ] || die "Empty image: $IMG"
+	if [ "$KEEP" = 1 ] && [ "$BYTES" -gt $((HSTART * 512)) ]; then
+		die "This image ($((BYTES / 1048576)) MiB) would run into /home (from $((HSTART / 2048)) MiB). Nothing written."
+	fi
 
 	for P in $(lsblk -lnpo NAME "$DEV"); do
 		if findmnt -rn -S "$P" >/dev/null; then sudo umount "$P"; fi
 	done
-	echo "Erasing the old partition table, then writing $((BYTES / 1048576)) MiB (sudo asks for your password)..."
-	sudo wipefs -a -q "$DEV"
+	if [ "$KEEP" = 0 ]; then
+		echo "Erasing the old partition table (sudo asks for your password)..."
+		sudo wipefs -a -q "$DEV"
+	fi
+	echo "Writing $((BYTES / 1048576)) MiB (sudo asks for your password)..."
 	unpack | sudo dd of="$DEV" bs=4M iflag=fullblock conv=fsync status=progress
 	sync
 	echo "Reading the card back..."
 	sudo blockdev --flushbufs "$DEV"
 	unpack | sudo cmp -n "$BYTES" - "$DEV" || die "The card does NOT match the image: write it again, or use another card."
-	echo "OK: the card matches the image. You can take it out."
+	echo "OK: the card matches the image."
+	if [ "$KEEP" = 1 ]; then
+		# The image brought its own partition table, without /home: its entry goes back, same place
+		printf 'start=%s, size=%s, type=83\n' "$HSTART" "$HSIZE" | \
+			sudo sfdisk --append --no-reread --no-tell-kernel --wipe-partitions never -q "$DEV" || \
+			die "/home's partition entry could not be put back. Its data is still there: the unit puts it back at first boot, or by hand: start=$HSTART size=$HSIZE (sectors)"
+		sudo blockdev --rereadpt "$DEV" 2>/dev/null || true
+		[ "$(sudo blkid -p -O $((HSTART * 512)) -s LABEL -o value "$DEV" 2>/dev/null)" = sparrows-home ] || \
+			die "/home is not where it was: check with  sudo blkid -p -O $((HSTART * 512)) $DEV"
+		echo "OK: /home is kept, in its place."
+	fi
+	echo "You can take the card out."
+}
+
+# ---------------------------------------------------------------- locked /home (Pi units)
+
+# A unit for ssh: root@<address> (fe80::...%eth0, or its village address), or as given with a user
+ssh_to() { case "$1" in *@*) echo "$1" ;; *) echo "root@$1" ;; esac; }
+
+# The unit's name, read over SSH with the admin key: the name its passphrase is kept under
+unit_name() {
+	local NAME
+	NAME=$(ssh -o BatchMode=yes "$1" 'uci -q get system.@system[0].hostname') || die "Can't log in to $1 with your key."
+	[[ "$NAME" =~ ^[a-z][a-z0-9-]*$ ]] || die "Unexpected unit name '$NAME'."
+	echo "$NAME"
+}
+
+# Set up a unit's /home: one passphrase per unit, made here (or chosen, 20 characters at least), shown
+# once, kept in secrets/home/<unit>.key. It reaches the unit over SSH, on stdin: never on its card.
+home_setup() {
+	local T NAME F K K2
+	[ -n "${1:-}" ] || die "Usage: ./build.sh home <unit address>   (e.g. fe80::...%eth0, or its village address)"
+	[ -t 0 ] || die "Setting up /home needs a terminal: it shows the passphrase once."
+	T=$(ssh_to "$1")
+	NAME=$(unit_name "$T")
+	ssh -o BatchMode=yes "$T" 'command -v sparrows-home >/dev/null' || \
+		die "$NAME has no locked /home in its image (Pi nests and trees, built from 2026-11-22)."
+	F="$HERE/secrets/home/$NAME.key"
+	if [ -s "$F" ]; then
+		echo "$NAME: its passphrase is already in secrets/home/$NAME.key, used again."
+	else
+		echo "$NAME gets its own passphrase for /home. It is never written on the unit's card."
+		K=$(ask_secret "Type a passphrase (20 characters or more), or press Enter to make a random one: ")
+		if [ -z "$K" ]; then
+			K=$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)
+		else
+			[ "${#K}" -ge 20 ] || die "Too short: 20 characters or more. Nothing done."
+			K2=$(ask_secret "Again: ")
+			[ "$K" = "$K2" ] || die "Not the same. Nothing done."
+		fi
+		( umask 077; mkdir -p "$HERE/secrets/home"; printf '%s\n' "$K" > "$F" )
+		echo
+		echo "Passphrase of $NAME's /home, shown this once:"
+		echo
+		echo "    $K"
+		echo
+		echo "A copy is in secrets/home/$NAME.key. Save it away from this laptop too (on paper, or in a"
+		echo "password manager): without it, and with no approver, /home and what it holds are lost."
+		if [ "$(ask "Type  saved  once it is saved: ")" != saved ]; then
+			rm -f "$F"; die "Nothing done, and the passphrase is forgotten."
+		fi
+		K='' K2=''
+	fi
+	ssh "$T" sparrows-home setup < "$F"
+}
+
+# Open a unit's /home with its kept passphrase (after a reboot it stays locked until someone does)
+home_unlock() {
+	local T NAME F
+	[ -n "${1:-}" ] || die "Usage: ./build.sh unlock <unit address>"
+	T=$(ssh_to "$1")
+	NAME=$(unit_name "$T")
+	F="$HERE/secrets/home/$NAME.key"
+	[ -s "$F" ] || die "No secrets/home/$NAME.key here. On the unit, sparrows-unlock asks for the passphrase."
+	ssh "$T" sparrows-home open < "$F"
 }
 
 # ---------------------------------------------------------------- main
@@ -777,13 +929,16 @@ ARG="${1:-}"
 MENU=0
 [ -z "$ARG" ] && [ -t 0 ] && [ -t 1 ] && MENU=1
 CHOSEN=''
+USAGE="Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz] | ./build.sh home|unlock <unit address>"
 case "$ARG" in
 	'')    if [ "$MENU" = 1 ]; then menu; else CHOSEN=$(profiles); fi ;;
 	all|uses) CHOSEN=$(profiles) ;;
 	sd)    write_sd "${2:-}"; exit 0 ;;
-	-*|*/*) die "Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz]" ;;
+	home)  home_setup "${2:-}"; exit 0 ;;
+	unlock) home_unlock "${2:-}"; exit 0 ;;
+	-*|*/*) die "$USAGE" ;;
 	*)     CHOSEN=$(profiles | lines_of_role "$ARG")
-	       [ -n "$CHOSEN" ] || die "No line with role '$ARG' in profiles.txt (roles: $ROLES). Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz]" ;;
+	       [ -n "$CHOSEN" ] || die "No line with role '$ARG' in profiles.txt (roles: $ROLES). $USAGE" ;;
 esac
 [ -n "$CHOSEN" ] || die "Nothing to build."
 
@@ -853,6 +1008,12 @@ if grep -q -e '-ui-' "$BUILD/.built"; then
 	echo "Web interface (images with -ui): it only listens on the unit itself. From your laptop:"
 	echo "  ssh -N -L 8080:127.0.0.1:80 root@<station address>    then open http://localhost:8080"
 	echo "  The first time, set the root password over SSH:  passwd   (SSH itself stays keys only)"
+fi
+
+if grep -q '\.img\.gz$' "$BUILD/.built"; then
+	echo
+	echo "Pi images: a unit with a locked /home stays locked after an update until  ./build.sh unlock <unit>"
+	echo "(or sparrows-unlock on the unit). A card is written with  ./build.sh sd, which keeps /home."
 fi
 
 if [ "$MENU" = 1 ] && grep -q '\.img\.gz$' "$BUILD/.built"; then

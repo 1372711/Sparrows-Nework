@@ -1,15 +1,22 @@
 #!/bin/sh /etc/rc.common
 # Sparrows-Network nest: LXMF propagation node (keeps messages for people who are away), as user rns.
-# It uses the rnsd started just before it (shared instance). First run writes /etc/lxmd/config.
+# It uses the rnsd started just before it (shared instance). First run writes its config.
+# Its data: /etc/lxmd, or /home/lxmd on a Pi whose locked /home is set up. While /home is locked it
+# waits: sparrows-unlock opens /home and starts it.
 
 START=96
 STOP=09
 USE_PROCD=1
 
 start_service() {
+	local D=/etc/lxmd
+	if [ -x /usr/sbin/sparrows-home ]; then
+		D=$(/usr/sbin/sparrows-home dir lxmd) || { logger -t sparrows "lxmd waits for /home: sparrows-unlock"; return 0; }
+	fi
+	mkdir -p "$D" && chown rns:rns "$D"
 	procd_open_instance
-	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME=/etc/lxmd
-	procd_set_param command /usr/bin/python3 -m LXMF.Utilities.lxmd --config /etc/lxmd --rnsconfig /etc/reticulum -p
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME="$D"
+	procd_set_param command /usr/bin/python3 -m LXMF.Utilities.lxmd --config "$D" --rnsconfig /etc/reticulum -p
 	procd_set_param user rns
 	procd_set_param respawn 3600 10 0
 	procd_close_instance

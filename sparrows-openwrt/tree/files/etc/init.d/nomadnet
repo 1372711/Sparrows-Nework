@@ -1,16 +1,26 @@
 #!/bin/sh /etc/rc.common
 # Sparrows-Network tree: Nomad Network page node (the Sparrows page), as user rns.
 # It uses the rnsd started just before it (shared instance).
+# Its config comes from the image (/etc/nomadnetwork/config). Its identity: /etc/nomadnetwork/storage,
+# or /home/nomadnetwork on a Pi whose locked /home is set up. While /home is locked it waits:
+# sparrows-unlock opens /home and starts it.
 
 START=96
 STOP=09
 USE_PROCD=1
 
 start_service() {
+	local D=/etc/nomadnetwork
+	if [ -x /usr/sbin/sparrows-home ]; then
+		D=$(/usr/sbin/sparrows-home dir nomadnetwork) || { logger -t sparrows "nomadnet waits for /home: sparrows-unlock"; return 0; }
+	fi
+	if [ "$D" != /etc/nomadnetwork ]; then
+		cp /etc/nomadnetwork/config "$D/config" && chown rns:rns "$D/config"   # the image's config, each start
+	fi
 	procd_open_instance
-	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME=/etc/nomadnetwork
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME="$D"
 	procd_set_param command /usr/bin/python3 -m nomadnet.nomadnet --daemon \
-		--config /etc/nomadnetwork --rnsconfig /etc/reticulum
+		--config "$D" --rnsconfig /etc/reticulum
 	procd_set_param user rns
 	procd_set_param respawn 3600 10 0
 	procd_close_instance

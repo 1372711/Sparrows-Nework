@@ -1,0 +1,7 @@
+#!/bin/sh
+# Sparrows-Network: the locked /home of a Pi unit. Runs at first boot and after every sysupgrade.
+# An update writes a new partition table, which drops /home's entry: its data stays, and the entry is
+# put back here, found by the label in its LUKS header. On a new card: an empty partition for /home,
+# set up later from the admin laptop (./build.sh home <unit>). Status: NOT YET TESTED.
+[ ! -x /usr/sbin/sparrows-home ] || /usr/sbin/sparrows-home ensure
+exit 0
