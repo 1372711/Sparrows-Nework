@@ -3,7 +3,8 @@
 # Run by 90-sparrows-station at first boot, and by hotplug (/etc/hotplug.d/ieee80211/20-sparrows-radios)
 # when a radio shows up after that, as on a Raspberry Pi. Once the radios are set, it writes
 # /etc/sparrows/radios.done and does nothing more: to redo it, delete that file (or firstboot).
-# Status: NOT YET TESTED on a unit (2026-11-21).
+# Status: tested 2026-11-22 on an EAP225-Outdoor v3 (feeder). Removing an earlier role's interfaces:
+# NOT YET TESTED.
 
 [ -f /etc/sparrows/radios.done ] && exit 0
 . /etc/sparrows/station
@@ -60,6 +61,13 @@ for B in 2g 5g; do
 			break
 		fi
 	done
+done
+# What an earlier role made goes first: an update that keeps the settings (sysupgrade -v) would
+# otherwise keep the old role's interfaces (seen 2026-11-22: an EAP225 flashed from hedge to feeder
+# kept the hedge's open-looking mesh on 2.4 GHz, and its 2.4 GHz feeder never came up). Only the
+# interfaces Sparrows makes, by their names
+for I in $(uci -q show wireless | sed -n 's/^wireless\.\([^.=]*\)=wifi-iface$/\1/p'); do
+	case "$I" in flyway|wsta|mesh_*|ap_*) uci delete wireless.$I ;; esac
 done
 DONE=''
 for r in $RADIOS; do

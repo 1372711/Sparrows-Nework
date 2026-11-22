@@ -19,7 +19,13 @@ ALL="$USE2 $USE5"
 BR=$(uci show network | sed -n "s/^network\.\([^.]*\)\.name='br-lan'$/\1/p")
 [ "$PORTS" != off ] || uci -q delete network.$BR.ports
 
-# --- Flyway: batman-adv, bridged with the rest in br-lan ---
+# --- Flyway: batman-adv, bridged with the rest in br-lan. Without one, what an earlier role made goes
+# (an update that keeps the settings would keep it: seen 2026-11-22, hedge -> feeder) ---
+if ! has "$ALL" flyway; then
+	uci -q del_list network.$BR.ports='bat0'
+	uci -q delete network.bat0
+	uci -q delete network.mesh0
+fi
 if has "$ALL" flyway; then
 	uci set network.bat0=interface
 	uci set network.bat0.proto='batadv'
@@ -35,6 +41,7 @@ if has "$ALL" flyway; then
 fi
 
 # --- Join: the Wi-Fi client is an interface of its own, address by SLAAC from the nests' RAs ---
+has "$ALL" join || uci -q delete network.wsta
 if has "$ALL" join; then
 	uci set network.wsta=interface
 	uci set network.wsta.proto='dhcpv6'
