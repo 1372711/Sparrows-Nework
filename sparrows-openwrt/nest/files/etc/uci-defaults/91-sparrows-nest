@@ -1,6 +1,6 @@
 #!/bin/sh
 # Sparrows-Network: nest services, on OpenWrt (decided 2026-11-21: one system on every unit).
-# The same on-ramp as the Debian nest, with OpenWrt's own tools:
+# The village on-ramp, with OpenWrt's own tools:
 #   a fixed village address, built from the MAC (EUI-64), so every nest has its own: nests are equal
 #   odhcpd   router advertisements: SLAAC only, the router flag, the DNS server and domain inside
 #   dnsmasq  DNS only, no DHCP: sparrows.lan and every other name -> this nest (catch-all)
@@ -11,7 +11,7 @@
 
 . /etc/sparrows/station
 
-ULA='fd7e:4c1a:9b20:1'           # the village prefix, as on the Debian nest
+ULA='fd7e:4c1a:9b20:1'           # the village prefix (village 1 of fd7e:4c1a:9b20::/48)
 NONULA='2001:db8:1:0'            # BENCH ONLY (documentation range): Android wants a non-ULA prefix.
                                  # The real one is not decided yet. Like ULA above: 4 groups, a /64
                                  # (seen 2026-11-21: '2001:db8:1' gave 7 groups, netifd refused the
@@ -58,7 +58,7 @@ uci set dhcp.lan.ra_default='2'           # announce a default router though the
                                           # Android drops a network without one. Nothing is forwarded:
                                           # this nest has no other network to forward to
 uci set dhcp.lan.ra_maxinterval='60'      # RA every 60 s at most
-uci set dhcp.lan.ra_lifetime='1800'       # router lifetime 1800 s, as on the Debian nest
+uci set dhcp.lan.ra_lifetime='1800'       # router lifetime 1800 s: phones accept the network
 uci -q delete dhcp.lan.dns
 uci add_list dhcp.lan.dns="$ADDR2"        # non-ULA first: some Android versions drop a ULA DNS server
 uci add_list dhcp.lan.dns="$ADDR"

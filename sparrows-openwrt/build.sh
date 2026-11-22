@@ -347,7 +347,7 @@ make_kit() {
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
 check_sig() {
 	local FILE=$1 SIG=$2 KR="$BUILD/trust.gpg" GH="$BUILD/gnupg" STATUS ID
-	command -v gpgv >/dev/null || { echo "gpgv is missing (Debian/Ubuntu: apt install gpgv), or CHECK_SIG=0 to skip this check" >&2; return 1; }
+	command -v gpgv >/dev/null || { echo "gpgv is missing (install the package gpgv, or gnupg), or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	compgen -G "$HERE/trust/*.asc" >/dev/null || { echo "No OpenWrt public key in trust/*.asc, or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	mkdir -p "$GH" && chmod 700 "$GH"
 	python3 -I -c '

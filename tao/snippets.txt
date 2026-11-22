@@ -280,8 +280,11 @@ grep -r -l -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY' kit/ && echo "STOP: a private 
 # Anyone who gets the copy checks it
 cd kit && sha256sum -c SHA256SUMS
 ### rns-hub
-# ---- On the VPS (Debian family). Same install as on a nest: venv, user rns, rnsd.service ----
-# /var/lib/reticulum/config
+# ---- On the VPS (any Linux with Python 3). Not yet tested ----
+# Reticulum in a virtual environment, run by a user of its own (rns), started at boot by the VPS's
+# service manager:  /home/rns/venv/bin/rnsd --config /home/rns/.reticulum
+python3 -m venv /home/rns/venv && /home/rns/venv/bin/pip install rns==1.6.1
+# /home/rns/.reticulum/config
 [reticulum]
   enable_transport = Yes
   share_instance = Yes
@@ -422,8 +425,8 @@ git log --format='%an <%ae>' | sort -u      # who the commits already made are s
 ssh-keygen -t ed25519 -C "sparrows-admin"
 
 # Before sharing a photo or a document: remove its hidden data (GPS, camera, author)
-mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
-exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)
+mat2 photo.jpg                  # writes photo.cleaned.jpg   (package: mat2)
+exiftool photo.cleaned.jpg      # check what is left         (package: exiftool, or libimage-exiftool-perl)
 ### uses-change
 # On the admin laptop, in sparrows-openwrt/: what each port and radio of every line will do
 ./build.sh uses
