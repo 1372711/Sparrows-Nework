@@ -144,6 +144,11 @@ ask_approvers() {
 	( umask 077; : > "$HERE/keys/approvers.txt" )
 	while L=$(ask "  approver key: ") && [ -n "$L" ]; do
 		if [[ "$L" =~ ^[0-9a-fA-F]{128}$ ]]; then echo "$L" >> "$HERE/keys/approvers.txt"; N=$((N + 1))
+		elif [[ "$L" =~ ^[A-Z2-7]{100,}=*$ ]]; then
+			# Sideband's identity backup is the PRIVATE key in base32: it must never leave the phone
+			echo "  That looks like a Sideband identity backup: a PRIVATE key. Left out, nothing kept."
+			echo "  Whoever has it can be that identity: make a new one in Sideband if it went anywhere."
+			echo "  An approver key comes from  sparrows-approve id  (128 hex characters), not from Sideband."
 		else echo "  Not a key (128 hex characters): left out."; fi
 	done
 	echo "  $N approver(s), kept in keys/approvers.txt (no names). Change it there, then rebuild and update."
