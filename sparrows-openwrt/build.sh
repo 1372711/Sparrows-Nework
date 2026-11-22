@@ -553,8 +553,14 @@ build_one() (
 	# The hard rules, checked by the machine: the Image Builder lists every package the image would
 	# hold, dependencies included, before building it. Seen 2026-11-20: luci-light brought a firewall back
 	if [ "$CHECK_RULES" = 1 ]; then
-		MANIFEST=$(make manifest PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" STRIP_ABI=1) || \
+		if ! MANIFEST=$(make manifest PROFILE="$IB_PROFILE" PACKAGES="$PACKAGES" STRIP_ABI=1 2>"$BUILD/.manifest.err"); then
+			cat "$BUILD/.manifest.err" >&2
+			# Seen 2026-11-22: the laptop was on the Sparrows Wi-Fi, which has no Internet
+			if grep -q 'wget: exited with error' "$BUILD/.manifest.err"; then
+				die "$ROLE $PROFILE: OpenWrt's packages could not be downloaded. The Image Builder fetches the ones it doesn't have yet: connect this laptop to the Internet (not the Sparrows Wi-Fi) and build again"
+			fi
 			die "$ROLE $PROFILE: the Image Builder can't put these packages together (make manifest)"
+		fi
 		NO="$FORBIDDEN"; [ "$WITH_UI" = 1 ] || NO="$NO $FORBIDDEN_NO_UI"
 		# A nest is the one unit that sends RAs and answers DNS (no DHCP), and serves the page.
 		# Still no firewall, no PPP, no DHCPv6 server

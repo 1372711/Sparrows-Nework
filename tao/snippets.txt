@@ -41,11 +41,14 @@ CHECK_SIG=0 ./build.sh all    # skip the check of OpenWrt's signature (new OpenW
 CHECK_RULES=0 ./build.sh all  # skip the check of each image's packages against the hard rules
 ls build/images/latest/       # the images of the newest version (one folder per version, with SHA256SUMS)
 ### web-ui-access
-# On your laptop: a tunnel through SSH, with your admin key. Leave it open.
-ssh -N -L 8080:127.0.0.1:80 root@<station address>
-# Then open http://localhost:8080 in the browser.
-# First time only, on the station over SSH: the root password LuCI asks for
-passwd
+# Step 1, once and again after each update: a root password for LuCI, set over SSH with your key
+ssh root@<unit address>            # e.g. root@fe80::e65f:1ff:fe47:9b58%wlan0
+passwd                             # type the new password twice, then: exit
+
+# Step 2, on the laptop: a tunnel through SSH. It prints nothing: leave this terminal open
+ssh -N -L 8080:127.0.0.1:80 root@<unit address>
+
+# Step 3, in the browser: http://localhost:8080   user root, the password of step 1
 
 # Verify on the station: the web server listens on the unit itself only
 netstat -ltn | grep ':80 '                 # 127.0.0.1:80 and ::1:80 only, never 0.0.0.0:80 or :::80
