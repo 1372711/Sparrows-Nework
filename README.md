@@ -2,7 +2,7 @@
 
 **Standalone Peer Access Radio Relay Over Wireless Stations**
 
-A community network that runs without the Internet. Fixed Wi-Fi stations cover one village first, then link villages 1 to 15 km apart. Anyone nearby joins the open `Sparrows` Wi-Fi with an ordinary phone, and finds a welcome page, messages and local services, with no account and no operator.
+A community network that runs without the Internet. Fixed stations cover one village first, then link villages over any radio that carries the distance: Wi-Fi with directional antennas, LoRa, HF where the law allows, or a cable, whether the next village is 1 km away or 30 km and more. Anyone nearby joins the open `Sparrows` Wi-Fi with an ordinary phone, and finds a welcome page, messages and local services, with no account and no operator.
 
 ## Goals
 
