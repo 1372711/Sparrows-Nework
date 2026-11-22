@@ -406,3 +406,54 @@ ssh-keygen -t ed25519 -C "sparrows-admin"
 # Before sharing a photo or a document: remove its hidden data (GPS, camera, author)
 mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
 exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)
+### uses-change
+# On the admin laptop, in sparrows-openwrt/: what each port and radio of every line will do
+./build.sh uses
+nano uses.txt                     # a role's line: ports, 2.4 GHz, 5 GHz, services
+./build.sh uses                   # check the change; the build refuses what can't work, and says why
+./build.sh <role>                 # then update that role's units (sysupgrade, see "Update a running station")
+
+# On a unit: what it was built to do, and what its radios do now
+cat /etc/sparrows/station         # ROLE, PORTS, USE2, USE5, RETICULUM, NEST
+iw dev                            # each radio: type, SSID, channel, txpower
+
+# Set the radios again from the uses (a Pi's chip that showed up late, a radio changed by hand)
+rm /etc/sparrows/radios.done && /usr/lib/sparrows/radios && wifi reload
+iw dev                            # as the uses say
+
+# Undo a hand change: firstboot && reboot (back to the image's defaults)
+### base-verify
+uci get system.@system[0].hostname          # <role>-<last 4 hex of the MAC>
+cat /etc/sparrows/version                   # the build it came from
+ip -4 addr show br-lan                      # nothing: no IPv4
+ip -6 addr show br-lan                      # fe80:: (+ fd7e:4c1a:9b20:1:... once a nest sends RAs)
+uci get dropbear.@dropbear[0].PasswordAuth  # off: keys only
+cat /etc/dropbear/authorized_keys           # the keys of keys/ at build time, nothing else
+ps | grep -e dnsmasq -e odhcpd              # nothing (except on a nest)
+### check-any
+# 1. Reach it: from a laptop on the same cable or Wi-Fi (<if> = the laptop's interface)
+ping -6 -c2 ff02::1%<if>; ip -6 neigh show dev <if>
+ssh root@fe80::<from MAC>%<if>
+ssh-keygen -R 'fe80::<from MAC>%<if>'       # only if SSH says the host key changed (after a reflash)
+
+# 2. Who it is, what it was built to do, which version
+uci get system.@system[0].hostname
+cat /etc/sparrows/station /etc/sparrows/version
+uptime; free; df -h /overlay                # load, memory, room left for changes
+
+# 3. Its network
+ip -6 addr show br-lan                      # fe80:: + fd7e:4c1a:9b20:1:... once a nest sends RAs, no inet
+bridge link                                 # what is in the village bridge
+iw dev                                      # each radio: type, SSID, channel, txpower
+
+# 4. The log since boot
+logread | grep -i -e err -e fail | tail -n 30
+dmesg | tail -n 30
+
+# 5. By role
+perch status; batctl if; batctl n; batctl o # flyways (perch, hedge)
+iw dev wsta link; rns status                # tree: joined to Sparrows, Reticulum interface up
+/etc/init.d/lxmd status; logread -e odhcpd | tail -n 20   # nest: message store, RAs
+
+# Stuck: back to the image's defaults (the role stays, changes by hand are gone)
+firstboot && reboot

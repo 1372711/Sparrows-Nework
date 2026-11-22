@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Assemble index.html from tao.src.html + code snippets (escaped once, shared by all languages)."""
+"""Assemble index.html from tao.src.html + code snippets (escaped once, shared by all languages).
+
+The build scripts (sparrows-openwrt/) are not printed in the handbook: they travel with it, in the
+archive or the git repository. snippets.txt holds what a reader types: build, install, change, check, undo."""
 import html, pathlib, re, sys
 
 here = pathlib.Path(__file__).parent
-owrt = here.parent / "sparrows-openwrt"
 
 snips, wrap, name = {}, set(), None
 for line in (here / "snippets.txt").read_text().splitlines():
@@ -16,34 +18,6 @@ for line in (here / "snippets.txt").read_text().splitlines():
     elif name:
         snips[name].append(line)
 snips = {k: "\n".join(v).strip("\n") for k, v in snips.items()}
-
-# The OpenWrt image files are shown as they are in the build tree: one source of truth
-for key, rel in {
-    "owrt-profiles": "profiles.txt",
-    "owrt-uses": "uses.txt",
-    "owrt-build": "build.sh",
-    "owrt-common": "common/files/etc/uci-defaults/10-sparrows-common",
-    "station-defaults": "station/files/etc/uci-defaults/90-sparrows-station",
-    "station-radios": "station/files/usr/lib/sparrows/radios",
-    "station-hotplug": "station/files/etc/hotplug.d/ieee80211/20-sparrows-radios",
-    "perch-tool": "perch/files/usr/sbin/perch",
-    "ui-defaults": "ui/files/etc/uci-defaults/95-sparrows-ui",
-    "zero-conf": "devices/rpi-zero-2-w/device.conf",
-    "zero-defaults": "devices/rpi-zero-2-w/files/etc/uci-defaults/20-sparrows-device",
-    "rpi4-conf": "devices/rpi-4/device.conf",
-    "owrt-banner": "common/files/etc/sparrows/banner",
-    "tree-conf": "tree/role.conf",
-    "tree-rns-config": "tree/files/etc/reticulum/config",
-    "tree-init": "tree/files/etc/init.d/rnsd",
-    "tree-tool": "tree/files/usr/bin/rns",
-    "tree-page": "tree/files/usr/share/sparrows/nomadnet/pages/index.mu",
-    "tree-nomad-config": "tree/files/etc/nomadnetwork/config",
-    "tree-nomad-init": "tree/files/etc/init.d/nomadnet",
-    "nest-defaults": "nest/files/etc/uci-defaults/91-sparrows-nest",
-    "nest-conf": "nest/role.conf",
-    "nest-lxmd": "nest/files/etc/init.d/lxmd",
-}.items():
-    snips[key] = (owrt / rel).read_text().strip("\n")
 
 src = (here / "tao.src.html").read_text()
 
