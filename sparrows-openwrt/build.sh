@@ -1021,7 +1021,11 @@ ssh_to() { case "$1" in *@*) echo "$1" ;; *) echo "root@$1" ;; esac; }
 # The unit's name, read over SSH with the admin key: the name its passphrase is kept under
 unit_name() {
 	local NAME
-	NAME=$(ssh -o BatchMode=yes "$1" 'uci -q get system.@system[0].hostname') || die "Can't log in to $1 with your key."
+	# BatchMode can't answer ssh's "are you sure?" for a host it hasn't seen under this name
+	# (seen 2026-11-22: root@tree-7cd0 failed while root@fe80::...%wlan0 was known)
+	NAME=$(ssh -o BatchMode=yes "$1" 'uci -q get system.@system[0].hostname') || die "Can't log in to $1 with your key.
+  Use the address you already log in with (e.g. fe80::...%wlan0), or log in once by hand
+  (ssh $1) and answer yes to its host key, then run this again."
 	[[ "$NAME" =~ ^[a-z][a-z0-9-]*$ ]] || die "Unexpected unit name '$NAME'."
 	echo "$NAME"
 }
