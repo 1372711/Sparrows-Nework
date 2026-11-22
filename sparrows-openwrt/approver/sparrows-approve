@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+# sparrows-approve: the approver's tool. A unit whose /home is locked asks to open it; you answer.
+# For a laptop (Linux, macOS, Windows) or an Android phone in Termux. Needs Reticulum: pip install rns
+# (the version the units run, see sparrows-openwrt/tree/role.conf), and a Reticulum that reaches the
+# village: the Sparrows Wi-Fi with Reticulum's default config is enough.
+#
+#   sparrows-approve id                 make your approver identity (once), print its public key:
+#                                       give it to the admin, for keys/approvers.txt
+#   sparrows-approve add <door> [note]  trust a unit's door (the admin gives you its address:
+#                                       sparrows-door id on the unit). The note stays on your device
+#   sparrows-approve list               the doors you trust
+#   sparrows-approve forget <door>
+#   sparrows-approve watch              wait for requests and answer them: a = accept, r = reject,
+#                                       e = erase (you type the unit's name to confirm), s = skip
+#
+# Your approver identity is ~/.sparrows-approver/identity: keep it only for this, back it up, and keep
+# the device locked. Whoever holds it and a stolen card opens that card. This tool never announces:
+# it links to a unit's door only when it answers, and proves who it is to that door alone.
+# Status: NOT YET TESTED with a unit (written 2026-11-22; tested against a door on the same laptop).
+import os, queue, sys, threading, time
+
+import RNS
+from RNS.vendor import umsgpack
+
+HOME = os.path.join(os.path.expanduser("~"), ".sparrows-approver")
+IDENTITY = os.path.join(HOME, "identity")
+DOORS = os.path.join(HOME, "doors")
+APP, ASPECT = "sparrows", "door"
+RNSDIR = os.environ.get("SPARROWS_RNS")          # another Reticulum config folder, if needed
+
+
+def identity():
+    os.makedirs(HOME, mode=0o700, exist_ok=True)
+    if os.path.isfile(IDENTITY):
+        return RNS.Identity.from_file(IDENTITY)
+    ident = RNS.Identity()
+    old = os.umask(0o077)
+    ident.to_file(IDENTITY)
+    os.umask(old)
+    return ident
+
+
+def doors():
+    out = {}
+    try:
+        for line in open(DOORS):
+            parts = line.strip().split(None, 1)
+            if parts:
+                out[parts[0]] = parts[1] if len(parts) > 1 else ""
+    except FileNotFoundError:
+        pass
+    return out
+
+
+def save_doors(d):
+    os.makedirs(HOME, mode=0o700, exist_ok=True)
+    with open(DOORS, "w") as f:
+        for h, note in sorted(d.items()):
+            f.write(("%s %s" % (h, note)).strip() + "\n")
+
+
+def door_hex(s):
+    s = s.strip().strip("<>").replace(":", "").lower()
+    if len(s) != 32 or any(c not in "0123456789abcdef" for c in s):
+        sys.exit("A door address is 32 hex characters (sparrows-door id on the unit).")
+    return s
+
+
+class Watch:
+    aspect_filter = APP + "." + ASPECT
+    receive_path_responses = True                 # a door that asked before we started answers our path request
+
+    def __init__(self):
+        self.ident = identity()
+        self.trusted = doors()
+        self.todo = queue.Queue()
+        self.busy = set()
+        self.seen = set()                         # requests (boots) already answered or skipped
+        RNS.Reticulum(configdir=RNSDIR, loglevel=RNS.LOG_ERROR)
+        RNS.Transport.register_announce_handler(self)
+
+    def received_announce(self, destination_hash, announced_identity, app_data):
+        h = destination_hash.hex()
+        if h in self.trusted and h not in self.busy:
+            self.busy.add(h)
+            self.todo.put(destination_hash)
+
+    def handle(self, dh):
+        h = dh.hex()
+        note = self.trusted.get(h, "")
+        try:
+            if not RNS.Transport.has_path(dh):
+                RNS.Transport.request_path(dh)
+                t = time.time() + 30
+                while not RNS.Transport.has_path(dh) and time.time() < t:
+                    time.sleep(0.2)
+            ident = RNS.Identity.recall(dh)
+            if not ident:
+                print("door %s: no path to it" % h); return
+            dest = RNS.Destination(ident, RNS.Destination.OUT, RNS.Destination.SINGLE, APP, ASPECT)
+            up = threading.Event()
+            link = RNS.Link(dest, established_callback=lambda l: up.set())
+            if not up.wait(30):
+                print("door %s: no link" % h); return
+            link.identify(self.ident)
+            r = self.request(link, "/ask", None, 20)   # a door answers approvers only: no answer = not on its list
+            if r is None:
+                print("door %s: no answer (are you on its approver list?)" % h); link.teardown(); return
+            req = umsgpack.unpackb(r)
+            if "error" in req:
+                print("door %s: %s" % (h, req["error"])); link.teardown(); return
+            if req["boot"] in self.seen:                # this request was already answered or skipped
+                link.teardown(); return
+            self.seen.add(req["boot"])
+            hops = RNS.Transport.hops_to(dh)
+            via = RNS.Transport.next_hop_interface(dh)
+            print()
+            print("=" * 70)
+            print("%s asks to open /home%s" % (req["unit"], "   (" + note + ")" if note else ""))
+            print("  started   %s" % time.strftime("%Y-%m-%d %H:%M", time.localtime(req["started"])))
+            print("  heard     %s hop(s) away, through %s" % (hops, via))
+            print("  door      %s" % h)
+            print("Did this unit have a reason to restart now? In doubt: reject, and go and look.")
+            while True:
+                a = input("[a]ccept  [r]eject  [e]rase  [s]kip ? ").strip().lower()[:1]
+                if a in ("a", "r", "e", "s"):
+                    break
+            if a == "s":
+                link.teardown(); return
+            msg = {"boot": req["boot"]}
+            if a == "a":
+                key = self.ident.decrypt(req["sealed"])
+                if not key:
+                    print("This sealed key isn't for you: not answered."); link.teardown(); return
+                boot = RNS.Identity(create_keys=False)
+                boot.load_public_key(req["key"])
+                msg.update(action="accept", key=boot.encrypt(key))
+                key = None
+            elif a == "r":
+                msg["action"] = "reject"
+            else:
+                print("ERASE destroys /home on %s for good, wipes its system and switches it off." % req["unit"])
+                if input("Type the unit's name to erase it: ").strip() != req["unit"]:
+                    print("Not erased."); link.teardown(); return
+                msg.update(action="erase", unit=req["unit"])
+            r = self.request(link, "/decide", umsgpack.packb(msg))
+            res = umsgpack.unpackb(r) if r else {"ok": False, "error": "no answer"}
+            print("%s: %s" % (req["unit"], res.get("state") if res.get("ok") else "NOT DONE, " + res.get("error", "?")))
+            link.teardown()
+        finally:
+            self.busy.discard(h)
+
+    def request(self, link, path, data, timeout=60):
+        ev, out = threading.Event(), []
+        link.request(path, data, response_callback=lambda rr: (out.append(rr.response), ev.set()),
+                     failed_callback=lambda rr: ev.set(), timeout=timeout)
+        ev.wait(timeout + 5)
+        return out[0] if out else None
+
+    def run(self):
+        if not self.trusted:
+            sys.exit("No door yet: sparrows-approve add <door address>")
+        print("Waiting for requests from %d door(s). Ctrl-C to stop." % len(self.trusted))
+        for h in self.trusted:                     # units already waiting answer a path request
+            RNS.Transport.request_path(bytes.fromhex(h))
+        while True:
+            self.handle(self.todo.get())
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "id":
+        ident = identity()
+        print("Your approver public key (for the admin's keys/approvers.txt):")
+        print(ident.get_public_key().hex())
+    elif cmd == "add" and len(sys.argv) > 2:
+        d = doors()
+        d[door_hex(sys.argv[2])] = " ".join(sys.argv[3:])
+        save_doors(d)
+        print("Trusted: %s" % door_hex(sys.argv[2]))
+    elif cmd == "forget" and len(sys.argv) > 2:
+        d = doors()
+        d.pop(door_hex(sys.argv[2]), None)
+        save_doors(d)
+    elif cmd == "list":
+        for h, note in sorted(doors().items()):
+            print(h, note)
+    elif cmd == "watch":
+        try:
+            Watch().run()
+        except KeyboardInterrupt:
+            print()
+    else:
+        sys.exit("Usage: sparrows-approve id | add <door> [note] | list | forget <door> | watch")
+
+
+if __name__ == "__main__":
+    main()

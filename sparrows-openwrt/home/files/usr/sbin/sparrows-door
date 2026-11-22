@@ -1,0 +1,215 @@
+#!/usr/bin/python3
+# sparrows-door: the unit's door. While /home is locked, it asks the approvers over Reticulum to open it
+# (Sparrows Tao, "Kept data: a locked /home").
+#   sparrows-door id        the door's address: give it to each approver (sparrows-approve add <it>)
+#   sparrows-door seal      seal the unlock key (stdin) for each approver of /etc/sparrows/approvers
+#   sparrows-door run       wait for an approver's answer (started at boot by /etc/init.d/sparrows-door)
+#
+# How it works. At setup, /home gets a random unlock key in a LUKS slot of its own; this file seals it
+# for each approver's Reticulum key (/etc/sparrows/door/sealed/). At boot the door announces itself.
+# An approver's tool links to it, proves who it is (link.identify: only approvers are answered), gets
+# its own sealed copy and the key this boot made, and answers:
+#   accept   the unlock key, sealed for this boot's key only: /home opens
+#   reject   /home stays locked until the next boot asks again
+#   erase    /home's lock is destroyed, the system wiped, the unit switched off
+# The passphrase never travels. An old answer is useless: each boot makes a new key and a new request.
+# The door identity lives on the system side (it must answer while /home is locked); it names nobody.
+# Status: NOT YET TESTED on a unit (written 2026-11-22; the exchange tested on a laptop).
+import os, subprocess, sys, threading, time
+
+sys.path.insert(0, "/usr/lib/sparrows/python")
+import RNS
+from RNS.vendor import umsgpack
+
+DOOR = "/etc/sparrows/door"
+IDENTITY = DOOR + "/identity"
+SEALED = DOOR + "/sealed"
+RNSDIR = DOOR + "/rns"
+APPROVERS = "/etc/sparrows/approvers"
+TRANSPORT_ID = os.environ.get("SPARROWS_RNSD", "/etc/reticulum") + "/storage/transport_identity"
+APP, ASPECT = "sparrows", "door"
+
+
+def log(msg):
+    subprocess.run(["logger", "-t", "sparrows-door", msg])
+    print(msg, flush=True)
+
+
+def door_identity():
+    os.makedirs(DOOR, mode=0o700, exist_ok=True)
+    if os.path.isfile(IDENTITY):
+        return RNS.Identity.from_file(IDENTITY)
+    ident = RNS.Identity()
+    old = os.umask(0o077)
+    ident.to_file(IDENTITY)
+    os.umask(old)
+    return ident
+
+
+def door_hash(ident):
+    return RNS.Destination.hash(ident, APP, ASPECT)
+
+
+def approvers():
+    """The approvers' public keys (hex, one per line), as identities that can't sign or decrypt."""
+    out = []
+    try:
+        lines = open(APPROVERS).read().splitlines()
+    except FileNotFoundError:
+        return out
+    for line in lines:
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        try:
+            pub = bytes.fromhex(line)
+            if len(pub) != 64:
+                raise ValueError
+            ident = RNS.Identity(create_keys=False)
+            ident.load_public_key(pub)
+            out.append(ident)
+        except ValueError:
+            log("not an approver key (128 hex characters) in %s: %s..." % (APPROVERS, line[:16]))
+    return out
+
+
+def seal():
+    key = sys.stdin.buffer.read().strip()
+    if len(key) < 32:
+        sys.exit("seal: no unlock key on stdin")
+    os.makedirs(SEALED, mode=0o700, exist_ok=True)
+    keep = set()
+    for ident in approvers():
+        name = ident.hash.hex()
+        old = os.umask(0o077)
+        with open(os.path.join(SEALED, name), "wb") as f:
+            f.write(ident.encrypt(key))
+        os.umask(old)
+        keep.add(name)
+    for name in os.listdir(SEALED):
+        if name not in keep:
+            os.remove(os.path.join(SEALED, name))
+    print("unlock key sealed for %d approver(s)" % len(keep))
+
+
+def home(*args, stdin=None):
+    return subprocess.run(["/usr/sbin/sparrows-home"] + list(args), input=stdin,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
+class Door:
+    def __init__(self):
+        self.ident = door_identity()
+        self.boot = RNS.Identity()                 # this boot's key: lives in memory only
+        self.boot_id = os.urandom(16)
+        self.started = int(time.time())
+        self.unit = subprocess.run(["uci", "-q", "get", "system.@system[0].hostname"],
+                                   stdout=subprocess.PIPE, text=True).stdout.strip() or "unit"
+        self.done = threading.Event()
+        self.allowed = [a.hash for a in approvers()]
+        self.dest = RNS.Destination(self.ident, RNS.Destination.IN, RNS.Destination.SINGLE, APP, ASPECT)
+        self.dest.set_link_established_callback(self.linked)
+        self.dest.register_request_handler("/ask", self.ask, RNS.Destination.ALLOW_LIST, self.allowed)
+        self.dest.register_request_handler("/decide", self.decide, RNS.Destination.ALLOW_LIST, self.allowed)
+
+    def linked(self, link):
+        link.set_remote_identified_callback(
+            lambda l, ident: log("approver %s linked" % RNS.prettyhexrep(ident.hash)))
+
+    def ask(self, path, data, request_id, remote_identity, requested_at):
+        try:
+            sealed = open(os.path.join(SEALED, remote_identity.hash.hex()), "rb").read()
+        except FileNotFoundError:
+            return umsgpack.packb({"error": "no sealed key for you on this unit"})
+        return umsgpack.packb({"unit": self.unit, "boot": self.boot_id, "started": self.started,
+                               "key": self.boot.get_public_key(), "sealed": sealed})
+
+    def decide(self, path, data, request_id, remote_identity, requested_at):
+        who = RNS.prettyhexrep(remote_identity.hash)
+        try:
+            msg = umsgpack.unpackb(data)
+            action = msg["action"]
+        except Exception:
+            return umsgpack.packb({"ok": False, "error": "bad request"})
+        if msg.get("boot") != self.boot_id:
+            log("answer from %s for another boot: refused" % who)
+            return umsgpack.packb({"ok": False, "error": "old answer: ask again"})
+        if action == "reject":
+            log("approver %s said no: /home stays locked until the next boot" % who)
+            self.later(self.done.set)
+            return umsgpack.packb({"ok": True, "state": "stays locked"})
+        if action == "accept":
+            key = self.boot.decrypt(msg.get("key") or b"")
+            if not key:
+                return umsgpack.packb({"ok": False, "error": "key not sealed for this boot"})
+            r = home("open-key", stdin=key)
+            if r.returncode != 0:
+                log("approver %s said yes, but the key didn't open /home: %s" % (who, r.stdout.decode().strip()))
+                return umsgpack.packb({"ok": False, "error": "the key didn't open /home"})
+            log("approver %s said yes: /home is open" % who)
+            self.later(self.done.set)
+            return umsgpack.packb({"ok": True, "state": "open"})
+        if action == "erase":
+            if msg.get("unit") != self.unit:
+                return umsgpack.packb({"ok": False, "error": "erase: unit name doesn't match"})
+            log("approver %s asked to ERASE this unit" % who)
+            self.later(lambda: subprocess.Popen(["/usr/sbin/sparrows-home", "erase"], start_new_session=True))
+            return umsgpack.packb({"ok": True, "state": "erasing, then off"})
+        return umsgpack.packb({"ok": False, "error": "unknown action"})
+
+    def later(self, fn, delay=5):
+        # Answer first, act after: the reply must leave before /home opens or the unit stops
+        threading.Timer(delay, fn).start()
+
+    def run(self):
+        log("%s asks to open /home (door %s, %d approver(s))"
+            % (self.unit, RNS.prettyhexrep(self.dest.hash), len(self.allowed)))
+        n = 0
+        while not self.done.is_set():
+            if home("locked").returncode != 0:     # opened by hand (sparrows-unlock), or gone
+                log("/home is no longer locked: the door closes")
+                return
+            # Often at first, then every 15 min: an approver may come by later
+            if n % (12 if n < 180 else 90) == 0:
+                self.dest.announce(app_data=self.unit.encode())
+            n += 1
+            self.done.wait(10)
+
+
+def run():
+    if home("locked").returncode != 0:
+        return                                    # no /home here, or already open
+    if not approvers() or not (os.path.isdir(SEALED) and os.listdir(SEALED)):
+        log("no approver for this unit: /home opens by hand only (sparrows-unlock)")
+        return
+    # The unit's rnsd carries the door: wait for it, never start a Reticulum of our own. The door has its
+    # own config folder (it runs as root, rnsd as rns), so it gives rnsd's RPC key, which Reticulum
+    # derives from rnsd's transport identity (seen 2026-11-22: without it, "digest sent was rejected")
+    os.makedirs(RNSDIR, mode=0o700, exist_ok=True)
+    while True:
+        try:
+            tid = RNS.Identity.from_file(TRANSPORT_ID) if os.path.isfile(TRANSPORT_ID) else None
+            if tid:
+                old = os.umask(0o077)
+                with open(os.path.join(RNSDIR, "config"), "w") as f:
+                    f.write("[reticulum]\n  share_instance = Yes\n  rpc_key = %s\n\n[logging]\n  loglevel = 2\n\n"
+                            "[interfaces]\n" % RNS.Identity.full_hash(tid.get_private_key()).hex())
+                os.umask(old)
+                RNS.Reticulum(configdir=RNSDIR, require_shared_instance=True)
+                break
+        except SystemError:
+            pass
+        time.sleep(20)
+    Door().run()
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "id":
+        print(RNS.hexrep(door_hash(door_identity()), delimit=False))
+    elif cmd == "seal":
+        seal()
+    elif cmd == "run":
+        run()
+    else:
+        sys.exit("Usage: sparrows-door id | seal | run")

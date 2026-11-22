@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+# Sparrows-Network: while /home is locked, ask the approvers over Reticulum to open it (sparrows-door).
+# After the unit's rnsd (95), which carries it. It stops by itself once /home is open, or if this unit
+# has no approver (then /home opens by hand only: sparrows-unlock).
+
+START=97
+STOP=08
+USE_PROCD=1
+
+start_service() {
+	procd_open_instance
+	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python
+	procd_set_param command /usr/bin/python3 /usr/sbin/sparrows-door run
+	procd_close_instance
+}

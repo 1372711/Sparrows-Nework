@@ -20,6 +20,8 @@
 #        ./build.sh home <unit>  -> set up the locked /home of a Pi unit (a nest, a tree), over SSH:
 #                                   makes its passphrase, shows it once, keeps it in secrets/home/
 #        ./build.sh unlock <unit> -> open a unit's /home with its passphrase from secrets/home/
+#        ./build.sh approvers <unit> -> seal the unit's unlock key for the approvers of its image
+#                                   (a unit set up before it had approvers, or to drop them all)
 # Versions: each build is stamped with the build tree's git version (git describe: the last tag, the
 # commits since, the commit; "-dirty" when files are changed and not committed). The images go to
 # build/images/<version>/, with a SHA256SUMS file; build/images/latest points to the newest. Older
@@ -53,6 +55,9 @@
 #                        Generate one: head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32
 #                        Images with a flyway contain its key: never publish them.
 #   secrets/home/        made by ./build.sh home: one passphrase per unit's /home. Never in an image
+#   keys/approvers.txt   the approvers of the locked /home: one Reticulum public key per line (128 hex,
+#                        from sparrows-approve id), no names. Asked once when missing; empty = none,
+#                        /home then opens by hand only. Out of git, like the rest of keys/
 set -euo pipefail
 
 VER="${VER:-25.12.6}"     # 2026-10-18, security fixes. Check https://downloads.openwrt.org/releases/ for the latest 25.12.x
@@ -120,6 +125,28 @@ identity_check() {
 	fi
 	# The radio keys and passphrases: readable by you only
 	[ ! -d "$HERE/secrets" ] || chmod -R go-rwx "$HERE/secrets"
+}
+
+# The approvers' public keys from keys/approvers.txt: 128 hex characters each, one per line, the rest
+# of a line dropped (a note there stays on this laptop). Prints the keys; fails on a line that isn't one
+approver_keys() {
+	awk '{ sub(/#.*/, "") } NF { if ($1 !~ /^[0-9a-fA-F]+$/ || length($1) != 128) { print "not a key: " substr($1, 1, 20) "..." > "/dev/stderr"; bad = 1 } else print tolower($1) }
+		END { exit bad }' "$HERE/keys/approvers.txt"
+}
+
+# Asked once, when an image with a locked /home is built and keys/approvers.txt doesn't exist yet
+ask_approvers() {
+	local L N=0
+	echo
+	echo "  Pi units lock their /home. An approver can open it from their phone or laptop when a unit asks."
+	echo "  Each approver runs  sparrows-approve id  (sparrows-openwrt/approver/) and gives you the key it prints."
+	echo "  Paste one key per line, then an empty line. None (Enter now) = /home opens by hand only."
+	( umask 077; : > "$HERE/keys/approvers.txt" )
+	while L=$(ask "  approver key: ") && [ -n "$L" ]; do
+		if [[ "$L" =~ ^[0-9a-fA-F]{128}$ ]]; then echo "$L" >> "$HERE/keys/approvers.txt"; N=$((N + 1))
+		else echo "  Not a key (128 hex characters): left out."; fi
+	done
+	echo "  $N approver(s), kept in keys/approvers.txt (no names). Change it there, then rebuild and update."
 }
 
 # The device lines of profiles.txt: role target profile tx2 tx5 [ui] [uses=...]. A # starts a comment anywhere
@@ -467,6 +494,11 @@ build_one() (
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" >> "$F/etc/sparrows/station"
 	[ -z "$CH2" ] || printf "CH2='%s'\n" "$CH2" >> "$F/etc/sparrows/station"
 	[ "$LOCKED_HOME" = 0 ] || printf "HOME_START_MB='%s'\n" "$HOME_START_MB" >> "$F/etc/sparrows/station"
+	# The approvers of the locked /home: their public keys only, never a name or a note
+	if [ "$LOCKED_HOME" = 1 ] && [ -f "$HERE/keys/approvers.txt" ]; then
+		approver_keys > "$F/etc/sparrows/approvers" || die "keys/approvers.txt: fix it first"
+		chmod 644 "$F/etc/sparrows/approvers"
+	fi
 	if [ -n "$DEV" ] && [ -d "$DEV/files" ]; then
 		cp -a "$DEV/files/." "$F/"
 	fi
@@ -967,6 +999,28 @@ home_setup() {
 		K='' K2=''
 	fi
 	ssh "$T" sparrows-home setup < "$F"
+	door_address "$T" "$NAME"
+}
+
+# What the approvers need from a unit: its door's address, for  sparrows-approve add <it>
+door_address() {
+	local D
+	D=$(ssh -o BatchMode=yes "$1" 'sparrows-door id' 2>/dev/null) || { echo "$2 has no door (an image from before 2026-11-22)."; return 0; }
+	echo
+	echo "$2's door: $D"
+	echo "Each approver, once:  sparrows-approve add $D $2"
+}
+
+# Seal the unit's unlock key for the approvers of its image, with its kept passphrase
+home_approvers() {
+	local T NAME F
+	[ -n "${1:-}" ] || die "Usage: ./build.sh approvers <unit address>"
+	T=$(ssh_to "$1")
+	NAME=$(unit_name "$T")
+	F="$HERE/secrets/home/$NAME.key"
+	[ -s "$F" ] || die "No secrets/home/$NAME.key here: on the unit, sparrows-home approvers asks for the passphrase."
+	ssh "$T" sparrows-home approvers < "$F"
+	door_address "$T" "$NAME"
 }
 
 # Open a unit's /home with its kept passphrase (after a reboot it stays locked until someone does)
@@ -986,13 +1040,14 @@ ARG="${1:-}"
 MENU=0
 [ -z "$ARG" ] && [ -t 0 ] && [ -t 1 ] && MENU=1
 CHOSEN=''
-USAGE="Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz] | ./build.sh home|unlock <unit address>"
+USAGE="Usage: ./build.sh [all|uses|<role>] | ./build.sh sd [image.img.gz] | ./build.sh home|unlock|approvers <unit address>"
 case "$ARG" in
 	'')    if [ "$MENU" = 1 ]; then menu; else CHOSEN=$(profiles); fi ;;
 	all|uses) CHOSEN=$(profiles) ;;
 	sd)    write_sd "${2:-}"; exit 0 ;;
 	home)  home_setup "${2:-}"; exit 0 ;;
 	unlock) home_unlock "${2:-}"; exit 0 ;;
+	approvers) home_approvers "${2:-}"; exit 0 ;;
 	-*|*/*) die "$USAGE" ;;
 	*)     CHOSEN=$(profiles | lines_of_role "$ARG")
 	       [ -n "$CHOSEN" ] || die "No line with role '$ARG' in profiles.txt (roles: $ROLES). $USAGE" ;;
@@ -1037,6 +1092,20 @@ esac
 [ "$CHECK_SIG" = 1 ] || echo "  Skipped on purpose: the check of OpenWrt's signature (CHECK_SIG=0)"
 [ "$CHECK_RULES" = 1 ] || echo "  Skipped on purpose: the check of the packages against the hard rules (CHECK_RULES=0)"
 identity_check
+# Approvers of the locked /home: asked once, if an image to build has one and the list doesn't exist yet
+if [ ! -f "$HERE/keys/approvers.txt" ]; then
+	LOCKS=0
+	while read -r ROLE TARGET PROFILE TX2 TX5 UIOK SPEC; do
+		IFS='|' read -r _ _ _ RNS _ <<<"$(uses_of "$ROLE" "$PROFILE" "$TX2" "$TX5" "${SPEC:-}")"
+		if [ "$RNS" = 1 ] && grep -q '^HOME_START_MB=' "$HERE/devices/$PROFILE/device.conf" 2>/dev/null; then LOCKS=1; fi
+	done <<<"$CHOSEN"
+	if [ "$LOCKS" = 1 ]; then
+		if [ -t 0 ]; then mkdir -p "$HERE/keys"; ask_approvers
+		else echo "  No keys/approvers.txt: Pi units built now open their /home by hand only."; fi
+	fi
+elif [ -n "$(approver_keys 2>/dev/null)" ]; then
+	echo "  Approvers of the locked /home: $(approver_keys | wc -l) key(s) from keys/approvers.txt"
+fi
 if [ "$MENU" = 1 ]; then
 	case "$(ask "Go? [Y/n] ")" in [nN]*) exit 0 ;; esac
 fi

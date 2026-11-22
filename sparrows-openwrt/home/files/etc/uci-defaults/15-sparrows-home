@@ -4,4 +4,10 @@
 # put back here, found by the label in its LUKS header. On a new card: an empty partition for /home,
 # set up later from the admin laptop (./build.sh home <unit>). Status: NOT YET TESTED.
 [ ! -x /usr/sbin/sparrows-home ] || /usr/sbin/sparrows-home ensure
+# The door: its identity (kept through updates, keep.d/sparrows-home), and the service that asks the
+# approvers while /home is locked. Approvers and the door: NOT YET TESTED on a unit
+if [ -x /usr/sbin/sparrows-door ]; then
+	PYTHONPATH=/usr/lib/sparrows/python /usr/sbin/sparrows-door id >/dev/null
+	/etc/init.d/sparrows-door enable
+fi
 exit 0

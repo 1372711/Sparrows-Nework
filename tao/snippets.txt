@@ -476,6 +476,37 @@ sparrows-home status                        # Pi nest or tree: is /home open? (s
 
 # Stuck: back to the image's defaults (the role stays, changes by hand are gone)
 firstboot && reboot
+### home-approvers
+# Not yet tested on a unit (the exchange was tested on a laptop, 2026-11-22).
+# ---- Each approver, once, on the laptop or phone (Termux) they will answer from ----
+python3 -m pip install rns==1.6.1            # the version the units run (tree/role.conf)
+cp sparrows-openwrt/approver/sparrows-approve ~/ && chmod +x ~/sparrows-approve
+~/sparrows-approve id                        # prints a public key: give it to the admin
+# Back up ~/.sparrows-approver/identity offline: it is a key to every unit you approve for
+
+# ---- The admin laptop: the keys, one per line, no names ----
+nano keys/approvers.txt                      # or let ./build.sh ask for them once
+./build.sh nest                              # or tree: the images carry the approvers
+./build.sh home <unit address>               # a new /home: sealed for them, prints the door address
+./build.sh approvers <unit address>          # a /home set up before it had approvers
+
+# ---- Each approver, once per unit: the door address the admin gives ----
+~/sparrows-approve add <door address> <a note for you>
+~/sparrows-approve list
+
+# ---- After a unit reboots ----
+~/sparrows-approve watch                     # a accept, r reject, e erase (type the name), s skip
+
+# Verify on the unit
+sparrows-home status                         # LOCKED ... or an approver's yes (door <address>)
+ls /etc/sparrows/door/sealed/                # one sealed copy per approver
+/etc/init.d/sparrows-door status             # running while /home is locked
+logread -e sparrows-door                     # "asks to open /home", then "said yes: /home is open"
+cryptsetup luksDump /dev/mmcblk0p3 | grep -A1 'Keyslots:'   # two slots: the passphrase, the unlock key
+
+# Undo: drop every approver (the passphrase still opens it)
+: > keys/approvers.txt                       # on the admin laptop, then rebuild and update the unit
+./build.sh approvers <unit address>          # the unlock key's slot and the sealed copies are removed
 ### home-setup
 # Not yet tested. ---- On the admin laptop: a Pi image built from 2026-11-22 (nest, tree) ----
 ./build.sh nest                          # or tree: the image carries sparrows-home and the LUKS tools

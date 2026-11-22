@@ -6,21 +6,31 @@
 #   sparrows-home open         open it (passphrase on stdin, or typed) and start what waits for it.
 #                              sparrows-unlock does the same
 #   sparrows-home close        stop what uses it, then lock it
+#   sparrows-home approvers    seal the unlock key again for the approvers of this image
+#                              (passphrase on stdin: ./build.sh approvers <unit>). Opening /home
+#                              does it by itself when the list changed and a key is already there
+#   sparrows-home erase        destroy /home's lock, wipe the system, switch off. NO UNDO
 #   sparrows-home check-image <image.img.gz>   would this image reach /home? (before a sysupgrade)
 # For the system itself:
 #   sparrows-home ensure       first boot and after each update: find /home by its label and put its
 #                              partition entry back if an update dropped it, or make an empty one
 #   sparrows-home dir <name>   the folder a service keeps its data in (/etc/<name> or /home/<name>);
 #                              fails while /home is there but locked: the service then waits
+#   sparrows-home locked       true while /home is set up and locked (sparrows-door asks then)
+#   sparrows-home open-key     open it with the unlock key on stdin (sparrows-door, after a yes)
 # What lives on /home: the message store (lxmd) and the Sparrows page node (nomadnetwork). rnsd's own
 # identity stays on the system side, so the unit relays even while /home is locked.
-# The passphrase is never written on the card. Status: NOT YET TESTED (written 2026-11-22).
+# The passphrase is never written on the card. The unlock key that approvers open (sparrows-door) is
+# kept inside /home, so it can be sealed again when the approvers change; outside, only sealed copies.
+# Status: tested 2026-11-22 (setup, lock, sparrows-unlock). Approvers and erase: NOT YET TESTED.
 
 . /etc/sparrows/station          # HOME_START_MB: where /home starts on the card (devices/*/device.conf)
 
 LABEL='sparrows-home'            # in the LUKS header, readable without the key
 MAP='sparrows-home'              # /dev/mapper/sparrows-home once open
 KEPT='lxmd nomadnetwork'
+UK=/home/.sparrows/unlock.key   # the approvers' unlock key, inside the lock
+APPROVERS=/etc/sparrows/approvers
 
 log() { logger -t sparrows-home "$*"; echo "$*"; }
 die() { echo "$*" >&2; exit 1; }
@@ -109,13 +119,14 @@ setup() {
 	printf '%s' "$KEY" | cryptsetup luksFormat --type luks2 --label "$LABEL" --pbkdf argon2id \
 		--pbkdf-memory 131072 --batch-mode --key-file=- "$P3" || die "LUKS setup failed."
 	printf '%s' "$KEY" | cryptsetup open --key-file=- "$P3" "$MAP" || die "Can't open the new /home."
-	KEY='' K2=''
 	mkfs.ext4 -q -L home-data "/dev/mapper/$MAP" || die "mkfs failed."
 	mount_home || die "Can't mount /home."
 	services stop
 	move
+	printf '%s' "$KEY" | approvers_key     # the passphrase, still in memory, adds the approvers' slot
+	KEY='' K2=''
 	services start
-	log "/home is set up and open. After each reboot it stays locked until: sparrows-unlock"
+	log "/home is set up and open. After each reboot it stays locked until an approver says yes, or: sparrows-unlock"
 }
 
 open() {
@@ -130,8 +141,85 @@ open() {
 		fi
 	fi
 	is_open || mount_home || die "Opened, but can't mount /home."
+	rotate
 	services start
 	log "/home is open"
+}
+
+# The approvers' unlock key: a random key in a LUKS slot of its own, sealed for each approver
+# (sparrows-door seal). Any key that opens /home comes on stdin: the passphrase, or the old unlock key.
+# A new unlock key each time the list changes: an approver taken off the list can't open it any more.
+approvers_key() {
+	local OLD=/tmp/.sparrows-old.key NEW=/tmp/.sparrows-new.key    # /tmp is RAM, never the card
+	( umask 077; cat > "$OLD" )
+	mkdir -p /home/.sparrows && chmod 700 /home/.sparrows
+	if grep -q '^[0-9a-fA-F]\{128\}' "$APPROVERS" 2>/dev/null; then
+		( umask 077; head -c 32 /dev/urandom | base64 | tr -d '\n' > "$NEW" )   # exactly what is sealed
+		# A random key needs no slow key derivation (a passphrase does): quick on a Pi Zero too
+		if ! cryptsetup luksAddKey --batch-mode --pbkdf pbkdf2 --pbkdf-force-iterations 1000 \
+			--key-file="$OLD" "$P3" "$NEW"; then
+			rm -f "$OLD" "$NEW"; log "ERROR: the approvers' key could not be added to /home"; return 1
+		fi
+		[ ! -s "$UK" ] || cryptsetup luksRemoveKey --batch-mode "$P3" "$UK" 2>/dev/null
+		cp "$NEW" "$UK" && chmod 600 "$UK"
+		/usr/sbin/sparrows-door seal < "$NEW" | while read -r L; do log "$L"; done
+	else
+		[ ! -s "$UK" ] || cryptsetup luksRemoveKey --batch-mode "$P3" "$UK" 2>/dev/null
+		rm -f "$UK" /etc/sparrows/door/sealed/*
+		log "no approver in this image: /home opens by hand only (sparrows-unlock)"
+	fi
+	sha256sum "$APPROVERS" 2>/dev/null | cut -d' ' -f1 > /home/.sparrows/approvers.sha256
+	rm -f "$OLD" "$NEW"
+}
+
+# After an update, the approvers may have changed: seal a new key for the new list
+rotate() {
+	local NOW
+	NOW=$(sha256sum "$APPROVERS" 2>/dev/null | cut -d' ' -f1)
+	[ "$NOW" != "$(cat /home/.sparrows/approvers.sha256 2>/dev/null)" ] || return 0
+	if [ -s "$UK" ]; then
+		log "the approvers changed: a new unlock key is sealed for them"
+		approvers_key < "$UK"
+	elif [ -n "$NOW" ]; then
+		log "approvers in this image, none set up on /home yet: ./build.sh approvers <this unit>"
+	fi
+}
+
+# The approvers again, with the passphrase (a /home set up before approvers existed, or to redo it)
+approvers() {
+	is_open || die "/home is locked: open it first (sparrows-unlock)."
+	read_key
+	printf '%s' "$KEY" | approvers_key
+	KEY='' K2=''
+}
+
+# After an approver's yes: the unlock key on stdin
+open_key() {
+	has_home || die "No /home set up on this unit."
+	if ! [ -b "/dev/mapper/$MAP" ]; then
+		cryptsetup open --key-file=- "$P3" "$MAP" || die "Not opened: not a key of this /home."
+	fi
+	open </dev/null
+}
+
+# An approver's erase (sparrows-door), or by hand. The lock first: seconds, and /home is unreadable for
+# good. Then the system partitions, from a copy of busybox in RAM, as the system is being wiped under it
+erase() {
+	local P
+	log "ERASING this unit: /home's lock, then the system, then off"
+	services stop
+	! is_open || umount /home
+	[ ! -b "/dev/mapper/$MAP" ] || cryptsetup close "$MAP"
+	if cryptsetup isLuks "$P3" 2>/dev/null; then cryptsetup erase --batch-mode "$P3"; fi
+	dd if=/dev/zero of="$P3" bs=1M count=16 2>/dev/null
+	rm -rf /etc/sparrows/door
+	sync
+	cp /bin/busybox /tmp/bb
+	for P in "${DISK}p1" "${DISK}p2"; do
+		[ -b "$P" ] && /tmp/bb dd if=/dev/zero of="$P" bs=1M 2>/dev/null
+	done
+	/tmp/bb sync
+	echo o > /proc/sysrq-trigger
 }
 
 close() {
@@ -159,6 +247,9 @@ status() {
 		for N in $KEPT; do [ ! -d "/home/$N" ] || echo "  /home/$N"; done
 	else
 		echo "/home is LOCKED: sparrows-unlock to open it. Waiting meanwhile: the message store, the Sparrows page"
+		if [ -n "$(ls /etc/sparrows/door/sealed 2>/dev/null)" ]; then
+			echo "  or an approver's yes: sparrows-door asks them (door $(/usr/sbin/sparrows-door id 2>/dev/null))"
+		fi
 	fi
 }
 
@@ -187,8 +278,12 @@ case "${1:-}" in
 	setup) setup ;;
 	open) open ;;
 	close) close ;;
+	locked) has_home && ! is_open ;;
+	open-key) open_key ;;
+	approvers) approvers ;;
+	erase) erase ;;
 	ensure) ensure ;;
 	dir) dir "${2:-}" ;;
 	check-image) check_image "${2:-}" ;;
-	*) sed -n '2,15s/^# \{0,1\}//p' "$0"; exit 1 ;;
+	*) sed -n '2,22s/^# \{0,1\}//p' "$0"; exit 1 ;;
 esac
