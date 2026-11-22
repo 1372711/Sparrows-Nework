@@ -3,7 +3,8 @@
 #   perch ap  [channel]   this end beacons and does the radar duty (one AP per flyway)
 #   perch sta [channel]   this end follows its AP (default after flashing)
 #   perch status
-# Channel: outdoor FR, HT20 = 100 104 108 112 116 132 136 140 (120-128 forbidden: weather radar).
+# Channel: outdoor 5 GHz with DFS, HT20 = 100 104 108 112 116 132 136 140 (120-128: weather radar, never).
+# Allowed in the EU and the US; check your country, set by the build (COUNTRY).
 
 OK_CHANNELS='100 104 108 112 116 132 136 140'
 

@@ -29,11 +29,13 @@ cd sparrows-openwrt && mkdir -p keys secrets
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
 cp ~/.ssh/id_ed25519.pub keys/admin.pub                    # the build refuses to run without a key
+printf "COUNTRY='DE'\n" > local.conf                        # where the units stand (ISO 3166): its radio rules apply
 printf '%s' 'the-flyway-passphrase' > secrets/flyway.key   # 5 GHz flyway (perch) only: same as the running flyway
 head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 > secrets/hedge.key   # 2.4 GHz flyway (hedge) only
 # Back up secrets/ offline now, with your SSH key: no other copy of the radio keys exists
 ./build.sh                    # a menu: pick devices by number or role (Enter = all), n = add a device
 ./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree, nest)
+COUNTRY=BR ./build.sh all     # another country than local.conf, for this build only
 ./build.sh uses               # only show what each port and radio of every line will do
 VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
@@ -268,9 +270,9 @@ git pull                                      # later, from inside sparrows/: ge
 git log -1 --format='%h %ad %s'               # which version you have
 
 # A copy for a USB stick, on the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
-# Public files only: keys/, secrets/ and build/ never go in it.
+# Public files only: keys/, secrets/, build/ and local.conf never go in it.
 mkdir -p kit
-rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
+rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ --exclude local.conf sparrows-openwrt tao kit/
 cp <app-install-file> kit/                    # e.g. the Sideband APK, once chosen
 ( cd kit && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS )
 grep -r -l -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY' kit/ && echo "STOP: a private key in these files"   # should print nothing
@@ -430,7 +432,7 @@ nano uses.txt                     # a role's line: ports, 2.4 GHz, 5 GHz, servic
 ./build.sh <role>                 # then update that role's units (sysupgrade, see "Update a running station")
 
 # On a unit: what it was built to do, and what its radios do now
-cat /etc/sparrows/station         # ROLE, PORTS, USE2, USE5, RETICULUM, NEST
+cat /etc/sparrows/station         # ROLE, PORTS, USE2, USE5, RETICULUM, NEST, COUNTRY
 iw dev                            # each radio: type, SSID, channel, txpower
 
 # Set the radios again from the uses (a Pi's chip that showed up late, a radio changed by hand)

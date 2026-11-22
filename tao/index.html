@@ -176,7 +176,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#rule"><span lang="en">Who rules? Nobody</span><span lang="fr">Qui dirige ? Personne</span><span lang="es">¿Quién manda? Nadie</span></a>
     <a href="#limits"><span lang="en">Hard rules</span><span lang="fr">Règles dures</span><span lang="es">Reglas firmes</span></a>
     <a href="#frugal"><span lang="en">Frugal</span><span lang="fr">Frugal</span><span lang="es">Frugal</span></a>
-    <a href="#law"><span lang="en">The law in France</span><span lang="fr">La loi en France</span><span lang="es">La ley en Francia</span></a>
+    <a href="#law"><span lang="en">The law where you build</span><span lang="fr">La loi là où l'on construit</span><span lang="es">La ley donde se construye</span></a>
     <a href="#licences"><span lang="en">Licences and thanks</span><span lang="fr">Licences et remerciements</span><span lang="es">Licencias y agradecimientos</span></a>
     <a href="#start"><span lang="en">Start here</span><span lang="fr">Commencer ici</span><span lang="es">Empezar aquí</span></a>
     <p class="tg"><span lang="en">II. The network</span><span lang="fr">II. Le réseau</span><span lang="es">II. La red</span></p>
@@ -215,9 +215,9 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
 <main>
 <p class="eyebrow">Standalone Peer Access Radio Relay Over Wireless Stations</p>
 <h1>Sparrows Tao</h1>
-<p class="lead" lang="en">Sparrows-Network is a community network that runs without the Internet: fixed Wi-Fi stations in one village first, then links between villages 1 to 15 km apart. This handbook holds its way of thinking and its way of building in one file: give it to anyone who wants to join or to build, or let a nest serve it as the village's welcome page.</p>
-<p class="lead" lang="fr">Sparrows-Network est un réseau communautaire qui fonctionne sans Internet : des stations Wi-Fi fixes dans un village d'abord, puis des liaisons entre villages distants de 1 à 15 km. Ce manuel réunit sa façon de penser et sa façon de construire dans un seul fichier : à donner à quiconque veut rejoindre ou construire, ou à faire servir par un nid comme page d'accueil du village.</p>
-<p class="lead" lang="es">Sparrows-Network es una red comunitaria que funciona sin Internet: estaciones Wi-Fi fijas en un pueblo primero, y después enlaces entre pueblos separados de 1 a 15 km. Este manual reúne su forma de pensar y su forma de construir en un solo archivo: para dárselo a quien quiera unirse o construir, o para que un nido lo sirva como página de bienvenida del pueblo.</p>
+<p class="lead" lang="en">Sparrows-Network is a standard for building a community network that runs without the Internet, anywhere in the world: one set of build scripts and one handbook, so that anyone who wants a standalone mesh starts from the same tested pieces instead of from scratch. Fixed Wi-Fi stations cover one village first, then link villages 1 to 15 km apart. This handbook holds its way of thinking and its way of building in one file: give it to anyone who wants to join or to build, or let a nest serve it as the village's welcome page.</p>
+<p class="lead" lang="fr">Sparrows-Network est un standard pour construire un réseau communautaire qui fonctionne sans Internet, partout dans le monde : un seul jeu de scripts de build et un seul manuel, pour que quiconque veut un mesh autonome parte des mêmes briques testées au lieu de tout refaire. Des stations Wi-Fi fixes couvrent d'abord un village, puis relient des villages distants de 1 à 15 km. Ce manuel réunit sa façon de penser et sa façon de construire dans un seul fichier : à donner à quiconque veut rejoindre ou construire, ou à faire servir par un nid comme page d'accueil du village.</p>
+<p class="lead" lang="es">Sparrows-Network es un estándar para construir una red comunitaria que funciona sin Internet, en cualquier parte del mundo: un solo juego de scripts de construcción y un solo manual, para que quien quiera una malla autónoma parta de las mismas piezas probadas en vez de empezar de cero. Estaciones Wi-Fi fijas cubren primero un pueblo, y después enlazan pueblos separados de 1 a 15 km. Este manual reúne su forma de pensar y su forma de construir en un solo archivo: para dárselo a quien quiera unirse o construir, o para que un nido lo sirva como página de bienvenida del pueblo.</p>
 <p class="lead" lang="en"><strong>We fight for freedom of communication and of information.</strong></p>
 <p class="lead" lang="fr"><strong>Nous nous battons pour la liberté de communiquer et de s'informer.</strong></p>
 <p class="lead" lang="es"><strong>Luchamos por la libertad de comunicarse y de informarse.</strong></p>
@@ -459,7 +459,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>DNS and HTTP are the on-ramp and nothing more.</strong> No accounts, no logs, no streaming, no service that depends on a DNS name.</li>
   <li><strong>No user key on a nest.</strong> So no web client hosted on a nest.</li>
   <li><strong>No link to a home network.</strong> A nest has only the village network: no home side, no second network to forward to, and never a bridge to a home box.</li>
-  <li><strong>Radio, France.</strong> Outdoor 5 GHz on channels 100 to 140 (DFS), never 120 to 128 (weather radar), 30 dBm EIRP at most. Channels 36 to 48 are indoor only. No 802.11s on DFS channels: on 2.4 GHz it is fine.</li>
+  <li><strong>Radio: the law of the country.</strong> Every image is built for one country (<code>COUNTRY</code>), and its radios follow that country's rules. The defaults suit the EU and the US: outdoor 5 GHz on channels 100 to 140 with radar detection (DFS), never 120 to 128 (weather radar), 2.4 GHz on channel 1. Power at the radio = the country's EIRP limit minus the antenna gain. No 802.11s on DFS channels: on 2.4 GHz it is fine (decided 2026-11-22; France only before).</li>
   <li><strong>Perches, feeders and hedges only bridge.</strong> No dnsmasq, no odhcpd, no firewall, no Reticulum on them. On small ones (8 MB of flash, 64 MB of RAM, like the CPE510), no LuCI either.</li>
   <li><strong>No encrypted traffic on amateur radio bands.</strong> Layer 1 is always encrypted, so it never uses them.</li>
   <li><strong>Nothing outside.</strong> No public DNS, certificate authority or cloud for anything the mesh needs to run.</li>
@@ -475,7 +475,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>DNS et HTTP sont la rampe d'accès, rien de plus.</strong> Pas de comptes, pas de journaux, pas de streaming, aucun service qui dépende d'un nom DNS.</li>
   <li><strong>Aucune clé d'usager sur un nid.</strong> Donc pas de client web hébergé sur un nid.</li>
   <li><strong>Aucun lien vers un réseau de maison.</strong> Un nid n'a que le réseau du village : pas de côté maison, pas de deuxième réseau vers lequel router, et jamais de pont vers une box.</li>
-  <li><strong>Radio, France.</strong> 5 GHz extérieur sur les canaux 100 à 140 (DFS), jamais 120 à 128 (radar météo), 30 dBm de PIRE au plus. Les canaux 36 à 48 sont réservés à l'intérieur. Pas de 802.11s sur les canaux DFS : en 2,4 GHz, il va bien.</li>
+  <li><strong>Radio : la loi du pays.</strong> Chaque image est construite pour un pays (<code>COUNTRY</code>), et ses radios suivent les règles de ce pays. Les réglages par défaut conviennent à l'UE et aux États-Unis : 5 GHz extérieur sur les canaux 100 à 140 avec détection radar (DFS), jamais 120 à 128 (radar météo), 2,4 GHz sur le canal 1. Puissance à la radio = la limite de PIRE du pays moins le gain de l'antenne. Pas de 802.11s sur les canaux DFS : en 2,4 GHz, il va bien (décidé le 2026-11-22 ; la France seule avant).</li>
   <li><strong>Perchoirs, mangeoires et haies ne font que du pont.</strong> Ni dnsmasq, ni odhcpd, ni pare-feu, ni Reticulum. Sur les petits (8 Mo de flash, 64 Mo de RAM, comme le CPE510), pas de LuCI non plus.</li>
   <li><strong>Aucun trafic chiffré sur les bandes radioamateur.</strong> La couche 1 est toujours chiffrée, donc elle ne les utilise jamais.</li>
   <li><strong>Rien d'extérieur.</strong> Ni DNS public, ni autorité de certification, ni cloud pour ce dont le mesh a besoin pour tourner.</li>
@@ -491,7 +491,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>DNS y HTTP son la rampa de acceso y nada más.</strong> Sin cuentas, sin registros, sin streaming, ningún servicio que dependa de un nombre DNS.</li>
   <li><strong>Ninguna clave de usuario en un nido.</strong> Por tanto, ningún cliente web alojado en un nido.</li>
   <li><strong>Ningún enlace con una red de casa.</strong> Un nido solo tiene la red del pueblo: sin lado de casa, sin segunda red hacia la que reenviar, y nunca un puente con el router de casa.</li>
-  <li><strong>Radio, Francia.</strong> 5 GHz en exterior en los canales 100 a 140 (DFS), nunca del 120 al 128 (radar meteorológico), 30 dBm de PIRE como máximo. Los canales 36 a 48 son solo de interior. Nada de 802.11s en canales DFS: en 2,4 GHz va bien.</li>
+  <li><strong>Radio: la ley del país.</strong> Cada imagen se construye para un país (<code>COUNTRY</code>), y sus radios siguen las reglas de ese país. Los valores por defecto sirven para la UE y EE. UU.: 5 GHz en exterior en los canales 100 a 140 con detección de radar (DFS), nunca del 120 al 128 (radar meteorológico), 2,4 GHz en el canal 1. Potencia en la radio = el límite de PIRE del país menos la ganancia de la antena. Nada de 802.11s en canales DFS: en 2,4 GHz va bien (decidido el 2026-11-22; antes solo Francia).</li>
   <li><strong>Perchas, comederos y setos solo hacen de puente.</strong> Ni dnsmasq, ni odhcpd, ni cortafuegos, ni Reticulum en ellos. En los pequeños (8 MB de flash, 64 MB de RAM, como el CPE510), tampoco LuCI.</li>
   <li><strong>Ningún tráfico cifrado en las bandas de radioaficionados.</strong> La capa 1 va siempre cifrada, así que nunca las usa.</li>
   <li><strong>Nada de fuera.</strong> Ni DNS público, ni autoridad de certificación, ni nube para nada que la malla necesite para funcionar.</li>
@@ -523,30 +523,30 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>Los bytes cuentan.</strong> La capa 1 supone enlaces lentos: el texto primero, un archivo descargado una vez y guardado, nada en streaming.</li>
 </ul>
 
-<h3 id="law"><span lang="en">The law in France</span><span lang="fr">La loi en France</span><span lang="es">La ley en Francia</span></h3>
-<p class="note" lang="en">Not legal advice. This is what we found on 2026-11-13, to confirm with a lawyer or with the Fédération FDN, whose member associations already run community networks as declared operators.</p>
-<p class="note" lang="fr">Ce n'est pas un avis juridique. Voici ce que nous avons trouvé le 2026-11-13, à confirmer avec un juriste ou avec la Fédération FDN, dont les associations membres font déjà tourner des réseaux communautaires comme opérateurs déclarés.</p>
-<p class="note" lang="es">Esto no es asesoramiento jurídico. Es lo que encontramos el 2026-11-13, a confirmar con un abogado o con la Fédération FDN, cuyas asociaciones miembro ya llevan redes comunitarias como operadores declarados.</p>
+<h3 id="law"><span lang="en">The law where you build</span><span lang="fr">La loi là où l'on construit</span><span lang="es">La ley donde se construye</span></h3>
+<p class="note" lang="en">Not legal advice. Every country is different: these are the questions to answer where you build, before the network opens beyond friends. Community network groups near you have often answered them already.</p>
+<p class="note" lang="fr">Ce n'est pas un avis juridique. Chaque pays est différent : voici les questions à régler là où l'on construit, avant que le réseau s'ouvre au-delà des amis. Les réseaux communautaires proches y ont souvent déjà répondu.</p>
+<p class="note" lang="es">Esto no es asesoramiento jurídico. Cada país es distinto: estas son las preguntas a resolver donde se construye, antes de que la red se abra más allá de los amigos. Las redes comunitarias cercanas a menudo ya las han respondido.</p>
 <ul lang="en">
-  <li><strong>Tor is legal in France</strong>, to use and to relay. An exit relay is legal too, but its operator gets the abuse complaints and its servers can be seized: in 2017, <a href="https://next.ink/news/104398-wannacrypt-nud-tor-saisi-chez-firstheberg.htm">Tor relays hosted in France were seized</a> during the WannaCry investigation. Sparrows runs no exit, and no Tor at all.</li>
-  <li><strong>Data retention.</strong> Anyone who offers the public a connection for online communication, even for free, is treated as an operator under <a href="https://www.cnil.fr/fr/fournir-un-acces-internet-public-quelles-obligations">article L34-1 of the CPCE</a> and must keep traffic data. That clashes head-on with "no logs".</li>
-  <li><strong>Does it apply to Sparrows?</strong> Our reading: that duty is about access to online communication, meaning the Internet, and Sparrows gives none. But a standalone local network open to the public could still be an "electronic communications network open to the public" (article L33-1, operator status with ARCEP). Unknown, and decisive: it is the first legal question to settle, before the network opens beyond friends.</li>
-  <li><strong>Encryption is free to use</strong> in France (LCEN 2004, article 30).</li>
-  <li><strong>Radio:</strong> the power and channel rules above, and no encrypted traffic on amateur bands.</li>
+  <li><strong>Radio.</strong> Which bands, channels and power are free to use outdoors, and where radar detection (DFS) is required. Build with your country's code (<code>COUNTRY</code>), and set the power in <code>profiles.txt</code> from its limits.</li>
+  <li><strong>Operator.</strong> In many countries, whoever offers the public a communication network, even free and even without the Internet, may count as an operator: a declaration, sometimes a duty to keep traffic data. That would clash head-on with "no logs". Find out first: it is the first legal question to settle.</li>
+  <li><strong>Encryption.</strong> Free to use in most countries, limited in some. Layer 1 is always encrypted: check that it is allowed.</li>
+  <li><strong>Amateur bands.</strong> They need a licence and almost everywhere forbid encryption, so Sparrows never uses them.</li>
+  <li><strong>Tor.</strong> Sparrows runs no Tor and no exit of any kind, so it never carries anyone's traffic to the Internet.</li>
 </ul>
 <ul lang="fr">
-  <li><strong>Tor est légal en France</strong>, pour l'utiliser comme pour faire tourner un relais. Un relais de sortie aussi, mais son opérateur reçoit les plaintes pour abus et ses serveurs peuvent être saisis : en 2017, <a href="https://next.ink/news/104398-wannacrypt-nud-tor-saisi-chez-firstheberg.htm">des relais Tor hébergés en France ont été saisis</a> pendant l'enquête sur WannaCry. Sparrows ne fait tourner aucune sortie, et pas de Tor du tout.</li>
-  <li><strong>Conservation des données.</strong> Quiconque offre au public une connexion permettant une communication en ligne, même gratuitement, est traité comme un opérateur au titre de <a href="https://www.cnil.fr/fr/fournir-un-acces-internet-public-quelles-obligations">l'article L34-1 du CPCE</a> et doit conserver des données de trafic. Cela heurte de front le « aucun journal ».</li>
-  <li><strong>Est-ce que ça s'applique à Sparrows ?</strong> Notre lecture : cette obligation vise l'accès à la communication en ligne, c'est-à-dire Internet, et Sparrows n'en donne aucun. Mais un réseau local autonome ouvert au public pourrait quand même être un « réseau de communications électroniques ouvert au public » (article L33-1, statut d'opérateur auprès de l'ARCEP). Inconnu, et décisif : c'est la première question juridique à régler, avant d'ouvrir le réseau au-delà des amis.</li>
-  <li><strong>Le chiffrement est libre</strong> en France (LCEN 2004, article 30).</li>
-  <li><strong>Radio :</strong> les règles de puissance et de canaux ci-dessus, et aucun trafic chiffré sur les bandes radioamateur.</li>
+  <li><strong>Radio.</strong> Quelles bandes, quels canaux et quelle puissance sont libres en extérieur, et où la détection radar (DFS) est obligatoire. Construire avec le code de son pays (<code>COUNTRY</code>), et régler la puissance dans <code>profiles.txt</code> selon ses limites.</li>
+  <li><strong>Opérateur.</strong> Dans beaucoup de pays, qui offre au public un réseau de communication, même gratuit et même sans Internet, peut compter comme opérateur : une déclaration, parfois une obligation de garder les données de trafic. Cela heurterait de front « aucun journal ». Se renseigner d'abord : c'est la première question juridique à régler.</li>
+  <li><strong>Chiffrement.</strong> Libre dans la plupart des pays, limité dans certains. La couche 1 est toujours chiffrée : vérifier que c'est permis.</li>
+  <li><strong>Bandes radioamateur.</strong> Elles demandent une licence et interdisent presque partout le chiffrement : Sparrows ne s'en sert jamais.</li>
+  <li><strong>Tor.</strong> Sparrows ne fait tourner aucun Tor ni aucune sortie : il ne porte jamais le trafic de personne vers Internet.</li>
 </ul>
 <ul lang="es">
-  <li><strong>Tor es legal en Francia</strong>, tanto usarlo como llevar un relevo. Un relevo de salida también, pero su operador recibe las quejas por abuso y sus servidores pueden ser incautados: en 2017, <a href="https://next.ink/news/104398-wannacrypt-nud-tor-saisi-chez-firstheberg.htm">se incautaron relevos Tor alojados en Francia</a> durante la investigación de WannaCry. Sparrows no lleva ninguna salida, ni nada de Tor.</li>
-  <li><strong>Conservación de datos.</strong> Quien ofrece al público una conexión para comunicarse en línea, aunque sea gratis, es tratado como operador según el <a href="https://www.cnil.fr/fr/fournir-un-acces-internet-public-quelles-obligations">artículo L34-1 del CPCE</a> y debe conservar datos de tráfico. Eso choca de frente con «ningún registro».</li>
-  <li><strong>¿Se aplica a Sparrows?</strong> Nuestra lectura: esa obligación trata del acceso a la comunicación en línea, es decir, Internet, y Sparrows no da ninguno. Pero una red local autónoma abierta al público podría ser aun así una «red de comunicaciones electrónicas abierta al público» (artículo L33-1, estatus de operador ante la ARCEP). No se sabe, y es decisivo: es la primera cuestión legal que resolver, antes de abrir la red más allá de los amigos.</li>
-  <li><strong>El cifrado es de uso libre</strong> en Francia (LCEN 2004, artículo 30).</li>
-  <li><strong>Radio:</strong> las reglas de potencia y de canales de arriba, y ningún tráfico cifrado en las bandas de radioaficionados.</li>
+  <li><strong>Radio.</strong> Qué bandas, canales y potencia son libres en exterior, y dónde es obligatoria la detección de radar (DFS). Construir con el código de su país (<code>COUNTRY</code>), y ajustar la potencia en <code>profiles.txt</code> según sus límites.</li>
+  <li><strong>Operador.</strong> En muchos países, quien ofrece al público una red de comunicación, aunque sea gratis y sin Internet, puede contar como operador: una declaración, a veces la obligación de guardar datos de tráfico. Chocaría de frente con «ningún registro». Informarse primero: es la primera cuestión legal a resolver.</li>
+  <li><strong>Cifrado.</strong> Libre en la mayoría de los países, limitado en algunos. La capa 1 siempre va cifrada: comprobar que está permitido.</li>
+  <li><strong>Bandas de radioaficionado.</strong> Exigen licencia y casi en todas partes prohíben el cifrado: Sparrows nunca las usa.</li>
+  <li><strong>Tor.</strong> Sparrows no hace funcionar ningún Tor ni ninguna salida: nunca lleva el tráfico de nadie hacia Internet.</li>
 </ul>
 
 <h3 id="licences"><span lang="en">Licences and thanks</span><span lang="fr">Licences et remerciements</span><span lang="es">Licencias y agradecimientos</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
@@ -1013,7 +1013,7 @@ python3 -I -m zipfile -l &lt;wheel&gt;.whl | grep -i -e licen -e copying   # not
 <div class="tw"><table>
   <thead><tr>
     <th><span lang="en">Medium</span><span lang="fr">Support</span><span lang="es">Medio</span></th>
-    <th><span lang="en">Licence-free in France</span><span lang="fr">Libre en France</span><span lang="es">Sin licencia en Francia</span></th>
+    <th><span lang="en">Licence-free? (EU values)</span><span lang="fr">Libre ? (valeurs UE)</span><span lang="es">¿Sin licencia? (valores UE)</span></th>
     <th><span lang="en">Rate and reach</span><span lang="fr">Débit et portée</span><span lang="es">Caudal y alcance</span></th>
     <th><span lang="en">Carries</span><span lang="fr">Porte</span><span lang="es">Lleva</span></th></tr></thead>
   <tbody>
@@ -1046,9 +1046,9 @@ python3 -I -m zipfile -l &lt;wheel&gt;.whl | grep -i -e licen -e copying   # not
     <td><span lang="en">Layer 1 store-and-forward</span><span lang="fr">stocker-puis-transmettre de la couche 1</span><span lang="es">almacenar y reenviar de la capa 1</span></td></tr>
   </tbody>
 </table></div>
-<p class="meta" lang="en">Radio rules change. Check the current ARCEP and ETSI rules before buying a radio.</p>
-<p class="meta" lang="fr">Les règles radio changent. Vérifier les règles ARCEP et ETSI en vigueur avant d'acheter une radio.</p>
-<p class="meta" lang="es">Las reglas de radio cambian. Comprobar las reglas vigentes de la ARCEP y del ETSI antes de comprar una radio.</p>
+<p class="meta" lang="en">Radio rules differ by country and change. The values above are the EU's (ETSI); the US and others differ (LoRa, for one, is 902–928 MHz in the Americas). Check your country's regulator before buying a radio.</p>
+<p class="meta" lang="fr">Les règles radio diffèrent selon les pays et changent. Les valeurs ci-dessus sont celles de l'UE (ETSI) ; les États-Unis et d'autres diffèrent (le LoRa, par exemple, est en 902–928 MHz dans les Amériques). Consulter le régulateur de son pays avant d'acheter une radio.</p>
+<p class="meta" lang="es">Las reglas de radio varían según el país y cambian. Los valores de arriba son los de la UE (ETSI); EE. UU. y otros difieren (LoRa, por ejemplo, va en 902–928 MHz en las Américas). Consultar al regulador de su país antes de comprar una radio.</p>
 
 <h3 id="segment"><span lang="en">One village, one segment</span><span lang="fr">Un village, un segment</span><span lang="es">Un pueblo, un segmento</span></h3>
 <p lang="en">Perches, feeders, hedges and nests of a village are all on the same network. Each perch and each hedge bridges its Ethernet port with batman-adv, so together they act as one big switch, and anything cabled to them, directly or through a switch, joins it. That is why one RA from a nest reaches every device in the village, and why Reticulum finds its peers with no configuration.</p>
@@ -1330,7 +1330,7 @@ nano uses.txt                     # a role's line: ports, 2.4 GHz, 5 GHz, servic
 ./build.sh &lt;role&gt;                 # then update that role's units (sysupgrade, see "Update a running station")
 
 # On a unit: what it was built to do, and what its radios do now
-cat /etc/sparrows/station         # ROLE, PORTS, USE2, USE5, RETICULUM, NEST
+cat /etc/sparrows/station         # ROLE, PORTS, USE2, USE5, RETICULUM, NEST, COUNTRY
 iw dev                            # each radio: type, SSID, channel, txpower
 
 # Set the radios again from the uses (a Pi's chip that showed up late, a radio changed by hand)
@@ -1360,9 +1360,9 @@ git pull                                      # later, from inside sparrows/: ge
 git log -1 --format='%h %ad %s'               # which version you have
 
 # A copy for a USB stick, on the admin laptop, from the folder that holds tao/ and sparrows-openwrt/.
-# Public files only: keys/, secrets/ and build/ never go in it.
+# Public files only: keys/, secrets/, build/ and local.conf never go in it.
 mkdir -p kit
-rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ sparrows-openwrt tao kit/
+rsync -a --delete --exclude keys/ --exclude secrets/ --exclude build/ --exclude local.conf sparrows-openwrt tao kit/
 cp &lt;app-install-file&gt; kit/                    # e.g. the Sideband APK, once chosen
 ( cd kit &amp;&amp; find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum &gt; SHA256SUMS )
 grep -r -l -E '^-----BEGIN ([A-Z]+ )*PRIVATE KEY' kit/ &amp;&amp; echo "STOP: a private key in these files"   # should print nothing
@@ -1401,11 +1401,13 @@ cd sparrows-openwrt &amp;&amp; mkdir -p keys secrets</code></pre></div>
 #          sparrows-openwrt/trust/         OpenWrt's public keys, to check its signature
 cd sparrows-openwrt
 cp ~/.ssh/id_ed25519.pub keys/admin.pub                    # the build refuses to run without a key
+printf "COUNTRY='DE'\n" &gt; local.conf                        # where the units stand (ISO 3166): its radio rules apply
 printf '%s' 'the-flyway-passphrase' &gt; secrets/flyway.key   # 5 GHz flyway (perch) only: same as the running flyway
 head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32 &gt; secrets/hedge.key   # 2.4 GHz flyway (hedge) only
 # Back up secrets/ offline now, with your SSH key: no other copy of the radio keys exists
 ./build.sh                    # a menu: pick devices by number or role (Enter = all), n = add a device
 ./build.sh all                # no menu: every line of profiles.txt (also: perch, feeder, hedge, tree, nest)
+COUNTRY=BR ./build.sh all     # another country than local.conf, for this build only
 ./build.sh uses               # only show what each port and radio of every line will do
 VER=25.12.x ./build.sh all    # another release (or v in the menu)
 UI=1 ./build.sh all           # with the web interface where profiles.txt says ui (or w in the menu)
@@ -1614,9 +1616,9 @@ rdisc6 wlan0</code></pre></div>
 <div class="code"><div class="hd"><span class="file">undo</span></div><pre><code>firstboot &amp;&amp; reboot             # back to this image's defaults
 # Locked out: failsafe mode (reset button during boot) -&gt; 192.168.1.1
 # Back to stock firmware: procedure on the OpenWrt wiki page of the device</code></pre></div>
-<p class="note" lang="en">Two open points. Any phone on the open SSID can send a rogue RA, and the bridge would spread it. Dropping RAs that arrive from the Wi-Fi side would fix it, but that is an exception to "never filter ICMPv6": not decided, not in the image. And TP-Link's CE figure for this unit is 27 dBm EIRP on 5 GHz, because it has no transmit power control (TPC), hence 23 dBm at the radio in <code>profiles.txt</code>. If the CPE510 has no TPC either, the same rule gives 14 dBm at its radio, not 17. To check against the French rules before perches go on masts: it is one number in <code>profiles.txt</code>.</p>
-<p class="note" lang="fr">Deux points ouverts. N'importe quel téléphone sur le SSID ouvert peut envoyer un faux RA, et le pont le propagerait. Jeter les RA qui arrivent du côté Wi-Fi réglerait le problème, mais c'est une exception à « ne jamais filtrer ICMPv6 » : pas décidé, pas dans l'image. Et la valeur CE de TP-Link pour ce boîtier est de 27 dBm de PIRE en 5 GHz, parce qu'il n'a pas de contrôle de puissance d'émission (TPC), d'où 23 dBm à la radio dans <code>profiles.txt</code>. Si le CPE510 n'a pas de TPC non plus, la même règle donne 14 dBm à sa radio, pas 17. À vérifier dans les règles françaises avant de monter les perchoirs sur les mâts : c'est un seul nombre dans <code>profiles.txt</code>.</p>
-<p class="note" lang="es">Dos puntos abiertos. Cualquier teléfono en el SSID abierto puede enviar un RA falso, y el puente lo propagaría. Descartar los RA que llegan del lado Wi-Fi lo arreglaría, pero es una excepción a «no filtrar nunca ICMPv6»: sin decidir, no está en la imagen. Y la cifra CE de TP-Link para esta unidad es de 27 dBm de PIRE en 5 GHz, porque no tiene control de potencia de transmisión (TPC), de ahí los 23 dBm en la radio en <code>profiles.txt</code>. Si el CPE510 tampoco tiene TPC, la misma regla da 14 dBm en su radio, no 17. A comprobar con las reglas francesas antes de subir las perchas a los mástiles: es un solo número en <code>profiles.txt</code>.</p>
+<p class="note" lang="en">Two open points. Any phone on the open SSID can send a rogue RA, and the bridge would spread it. Dropping RAs that arrive from the Wi-Fi side would fix it, but that is an exception to "never filter ICMPv6": not decided, not in the image. And TP-Link's CE figure for this unit is 27 dBm EIRP on 5 GHz, because it has no transmit power control (TPC), hence 23 dBm at the radio in <code>profiles.txt</code>. If the CPE510 has no TPC either, the same rule gives 14 dBm at its radio, not 17. To check against your country's rules before perches go on masts: it is one number in <code>profiles.txt</code>.</p>
+<p class="note" lang="fr">Deux points ouverts. N'importe quel téléphone sur le SSID ouvert peut envoyer un faux RA, et le pont le propagerait. Jeter les RA qui arrivent du côté Wi-Fi réglerait le problème, mais c'est une exception à « ne jamais filtrer ICMPv6 » : pas décidé, pas dans l'image. Et la valeur CE de TP-Link pour ce boîtier est de 27 dBm de PIRE en 5 GHz, parce qu'il n'a pas de contrôle de puissance d'émission (TPC), d'où 23 dBm à la radio dans <code>profiles.txt</code>. Si le CPE510 n'a pas de TPC non plus, la même règle donne 14 dBm à sa radio, pas 17. À vérifier dans les règles de son pays avant de monter les perchoirs sur les mâts : c'est un seul nombre dans <code>profiles.txt</code>.</p>
+<p class="note" lang="es">Dos puntos abiertos. Cualquier teléfono en el SSID abierto puede enviar un RA falso, y el puente lo propagaría. Descartar los RA que llegan del lado Wi-Fi lo arreglaría, pero es una excepción a «no filtrar nunca ICMPv6»: sin decidir, no está en la imagen. Y la cifra CE de TP-Link para esta unidad es de 27 dBm de PIRE en 5 GHz, porque no tiene control de potencia de transmisión (TPC), de ahí los 23 dBm en la radio en <code>profiles.txt</code>. Si el CPE510 tampoco tiene TPC, la misma regla da 14 dBm en su radio, no 17. A comprobar con las reglas de su país antes de subir las perchas a los mástiles: es un solo número en <code>profiles.txt</code>.</p>
 
 <h4 id="zero"><span lang="en">Feeder on a Raspberry Pi Zero 2 W</span><span lang="fr">Mangeoire sur un Raspberry Pi Zero 2 W</span><span lang="es">Comedero en una Raspberry Pi Zero 2 W</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en"><span class="k">So far</span>on 2026-11-21 the feeder image (with the web interface) was built with the real Image Builder: Wi-Fi firmware fetched and checked, package rules passed, a 78 MB factory image. <code>./build.sh sd</code> wrote it to a card and read it back identical. Not yet booted on the Pi.</p>
@@ -2574,7 +2576,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>A port open on the Internet</strong> gets scanned and flooded, and <code>rnsd</code> is what answers. Open that port and SSH only, keys only, keep the software patched and the logs low, and assume the provider keeps its own logs.</li>
   <li><strong>People can be followed by their key hash.</strong> A phone that always announces the same identity can be tracked over time by anyone who sees its announces. Inside a private hub that means our own villages. With public peering on, it means everyone: the reason it is off by default.</li>
   <li><strong>The whole village is linked, not just the nest.</strong> With transport on, every phone can reach and be reached through the hub. Within one <code>rnsd</code> it is all or nothing.</li>
-  <li><strong>The law.</strong> A hub that only links our own villages is a private link. A hub that relays public traffic makes its owner the operator of that relay. See <a href="#law">The law in France</a>.</li>
+  <li><strong>The law.</strong> A hub that only links our own villages is a private link. A hub that relays public traffic makes its owner the operator of that relay. See <a href="#law">The law where you build</a>.</li>
 </ul>
 <ul lang="fr">
   <li><strong>Le hub voit qui parle à qui, pas ce qui se dit.</strong> Le contenu reste chiffré de bout en bout. Mais celui qui contrôle le VPS (nous, l'hébergeur, ou quelqu'un qui le saisit) voit quelles adresses de maisons se connectent, quand, combien, et quelles empreintes de clés échangent des paquets. Dans un village de quelques dizaines de personnes, les horaires seuls en disent long.</li>
@@ -2584,7 +2586,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>Un port ouvert sur Internet</strong> se fait scanner et inonder, et c'est <code>rnsd</code> qui répond. N'ouvrir que ce port et SSH, par clés seulement, tenir le logiciel à jour et les journaux au minimum, et supposer que l'hébergeur garde ses propres journaux.</li>
   <li><strong>On peut suivre les gens par leur empreinte de clé.</strong> Un téléphone qui annonce toujours la même identité peut être suivi dans le temps par quiconque voit ses annonces. Dans un hub privé, cela veut dire nos propres villages. Avec l'appairage public activé, cela veut dire tout le monde : c'est pour ça qu'il est coupé par défaut.</li>
   <li><strong>Tout le village est relié, pas seulement le nid.</strong> Avec le transport activé, chaque téléphone peut joindre et être joint à travers le hub. Dans un même <code>rnsd</code>, c'est tout ou rien.</li>
-  <li><strong>La loi.</strong> Un hub qui ne relie que nos propres villages est un lien privé. Un hub qui relaie du trafic public fait de son propriétaire l'opérateur de ce relais. Voir <a href="#law">La loi en France</a>.</li>
+  <li><strong>La loi.</strong> Un hub qui ne relie que nos propres villages est un lien privé. Un hub qui relaie du trafic public fait de son propriétaire l'opérateur de ce relais. Voir <a href="#law">La loi là où l'on construit</a>.</li>
 </ul>
 <ul lang="es">
   <li><strong>El hub ve quién habla con quién, no lo que se dice.</strong> El contenido sigue cifrado de extremo a extremo. Pero quien controla el VPS (nosotros, el proveedor o alguien que lo incaute) ve qué direcciones de casas se conectan, cuándo, cuánto, y qué huellas de claves intercambian paquetes. En un pueblo de unas decenas de personas, los horarios por sí solos dicen mucho.</li>
@@ -2594,7 +2596,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li><strong>Un puerto abierto en Internet</strong> recibe escaneos e inundaciones, y quien responde es <code>rnsd</code>. Abrir solo ese puerto y SSH, solo con claves, mantener el software al día y los registros al mínimo, y suponer que el proveedor guarda sus propios registros.</li>
   <li><strong>Se puede seguir a la gente por su huella de clave.</strong> Un teléfono que anuncia siempre la misma identidad puede ser seguido en el tiempo por cualquiera que vea sus anuncios. Dentro de un hub privado, eso quiere decir nuestros propios pueblos. Con el emparejamiento público activado, quiere decir todo el mundo: por eso está apagado por defecto.</li>
   <li><strong>Todo el pueblo queda enlazado, no solo el nido.</strong> Con el transporte activado, cada teléfono puede alcanzar y ser alcanzado a través del hub. Dentro de un mismo <code>rnsd</code> es todo o nada.</li>
-  <li><strong>La ley.</strong> Un hub que solo enlaza nuestros propios pueblos es un enlace privado. Un hub que retransmite tráfico público convierte a su dueño en el operador de ese relevo. Ver <a href="#law">La ley en Francia</a>.</li>
+  <li><strong>La ley.</strong> Un hub que solo enlaza nuestros propios pueblos es un enlace privado. Un hub que retransmite tráfico público convierte a su dueño en el operador de ese relevo. Ver <a href="#law">La ley donde se construye</a>.</li>
 </ul>
 <h4><span lang="en">How we would do it</span><span lang="fr">Comment on le ferait</span><span lang="es">Cómo lo haríamos</span></h4>
 <ol lang="en">
@@ -2710,7 +2712,7 @@ netstat -tn | grep 4242           # one TCP session
   <li><strong>Antenas:</strong> una colineal de exterior (unos 5 dBi), o una Yagi apuntada al otro extremo. Poner la placa en una caja arriba, junto a la antena, con un cable corto. Bajar USB o Ethernet por el mástil, no un cable de antena largo.</li>
   <li><strong>Probar antes de montar:</strong> dos placas con batería, una persona en cada sitio, y la intensidad de señal que muestra <code>rnprobe</code> (RSSI y SNR; el otro extremo necesita <code>respond_to_probes = Yes</code>).</li>
 </ul>
-<h4><span lang="en">The law: one sub-band</span><span lang="fr">La loi : une sous-bande</span><span lang="es">La ley: una subbanda</span></h4>
+<h4><span lang="en">The law in the EU: one sub-band (elsewhere, check your band)</span><span lang="fr">La loi dans l'UE : une sous-bande (ailleurs, vérifier sa bande)</span><span lang="es">La ley en la UE: una subbanda (en otros lugares, comprobar su banda)</span></h4>
 <ul lang="en">
   <li><strong>869.4–869.65 MHz:</strong> up to 500 mW <a href="#g-erp">ERP</a>, sending at most 10 % of the time. The best sub-band for a long link. Elsewhere in 868 MHz it is 25 mW and 1 %.</li>
   <li><strong>The limit includes the antenna.</strong> ERP = power set on the board + antenna gain (dBi) − cable loss − 2.15. With a high-gain Yagi, lower the power.</li>

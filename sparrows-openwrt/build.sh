@@ -12,6 +12,8 @@
 #        ./build.sh uses         -> what each port and radio of every line will do, nothing built
 #        VER=25.12.x ./build.sh  -> another 25.12 release
 #        UI=1 ./build.sh all     -> with the web interface (LuCI), only where profiles.txt says "ui"
+#        COUNTRY=DE ./build.sh   -> the country the units stand in (two letters, ISO 3166). Asked once
+#                                   and kept in local.conf (not in git) when not given
 #        ./build.sh sd [image]   -> write a Raspberry Pi image (.img.gz) to an SD card: asks which
 #                                   reader, shows what is on it, and asks you to type its name first.
 #                                   A card with a locked /home: rewrite the system only, /home kept
@@ -58,6 +60,10 @@ UI="${UI:-0}"             # 1 = add the web interface where profiles.txt allows 
 CHECK_SIG="${CHECK_SIG:-1}"
 CHECK_RULES="${CHECK_RULES:-1}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+# The country the units stand in: the radios follow its rules (channels, power, radar checks). Given as
+# COUNTRY=XX, or kept in local.conf, which stays on this laptop (never in git: every builder has their own)
+COUNTRY="${COUNTRY:-$(sed -n "s/^COUNTRY='*\([A-Za-z][A-Za-z]\)'*$/\1/p" "$HERE/local.conf" 2>/dev/null || true)}"
+COUNTRY=$(printf '%s' "$COUNTRY" | tr '[:lower:]' '[:upper:]')
 OUT="$HERE/build/images"
 # The version of this build tree. Without git (a copy of the kit): "unversioned"
 VERSION=$(git -C "$HERE" describe --tags --always --dirty 2>/dev/null || echo unversioned)
@@ -454,8 +460,8 @@ build_one() (
 	[ -s "$F/etc/dropbear/authorized_keys" ] || die "No usable key in keys/*.pub (a line starts with ssh-ed25519, ssh-rsa, ecdsa-... or sk-...)"
 	chmod 600 "$F/etc/dropbear/authorized_keys"
 	install -d -m 755 "$F/etc/sparrows"
-	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\n" \
-		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" > "$F/etc/sparrows/station"
+	printf "ROLE='%s'\nTX2='%s'\nTX5='%s'\nPORTS='%s'\nUSE2='%s'\nUSE5='%s'\nRETICULUM='%s'\nNEST='%s'\nCOUNTRY='%s'\n" \
+		"$NAMEROLE" "$TX2" "$TX5" "$PORTS" "$USE2" "$USE5" "$RNS" "$NEST" "$COUNTRY" > "$F/etc/sparrows/station"
 	printf "SPARROWS_VERSION='%s'\nOPENWRT='%s'\nBUILT='%s'\nLINE='%s'\n" "$VERSION" "$VER" "$(date -u +%F)" \
 		"$ROLE $TARGET $PROFILE $TX2 $TX5 $UIOK${SPEC:+ $SPEC}" > "$F/etc/sparrows/version"
 	[ -z "$MACDEV" ] || printf "MACDEV='%s'\n" "$MACDEV" >> "$F/etc/sparrows/station"
@@ -707,8 +713,8 @@ add_device() {
 		SPEC=$(ask_uses)
 	fi
 
-	echo "Power to set at the radio = legal EIRP (FR) - antenna gain. 2.4 GHz: 20 dBm EIRP."
-	echo "5 GHz outdoor (ch 100-140): 30 dBm EIRP with TPC, 27 dBm without. - = band not used."
+	echo "Power to set at the radio = the legal EIRP of your country - antenna gain. In the EU, for example:"
+	echo "2.4 GHz 20 dBm EIRP; 5 GHz outdoor (ch 100-140) 30 dBm with TPC, 27 dBm without. - = band not used."
 	TX2=$(ask_tx "2.4 GHz power in dBm, or -: ")
 	TX5=$(ask_tx "5 GHz power in dBm, or -: ")
 	case "$(ask "At least 16 MB of flash and 128 MB of RAM (web interface allowed)? [y/N] ")" in
@@ -1014,6 +1020,15 @@ if printf '%s\n' "$CHOSEN" | lines_of_role nest | grep -q . ; then
 	echo "  Nests: Android needs a non-ULA prefix; the image uses 2001:db8:1::/64, the BENCH range (nest/files)."
 fi
 [ "$ARG" != uses ] || exit 0
+# The country: asked once in a terminal, then kept in local.conf
+if [ -z "$COUNTRY" ] && [ -t 0 ]; then
+	echo "  Which country will these units stand in? Its radio rules apply to them."
+	COUNTRY=$(ask "  Two letters, ISO 3166 (e.g. FR, DE, US, BR, IN): " | tr '[:lower:]' '[:upper:]')
+	[[ "$COUNTRY" =~ ^[A-Z]{2}$ ]] && printf "COUNTRY='%s'\n" "$COUNTRY" > "$HERE/local.conf" && echo "  Kept in local.conf."
+fi
+[[ "$COUNTRY" =~ ^[A-Z]{2}$ ]] || die "The country the units stand in is needed: COUNTRY=XX ./build.sh (two letters, ISO 3166), or a line COUNTRY='XX' in local.conf"
+echo "  Country: $COUNTRY. The radios use 2.4 GHz channel 1 (6 where a device fixes it) and 5 GHz 108 and 132"
+echo "  (outdoor, radar checks). Check that $COUNTRY allows them, and the power in profiles.txt, before a unit goes up."
 echo "  Version: $VERSION"
 case "$VERSION" in
 	*-dirty) echo "  Files are changed and not committed: these images can't be found in git later. Commit first to give them a version." ;;

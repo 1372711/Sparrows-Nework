@@ -17,7 +17,7 @@ case " 100 104 108 112 116 132 136 140 " in *" $PERCH_CH "*) ;; *) PERCH_CH='' ;
 
 SSID='Sparrows'                  # the open Wi-Fi, for people's devices
 FLYWAY_SSID='wifilibre-link'     # 5 GHz flyway: same as the running one, so new perches join it
-FLYWAY_CH='108'                  # outdoor FR: 100-140 (DFS), never 120-128 (weather radar)
+FLYWAY_CH='108'                  # outdoor 5 GHz: 100-140 with DFS in the EU and the US, never 120-128 (weather radar)
 MESH_ID='sparrows-hedge'         # 2.4 GHz flyway: same on every unit of the village
 MESH_CH='1'                      # fixed, same on every unit (a mesh can't use ACS): 1, 6 or 11
 FEED_CH2="${CH2:-auto}"          # 2.4 GHz feeder alone: ACS, unless the device sets one (no ACS)
@@ -76,7 +76,7 @@ for r in $RADIOS; do
 	fi
 	DONE="$DONE $B"
 	uci set wireless.$r.disabled='0'
-	uci set wireless.$r.country='FR'
+	uci set wireless.$r.country="$COUNTRY"    # the build's COUNTRY: its rules apply
 	uci set wireless.$r.log_level='4'          # warnings only: no per-client connect lines
 	uci set wireless.$r.txpower="$TX"
 
