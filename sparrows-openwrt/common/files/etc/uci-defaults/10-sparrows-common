@@ -47,6 +47,25 @@ REL="$REL, Sparrows $SPARROWS_VERSION"
 sed -e "s|@NAME@|$ROLE-$ID|" -e "s|@ROLE@|$WHAT|" -e "s|@RELEASE@|$REL|" -e "s|@HINT@|$HINT|" \
 	/etc/sparrows/banner > /etc/banner
 
+# --- LEDs: off once the unit is up (Frugal: nobody looks at them on a roof). They still light during
+# boot, failsafe and upgrades: these settings only load at the end of a normal boot. LEDs the device
+# already sets up for a job (signal strength for aiming a CPE510, a port's activity) are left alone.
+# Tested by hand 2026-11-22 on an EAP225-Outdoor v3 (green:status off after a reboot); in the image:
+# NOT YET TESTED ---
+for L in /sys/class/leds/*; do
+	[ -e "$L" ] || continue
+	N=${L##*/}
+	S=led_sparrows_$(echo "$N" | tr -c 'a-z0-9\n' '_')
+	# Already set up by the device (any led section for it that isn't ours)? Leave it
+	uci -q show system | grep -v "^system\.$S\." | grep -q "\.sysfs='$N'$" && continue
+	uci set system.$S=led
+	uci set system.$S.name="sparrows: $N off"
+	uci set system.$S.sysfs="$N"
+	uci set system.$S.trigger='none'
+	uci set system.$S.default='0'
+done
+uci commit system
+
 # --- Admin: SSH keys only (P1). Failsafe mode still works for recovery ---
 # The keys are always the image's own: sysupgrade -v brings the old file back, which would keep a key
 # taken out of keys/ (an admin who left, a lost laptop). This file runs again after every update
