@@ -22,7 +22,9 @@
 # identity stays on the system side, so the unit relays even while /home is locked.
 # The passphrase is never written on the card. The unlock key that approvers open (sparrows-door) is
 # kept inside /home, so it can be sealed again when the approvers change; outside, only sealed copies.
-# Status: tested 2026-11-22 (setup, lock, sparrows-unlock). Approvers and erase: NOT YET TESTED.
+# Status: partition and image check tested 2026-11-22 on a simulated card. Setup FAILS on a Pi Zero 2 W
+# (seen 2026-11-22: luksFormat works, then the same passphrase is refused, "digest verify failed").
+# Cause under study. Approvers and erase: NOT YET TESTED.
 
 . /etc/sparrows/station          # HOME_START_MB: where /home starts on the card (devices/*/device.conf)
 
@@ -113,7 +115,7 @@ setup() {
 	[ -b "$P3" ] || die "No partition for /home: card too small, or something else is on it (logread -e sparrows-home)."
 	[ "$(cat "/sys/class/block/${P3#/dev/}/start")" = "$START" ] || die "Partition 3 doesn't start at ${HOME_START_MB} MiB: not ours, left alone."
 	if cryptsetup isLuks "$P3" 2>/dev/null; then
-		die "/home is already set up. Open it with sparrows-unlock. To start over (destroys it): sparrows-home close; cryptsetup erase $P3"
+		die "/home is already set up. Open it with sparrows-unlock. To start over (destroys it): sparrows-home close; dd if=/dev/zero of=$P3 bs=1M count=32"
 	fi
 	read_key
 	printf '%s' "$KEY" | cryptsetup luksFormat --type luks2 --label "$LABEL" --pbkdf argon2id \
