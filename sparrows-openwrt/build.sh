@@ -718,22 +718,81 @@ ask_uses() {
 	printf 'uses=%s,%s,%s,%s' "${P:-wire}" "${U2:-off}" "${U5:-off}" "${S:--}"
 }
 
-# Find a device in the Image Builder of its target, then add it to profiles.txt
+# OpenWrt's list of every device of a release, all targets in one file (the firmware selector's):
+# fetched once per release into build/dl. Only used to find a device: the image itself comes from the
+# target's Image Builder, whose signature is checked. Prints its path, or fails without Internet
+device_list() {
+	local L="$BUILD/dl/overview-$VER.json"
+	if [ ! -s "$L" ]; then
+		mkdir -p "$BUILD/dl"
+		wget -q -O "$L.part" "https://downloads.openwrt.org/releases/$VER/.overview.json" && mv "$L.part" "$L" \
+			|| { rm -f "$L.part"; return 1; }
+	fi
+	echo "$L"
+}
+
+# The devices of that list whose name or profile holds every word given, as target<TAB>profile<TAB>name
+find_devices() {
+	python3 -I -c '
+import json, re, sys
+data = json.load(open(sys.argv[1]))
+profiles = data.get("profiles", [])
+if isinstance(profiles, dict):
+    profiles = [dict(v, id=k) for k, v in profiles.items()]
+words = sys.argv[2].lower().split()
+out = set()
+for p in profiles:
+    names = []
+    for t in p.get("titles", []):
+        names.append(t.get("title") or " ".join(x for x in (t.get("vendor"), t.get("model"), t.get("variant")) if x))
+    hay = (p.get("id", "") + " " + " ".join(names)).lower()
+    # each word at the start of a word: "4" finds 4B, not the 4 in "64bit"
+    if all(re.search(r"(?<![a-z0-9])" + re.escape(w), hay) for w in words):
+        for n in names or [p.get("id", "")]:
+            out.add((p.get("target", "?"), p.get("id", "?"), n))
+for t, i, n in sorted(out, key=lambda x: x[2].lower()):
+    print(t, i, n, sep="\t")
+' "$1" "$2"
+}
+
+# Find a device in OpenWrt's list (or, without it, in the Image Builder of a target), then add it to
+# profiles.txt
 add_device() {
-	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' SPEC='' MAP i
+	local TARGET WORD FOUND N PROFILE R RS TX2 TX5 UIOK LINE WHY NEW='' SPEC='' MAP i LIST T P D
 	echo
-	echo "The target is on the device's page of the OpenWrt Table of Hardware, e.g. ath79/generic, bcm27xx/bcm2711."
-	TARGET=$(ask "Target: ")
-	[[ "$TARGET" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "Not a target (form: name/subtarget)."; return; }
-	get_ib "$TARGET" || return 0
-	WORD=$(ask "Part of the model name, e.g. cpe510, eap225, rpi-4: ")
-	mapfile -t FOUND < <(cd "$BUILD/$(ib_name "$TARGET")" && make info 2>/dev/null \
-		| sed -n 's/^\([A-Za-z0-9_.,-]*\):$/\1/p' | grep -i -F -- "$WORD" || true)
-	[ "${#FOUND[@]}" -gt 0 ] || { echo "No model matching '$WORD' in $TARGET ($VER)."; return; }
-	for i in "${!FOUND[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${FOUND[$i]}"; done
-	N=$(ask "Which one? ")
-	[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#FOUND[@]}" ]] || { echo "Nothing added."; return; }
-	PROFILE=${FOUND[$((N - 1))]}
+	WORD=$(ask "Part of the model name, e.g. cpe510, eap225, raspberry pi 4 (several words: all must match): ")
+	[ -n "$WORD" ] || { echo "Nothing added."; return; }
+	if LIST=$(device_list); then
+		mapfile -t FOUND < <(find_devices "$LIST" "$WORD")
+		[ "${#FOUND[@]}" -gt 0 ] || { echo "No device matching '$WORD' in OpenWrt $VER."; return; }
+		if [ "${#FOUND[@]}" -gt 40 ]; then
+			echo "${#FOUND[@]} devices match '$WORD': add a word (a model, a version) to narrow it down."; return
+		fi
+		for i in "${!FOUND[@]}"; do
+			IFS=$'\t' read -r T P D <<<"${FOUND[$i]}"
+			printf '  %2d) %-42s %-16s %s\n' $((i + 1)) "$D" "$T" "$P"
+		done
+		N=$(ask "Which one? ")
+		[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#FOUND[@]}" ]] || { echo "Nothing added."; return; }
+		IFS=$'\t' read -r TARGET PROFILE D <<<"${FOUND[$((N - 1))]}"
+		get_ib "$TARGET" || return 0
+		( cd "$BUILD/$(ib_name "$TARGET")" && make info 2>/dev/null | grep -q "^$PROFILE:" ) || \
+			{ echo "$PROFILE is in OpenWrt's list but not in the $TARGET Image Builder ($VER). Nothing added."; return; }
+	else
+		# No list (no Internet, or a release without one): the old way, by target
+		echo "OpenWrt's device list could not be fetched. The target is on the device's page of the OpenWrt"
+		echo "Table of Hardware, e.g. ath79/generic, bcm27xx/bcm2711."
+		TARGET=$(ask "Target: ")
+		[[ "$TARGET" =~ ^[a-z0-9_-]+/[a-z0-9_-]+$ ]] || { echo "Not a target (form: name/subtarget)."; return; }
+		get_ib "$TARGET" || return 0
+		mapfile -t FOUND < <(cd "$BUILD/$(ib_name "$TARGET")" && make info 2>/dev/null \
+			| sed -n 's/^\([A-Za-z0-9_.,-]*\):$/\1/p' | grep -i -F -- "${WORD%% *}" || true)
+		[ "${#FOUND[@]}" -gt 0 ] || { echo "No model matching '$WORD' in $TARGET ($VER)."; return; }
+		for i in "${!FOUND[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${FOUND[$i]}"; done
+		N=$(ask "Which one? ")
+		[[ "$N" =~ ^[0-9]+$ && "$N" -ge 1 && "$N" -le "${#FOUND[@]}" ]] || { echo "Nothing added."; return; }
+		PROFILE=${FOUND[$((N - 1))]}
+	fi
 
 	echo "Roles: $ROLES. Join roles with + to have both on one unit (e.g. tree+feeder)."
 	RS=$(ask "Role(s) for this device (several with spaces), or m for manual mode: ")
