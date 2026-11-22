@@ -2,7 +2,7 @@
 # Build the Sparrows-Network OpenWrt images with the OpenWrt Image Builder.
 # One image per role and device: the same image goes on every unit of that role.
 # What each port and radio does comes from the role (uses.txt), or from a manual line (profiles.txt).
-# Runs on x86_64 Linux. Needs: wget, zstd, make, gcc, python3, perl, rsync (see OpenWrt IB docs), gpgv.
+# Runs on an x86_64 Debian or Ubuntu laptop (other distributions: not supported for now). Needs: wget, zstd, make, gcc, python3, perl, rsync (see OpenWrt IB docs), gpgv.
 #
 # Usage: ./build.sh              -> in a terminal: a menu to pick the devices (Enter = all of them)
 #                                   without a terminal (a script, cron): every line of profiles.txt
@@ -347,7 +347,7 @@ make_kit() {
 # from. gpgv is enough: python unpacks the keys, so GnuPG itself isn't needed. Prints who signed.
 check_sig() {
 	local FILE=$1 SIG=$2 KR="$BUILD/trust.gpg" GH="$BUILD/gnupg" STATUS ID
-	command -v gpgv >/dev/null || { echo "gpgv is missing (install the package gpgv, or gnupg), or CHECK_SIG=0 to skip this check" >&2; return 1; }
+	command -v gpgv >/dev/null || { echo "gpgv is missing (Debian/Ubuntu: apt install gpgv), or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	compgen -G "$HERE/trust/*.asc" >/dev/null || { echo "No OpenWrt public key in trust/*.asc, or CHECK_SIG=0 to skip this check" >&2; return 1; }
 	mkdir -p "$GH" && chmod 700 "$GH"
 	python3 -I -c '
@@ -1115,7 +1115,10 @@ MISSING=''
 for C in wget zstd tar make gcc perl rsync python3 sha256sum $( [ "$CHECK_SIG" = 0 ] || echo gpgv ); do
 	command -v "$C" >/dev/null || MISSING="$MISSING $C"
 done
-[ -z "$MISSING" ] || die "Missing on this machine:$MISSING (the Image Builder needs them; see its page on openwrt.org)"
+# build.sh is written for a Debian or Ubuntu laptop (Sparrows Tao, "Build"): the packages are Debian's
+[ -z "$MISSING" ] || die "Missing on this machine:$MISSING. On Debian or Ubuntu:
+  sudo apt install build-essential file libncurses-dev zlib1g-dev gawk git gettext libssl-dev xsltproc rsync wget unzip python3 xz-utils zstd gpgv
+(other distributions: the Image Builder's page on openwrt.org)"
 mkdir -p "$BUILD" "$OUT"
 case "$BUILD" in *[[:space:]]*) die "The build folder $BUILD has a space in its path, which the Image Builder can't handle. Set SPARROWS_BUILD=<a folder without spaces>" ;; esac
 [ "$BUILD" = "$HERE/build" ] || echo "This folder's path has a space: the Image Builder works in $BUILD (images still go to $OUT)."

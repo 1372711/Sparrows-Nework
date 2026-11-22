@@ -425,8 +425,8 @@ git log --format='%an <%ae>' | sort -u      # who the commits already made are s
 ssh-keygen -t ed25519 -C "sparrows-admin"
 
 # Before sharing a photo or a document: remove its hidden data (GPS, camera, author)
-mat2 photo.jpg                  # writes photo.cleaned.jpg   (package: mat2)
-exiftool photo.cleaned.jpg      # check what is left         (package: exiftool, or libimage-exiftool-perl)
+mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
+exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)
 ### uses-change
 # On the admin laptop, in sparrows-openwrt/: what each port and radio of every line will do
 ./build.sh uses
