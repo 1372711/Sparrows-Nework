@@ -486,7 +486,7 @@ build_one() (
 	done
 
 	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
-	WHEELS='' HANDBOOK_TO='' KIT_TO='' PKG_nest=''
+	WHEELS='' HANDBOOK_TO='' KIT_TO='' LICENSES_TO='' PKG_nest=''
 	if [ "$RNS" = 1 ]; then
 		# shellcheck source=/dev/null
 		. "$HERE/tree/role.conf"
@@ -505,6 +505,51 @@ build_one() (
 			python3 -I -m zipfile -e "$W" "$F/usr/lib/sparrows/python/"
 		done <<<"$WHEELS"
 	fi
+	# --- Licences: each piece's own text, beside it in the image, in /usr/share/sparrows/licenses ---
+	# A wheel brings its licence in its .dist-info; when it brings none (rns and lxmf today), the text
+	# comes from licenses/<name>.txt. No licence text = no image: what we hand on carries its notice
+	L="$F/usr/share/sparrows/licenses"
+	mkdir -p "$L"
+	[ -f "$HERE/../LICENSE" ] || die "No LICENSE next to sparrows-openwrt/: the project's own licence goes in every image"
+	install -m 644 "$HERE/../LICENSE" "$L/sparrows-network.txt"
+	cat > "$L/openwrt.txt" <<-EOT
+		OpenWrt $VER, target $TARGET: this image is OpenWrt's own packages, unchanged, put together
+		with OpenWrt's Image Builder. Each package keeps its licence: GPL-2.0 for Linux and most
+		tools, other free licences for some packages.
+		Their source code, for this exact release:
+		  https://github.com/openwrt/openwrt/tree/v$VER   (and the package feeds it names)
+		  https://downloads.openwrt.org/releases/$VER/
+	EOT
+	if [ -n "$FW_FILES" ]; then
+		printf '%s\n' "Wi-Fi firmware in $FW_DIR, from the Raspberry Pi firmware-nonfree repository:" \
+			"  ${FW_URL%/debian/*}" "under its maker's licence, kept in that repository. It may be used, not changed;" \
+			"images that hold it are for the village's own units, never a public kit." > "$L/firmware.txt"
+	fi
+	if [ -d "$F/usr/lib/sparrows/python" ]; then
+		for DI in "$F"/usr/lib/sparrows/python/*.dist-info; do
+			N=${DI##*/}; N=${N%.dist-info}      # e.g. rns-1.6.1
+			D=${N%-*}                           # e.g. rns
+			mapfile -t LF < <(find "$DI" -type f \( -iname 'LICEN[CS]E*' -o -iname 'COPYING*' \) | sort)
+			if [ "${#LF[@]}" -gt 0 ]; then
+				cat "${LF[@]}" > "$L/$N.txt"
+			elif [ -f "$HERE/licenses/$D.txt" ]; then
+				install -m 644 "$HERE/licenses/$D.txt" "$L/$N.txt"
+			else
+				die "$ROLE $PROFILE: $N brings no licence text. Put it in licenses/$D.txt first"
+			fi
+		done
+	fi
+	{
+		echo "The licences of the software in this unit, one file per piece. Each keeps its own licence."
+		echo "Respect them: see the Sparrows Tao, \"Licences and thanks\"."
+		echo
+		echo "Reticulum (rns) and LXMF are under the Reticulum License. Never use them in a system"
+		echo "built to harm people, never to make or train AI or machine-learning models, and keep"
+		echo "their notice with every copy."
+		echo
+		( cd "$L" && ls -1 | grep -v -x index.txt )
+	} > "$L/index.txt"
+	for H in $LICENSES_TO; do mkdir -p "$F/$H" && cp -a "$L/." "$F/$H/"; done
 	# The built handbook: offered by the page node, and the welcome page of a nest
 	if [ -n "$HANDBOOK_TO" ]; then
 		if [ -f "$HERE/../tao/index.html" ]; then

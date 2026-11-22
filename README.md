@@ -25,6 +25,10 @@ Without Internet: open [`tao/index.html`](tao/index.html) from a copy of this re
 - `tao/`: the handbook (`index.html`), built by `build.py` from `tao.src.html` and `snippets.txt`.
 - `sparrows-openwrt/`: the scripts that build the station images (`build.sh`, `profiles.txt`, `uses.txt`, first-boot files per role).
 
+## Licence
+
+The project's own files (the handbook and the build scripts) are under the BSD 2-Clause licence ([`LICENSE`](LICENSE)). The software they install keeps its own licence: OpenWrt, Reticulum, LXMF, Nomad Network and the others. Reticulum and LXMF must never be used in a system built to harm people, nor to make or train AI models. Every image carries these licences; see the handbook, "Licences and thanks".
+
 ---
 
 *Français :* un réseau communautaire sans Internet. Le manuel : [Sparrows Tao](https://1372711.github.io/Sparrows-Nework/tao/).

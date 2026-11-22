@@ -57,6 +57,15 @@ curl -m 5 'http://[<station address>]/'
 
 # Undo: flash the same role without -ui (sysupgrade -n), or on the station:
 /etc/init.d/uhttpd disable && /etc/init.d/uhttpd stop
+### licenses-check
+# On any unit: the licence of each piece of software it runs, one file each
+cat /usr/share/sparrows/licenses/index.txt
+ls /usr/share/sparrows/licenses/        # sparrows-network.txt, openwrt.txt, rns-<version>.txt, lxmf-...
+# From a laptop or phone on the village: the same list, served by a nest
+curl http://sparrows.lan/licenses/index.txt
+
+# On the admin laptop, before adding a Python wheel to tree/role.conf: does it bring its licence?
+python3 -I -m zipfile -l <wheel>.whl | grep -i -e licen -e copying   # nothing = add licenses/<name>.txt
 ### sd-write
 # On the admin laptop, after building a Raspberry Pi image (or s in the menu)
 ./build.sh sd                          # the factory .img.gz in build/images/latest (asks which, if several)
