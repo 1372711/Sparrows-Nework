@@ -298,6 +298,9 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
 <p lang="en">Every design choice should move at least one of these forward without breaking the others. A proposal says which principle it serves and what it costs: RAM, flash, complexity for amateurs, or legal risk.</p>
 <p lang="fr">Chaque choix de conception doit faire avancer au moins l'un d'eux sans casser les autres. Une proposition dit quel principe elle sert et ce qu'elle coûte : RAM, flash, complexité pour des amateurs, ou risque légal.</p>
 <p lang="es">Cada decisión de diseño debe hacer avanzar al menos uno de ellos sin romper los demás. Una propuesta dice a qué principio sirve y qué cuesta: RAM, flash, complejidad para aficionados o riesgo legal.</p>
+<p lang="en">Decided on 2026-11-23: <strong>prefer what runs everywhere.</strong> Between two tools, pick the one that works on Linux, Windows, macOS, Android and iOS, and on any OpenWrt device; between two formats, the standard one that many apps read (Reticulum's config, LXMF, plain files). Then nobody loses time adapting the network to each machine. Where something runs on one platform only, say so and say why. Today's exception: the build laptop is Debian or Ubuntu.</p>
+<p lang="fr">Décidé le 2026-11-23 : <strong>préférer ce qui marche partout.</strong> Entre deux outils, prendre celui qui marche sous Linux, Windows, macOS, Android et iOS, et sur n'importe quel appareil OpenWrt ; entre deux formats, le format standard que beaucoup d'applis lisent (la config de Reticulum, LXMF, des fichiers simples). Ainsi personne ne perd de temps à adapter le réseau à chaque machine. Quand quelque chose ne marche que sur une plateforme, le dire et dire pourquoi. Exception actuelle : le portable de construction est sous Debian ou Ubuntu.</p>
+<p lang="es">Decidido el 2026-11-23: <strong>preferir lo que funciona en todas partes.</strong> Entre dos herramientas, elegir la que funciona en Linux, Windows, macOS, Android e iOS, y en cualquier aparato OpenWrt; entre dos formatos, el estándar que leen muchas apps (la configuración de Reticulum, LXMF, archivos simples). Así nadie pierde tiempo adaptando la red a cada máquina. Cuando algo solo funciona en una plataforma, decirlo y decir por qué. Excepción actual: el portátil de construcción es Debian o Ubuntu.</p>
 
 <div class="cards">
   <div class="card">
@@ -2073,6 +2076,36 @@ sparrows-home check-image /tmp/fw.bin   # OK, or REFUSED if it would reach /home
   <li><strong>Sin el nido:</strong> el chat en directo dentro del pueblo debería seguir funcionando. La entrega a los ausentes y los enlaces más allá del pueblo se paran. <span class="st nt" data-ui="nt">not yet tested</span></li>
 </ul>
 
+<h4><span lang="en">An app that asks for a config file</span><span lang="fr">Une appli qui demande un fichier de config</span><span lang="es">Una app que pide un archivo de configuración</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Added on 2026-11-23. MeshChatX, Reticulum-Go and other apps read the same config format as Reticulum. On the village, keep one interface: AutoInterface in the default group. Remove or disable every TCP and Backbone interface: they point to servers on the Internet, which the village doesn't have, and on a device that does have Internet they would carry your traffic outside the village. Leave transport off: a phone or a laptop that comes and goes is not a relay (a tree is). Then restart the app; within a minute it should list the village's trees and nest as peers.</p>
+<p lang="fr">Ajouté le 2026-11-23. MeshChatX, Reticulum-Go et d'autres applis lisent le même format de config que Reticulum. Au village, garder une seule interface : AutoInterface dans le groupe par défaut. Supprimer ou désactiver toutes les interfaces TCP et Backbone : elles visent des serveurs sur Internet, que le village n'a pas, et sur un appareil qui a Internet elles feraient sortir votre trafic du village. Laisser le transport éteint : un téléphone ou un portable qui va et vient n'est pas un relais (un arbre, si). Puis redémarrer l'appli ; en une minute elle doit montrer les arbres et le nid du village comme pairs.</p>
+<p lang="es">Añadido el 2026-11-23. MeshChatX, Reticulum-Go y otras apps leen el mismo formato de configuración que Reticulum. En el pueblo, dejar una sola interfaz: AutoInterface en el grupo por defecto. Quitar o desactivar todas las interfaces TCP y Backbone: apuntan a servidores en Internet, que el pueblo no tiene, y en un aparato que sí tenga Internet sacarían su tráfico fuera del pueblo. Dejar el transporte apagado: un teléfono o un portátil que va y viene no es un relevo (un árbol sí). Después reiniciar la app; en un minuto debe mostrar los árboles y el nido del pueblo como pares.</p>
+<div class="code"><div class="hd"><span class="file">the app&#x27;s config file, on a phone or a laptop</span></div><pre><code># Any Reticulum app on the village (MeshChatX, Reticulum-Go, rnsd on a laptop...). Not yet tested.
+# Keep your app's own [reticulum] and [logging] lines; change only these:
+[reticulum]
+  enable_transport = no           # a device that comes and goes is not a relay
+  # share_instance: leave as the app ships it
+
+[interfaces]
+  # The village: IPv6 link-local multicast on whatever network the device is on. No address,
+  # no DNS needed. Default group, ports and scope: the same as every Sparrows unit
+  [[Sparrows]]
+    type = AutoInterface
+    enabled = yes
+    group_id = reticulum          # the default group: the same as leaving this line out
+    discovery_scope = link
+    discovery_port = 29716
+    data_port = 42671
+
+  # Every TCPClientInterface, BackboneInterface or TCPServerInterface: delete it, or
+  #   enabled = no
+  # They reach servers on the Internet. The village has none, and on a device that has Internet
+  # they would carry your traffic out of the village.
+
+# Check: restart the app; within a minute the village's trees and nest show up as peers.
+# On a laptop with rnsd:  rnstatus   -&gt; AutoInterface[Sparrows] Up, Peers: 1 or more
+# Undo: put back the app's own config file (keep a copy before you change it).</code></pre></div>
+
 <h4><span lang="en">1. Install, while the Pi has Internet through the home Wi-Fi</span><span lang="fr">1. Installer, tant que le Pi a Internet par le Wi-Fi de la maison</span><span lang="es">1. Instalar, mientras la Pi tiene Internet por el Wi-Fi de casa</span></h4>
 
 <p lang="en">On Android: install Sideband, connect through local Wi-Fi (AutoInterface), restart the app, then pick the nest as propagation node. The test that matters: two phones swap addresses, phone B is switched off, A sends a message, B comes back on the village. The message must arrive through the nest.</p>
@@ -2260,7 +2293,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li>Node clocks are not synchronised. Ignore timestamps when comparing logs between nodes.</li>
   <li>EAP225-Outdoor: the OpenWrt wiki says recent TP-Link stock firmware can block installing OpenWrt, and v4 is not supported. Check the revision and the stock firmware first.</li>
   <li>A single radio that can do both bands, like the Raspberry Pi 4's, is set to 5 GHz by OpenWrt (seen 2026-11-21: the Pi 4 nest + feeder, 2.4 GHz only, came up with no Wi-Fi at all). Since then the first-boot file gives such a radio the band that has a use. On a unit already flashed, write the rebuilt image again (<code>sysupgrade -n</code>, or the SD card).</li>
-  <li>Reticulum peers find each other only inside one group. The village uses Reticulum's default group, as Sideband does out of the box: no <code>group_id</code> line in any config. A laptop left with <code>group_id = sparrows</code> and the nest saw 0 peers, though their packets crossed the Wi-Fi (seen 2026-11-21). Check: <code>grep group_id ~/.reticulum/config</code> prints nothing.</li>
+  <li>Reticulum peers find each other only inside one group. The village uses Reticulum's default group, as Sideband does out of the box: no <code>group_id</code> line in any config. A laptop left with <code>group_id = sparrows</code> and the nest saw 0 peers, though their packets crossed the Wi-Fi (seen 2026-11-21). Check: <code>grep group_id ~/.reticulum/config</code> prints nothing, or <code>group_id = reticulum</code>, which is the default group written out.</li>
 </ul>
 <ul lang="fr">
   <li>Le mesh 802.11s ne marche pas sur les canaux DFS. Les deux nœuds passent le test radar, puis ne s'appairent jamais. Utiliser AP + client en 5 GHz. En 2,4 GHz, 802.11s marche : c'est ce qu'utilisent les haies.</li>
@@ -2272,7 +2305,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li>Les horloges des nœuds ne sont pas synchronisées. Ignorer les horodatages quand on compare des journaux entre nœuds.</li>
   <li>EAP225-Outdoor : le wiki OpenWrt indique qu'un firmware TP-Link récent peut bloquer l'installation d'OpenWrt, et la v4 n'est pas prise en charge. Vérifier d'abord la révision et le firmware d'origine.</li>
   <li>Une seule radio qui sait faire les deux bandes, comme celle du Raspberry Pi 4, est mise en 5 GHz par OpenWrt (vu le 2026-11-21 : le nid + mangeoire Pi 4, en 2,4 GHz seulement, a démarré sans aucun Wi-Fi). Depuis, le fichier de premier démarrage donne à une telle radio la bande qui a un usage. Sur un boîtier déjà flashé, réécrire l'image reconstruite (<code>sysupgrade -n</code>, ou la carte SD).</li>
-  <li>Les pairs Reticulum ne se trouvent qu'à l'intérieur d'un même groupe. Le village utilise le groupe par défaut de Reticulum, comme Sideband d'origine : aucune ligne <code>group_id</code> dans aucune config. Un portable resté avec <code>group_id = sparrows</code> et le nid voyaient 0 pair, alors que leurs paquets traversaient le Wi-Fi (vu le 2026-11-21). Vérifier : <code>grep group_id ~/.reticulum/config</code> n'affiche rien.</li>
+  <li>Les pairs Reticulum ne se trouvent qu'à l'intérieur d'un même groupe. Le village utilise le groupe par défaut de Reticulum, comme Sideband d'origine : aucune ligne <code>group_id</code> dans aucune config. Un portable resté avec <code>group_id = sparrows</code> et le nid voyaient 0 pair, alors que leurs paquets traversaient le Wi-Fi (vu le 2026-11-21). Vérifier : <code>grep group_id ~/.reticulum/config</code> n'affiche rien, ou <code>group_id = reticulum</code>, qui est le groupe par défaut écrit en clair.</li>
 </ul>
 <ul lang="es">
   <li>La malla 802.11s no funciona en canales DFS. Los dos nodos pasan la comprobación de radar y después no se emparejan nunca. Usar AP + cliente en 5 GHz. En 2,4 GHz, 802.11s va bien: es lo que usan los setos.</li>
@@ -2284,7 +2317,7 @@ firstboot &amp;&amp; reboot</code></pre></div>
   <li>Los relojes de las estaciones no están sincronizados. No hacer caso de las horas al comparar registros entre estaciones.</li>
   <li>EAP225-Outdoor: el wiki de OpenWrt dice que el firmware original reciente de TP-Link puede bloquear la instalación de OpenWrt, y la v4 no está soportada. Comprobar primero la revisión y el firmware original.</li>
   <li>Una sola radio que sabe hacer las dos bandas, como la de la Raspberry Pi 4, queda en 5 GHz por OpenWrt (visto el 2026-11-21: el nido + comedero Pi 4, solo en 2,4 GHz, arrancó sin ningún Wi-Fi). Desde entonces el archivo de primer arranque da a esa radio la banda que tiene un uso. En una unidad ya flasheada, volver a escribir la imagen reconstruida (<code>sysupgrade -n</code>, o la tarjeta SD).</li>
-  <li>Los pares Reticulum solo se encuentran dentro de un mismo grupo. El pueblo usa el grupo por defecto de Reticulum, como Sideband de fábrica: ninguna línea <code>group_id</code> en ninguna configuración. Un portátil que se quedó con <code>group_id = sparrows</code> y el nido veían 0 pares, aunque sus paquetes cruzaban el Wi-Fi (visto el 2026-11-21). Comprobar: <code>grep group_id ~/.reticulum/config</code> no muestra nada.</li>
+  <li>Los pares Reticulum solo se encuentran dentro de un mismo grupo. El pueblo usa el grupo por defecto de Reticulum, como Sideband de fábrica: ninguna línea <code>group_id</code> en ninguna configuración. Un portátil que se quedó con <code>group_id = sparrows</code> y el nido veían 0 pares, aunque sus paquetes cruzaban el Wi-Fi (visto el 2026-11-21). Comprobar: <code>grep group_id ~/.reticulum/config</code> no muestra nada, o <code>group_id = reticulum</code>, que es el grupo por defecto escrito.</li>
 </ul>
 <h4><span lang="en">Admin access</span><span lang="fr">Accès d'admin</span><span lang="es">Acceso de administración</span></h4>
 <ul lang="en">

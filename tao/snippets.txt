@@ -544,3 +544,29 @@ sparrows-home close
 sparrows-home close
 dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=16   # wipes the lock and its label: /home is gone for good
 reboot                                   # lxmd and nomadnet start fresh in /etc
+### rns-app
+# Any Reticulum app on the village (MeshChatX, Reticulum-Go, rnsd on a laptop...). Not yet tested.
+# Keep your app's own [reticulum] and [logging] lines; change only these:
+[reticulum]
+  enable_transport = no           # a device that comes and goes is not a relay
+  # share_instance: leave as the app ships it
+
+[interfaces]
+  # The village: IPv6 link-local multicast on whatever network the device is on. No address,
+  # no DNS needed. Default group, ports and scope: the same as every Sparrows unit
+  [[Sparrows]]
+    type = AutoInterface
+    enabled = yes
+    group_id = reticulum          # the default group: the same as leaving this line out
+    discovery_scope = link
+    discovery_port = 29716
+    data_port = 42671
+
+  # Every TCPClientInterface, BackboneInterface or TCPServerInterface: delete it, or
+  #   enabled = no
+  # They reach servers on the Internet. The village has none, and on a device that has Internet
+  # they would carry your traffic out of the village.
+
+# Check: restart the app; within a minute the village's trees and nest show up as peers.
+# On a laptop with rnsd:  rnstatus   -> AutoInterface[Sparrows] Up, Peers: 1 or more
+# Undo: put back the app's own config file (keep a copy before you change it).
