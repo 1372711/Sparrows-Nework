@@ -623,3 +623,21 @@ mv "$D/storage/identity" /tmp/old-identity      # /tmp is RAM: gone at the next 
 
 # Undo: rm -r $D/own, then restart (back to the Sparrows page and name).
 # The old address: put /tmp/old-identity back in $D/storage/identity before a reboot, then restart.
+### card-check
+# On a Pi, before ./build.sh home: it writes over the /home partition, so ONLY while /home is empty.
+# Tested 2026-11-22 on a Pi Zero 2 W (it found a card that gave back wrong data).
+dd if=/dev/urandom of=/tmp/r bs=1M count=4 2>/dev/null
+for PASS in 1 2; do
+  for MB in 0 1 4 8 16 32 64 128 256 512 1024 1536; do
+    dd if=/tmp/r of=/dev/mmcblk0p3 bs=1M seek=$MB conv=fsync 2>/dev/null
+    sync; echo 3 > /proc/sys/vm/drop_caches        # the read below comes from the card, not memory
+    dd if=/dev/mmcblk0p3 bs=1M skip=$MB count=4 2>/dev/null | cmp -s - /tmp/r && R=ok || R=BAD
+    printf '%s:%s ' "+${MB}M" "$R"
+  done; echo
+done
+rm -f /tmp/r
+dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=32   # leave it empty again for ./build.sh home
+
+# All ok: go on with ./build.sh home. Any BAD: another card (or a better power supply), then again.
+# On the admin laptop, f3 tells a card's real size. It ERASES the card:
+#   sudo apt install f3 && sudo f3probe --destructive --time-ops /dev/sdX

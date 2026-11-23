@@ -22,9 +22,9 @@
 # identity stays on the system side, so the unit relays even while /home is locked.
 # The passphrase is never written on the card. The unlock key that approvers open (sparrows-door) is
 # kept inside /home, so it can be sealed again when the approvers change; outside, only sealed copies.
-# Status: partition and image check tested 2026-11-22 on a simulated card. Setup FAILS on a Pi Zero 2 W
-# (seen 2026-11-22: luksFormat works, then the same passphrase is refused, "digest verify failed").
-# Cause under study. Approvers and erase: NOT YET TESTED.
+# Status: tested 2026-11-22 on the Pi 4 nest (setup, lock, sparrows-unlock). On a Pi Zero 2 W the same
+# day, setup failed ("No key available", then a mount error): its SD card gave back other data than
+# was written, with no error (a read-back test, Sparrows Tao, Pitfalls). Approvers and erase: NOT YET TESTED.
 
 . /etc/sparrows/station          # HOME_START_MB: where /home starts on the card (devices/*/device.conf)
 
