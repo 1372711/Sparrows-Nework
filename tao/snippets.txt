@@ -196,13 +196,10 @@ cd sparrows-openwrt/tree/files/usr/share/sparrows/nomadnet/pages
 nano index.mu fr.mu es.mu         # keep the three saying the same thing
 cd - && ./build.sh tree           # rebuild (rebuild the Tao first: the image ships tao/index.html too)
 
-# Try it on one tree first: the pages are in the read-only image, so copy them to the overlay
-mkdir -p /etc/sparrows-pages && cp /usr/share/sparrows/nomadnet/pages/* /etc/sparrows-pages/
-vi /etc/sparrows-pages/index.mu
-sed -i 's|^  pages_path = .*|  pages_path = /etc/sparrows-pages|' /etc/nomadnetwork/config
-/etc/init.d/nomadnet restart
-
-# Undo the try: put pages_path back to /usr/share/sparrows/nomadnet/pages, restart, rm -r /etc/sparrows-pages
+# Try a change on one tree first: put your version in the owner's folder (see own-node), restart
+mkdir -p /etc/sparrows/nomadnet/pages && cp /usr/share/sparrows/nomadnet/pages/index.mu /etc/sparrows/nomadnet/pages/
+vi /etc/sparrows/nomadnet/pages/index.mu && /etc/init.d/nomadnet restart
+# Undo the try: rm /etc/sparrows/nomadnet/pages/index.mu && /etc/init.d/nomadnet restart
 ### tree-verify
 # Find it from a laptop on the village Wi-Fi or cable. Name and address come from the radio's MAC.
 ping -6 -c2 ff02::1%<if>; ip -6 neigh show dev <if>
@@ -595,3 +592,27 @@ sed -i '12d' "$F"                            # remove line 12 (the number grep p
 # Verify from a laptop: in Nomad Network or MeshChat, open "Sparrows-Network (tree-xxxx)", write in
 # "Leave a trace", press "Leave it here": the page says thank you and shows the trace on top.
 # Undo: nothing to undo; the page is in the image (pages/guestbook.mu), the book is plain text.
+### own-node
+# On a tree you look after. Not yet tested. Everything here lives in /etc/sparrows/nomadnet/,
+# which updates keep. The page node reads it at each start: /etc/init.d/nomadnet restart after a change.
+
+# Your own pages, next to the Sparrows page (Micron, .mu). Same file name as a Sparrows page = yours wins
+mkdir -p /etc/sparrows/nomadnet/pages
+vi /etc/sparrows/nomadnet/pages/forum.mu       # reached as /page/forum.mu; link it from your pages
+chmod 755 /etc/sparrows/nomadnet/pages/forum.mu # only for a page that is a program (like guestbook.mu)
+
+# Your own name in the announces (one line, 64 characters at most), instead of "Sparrows-Network (tree-xxxx)"
+echo 'The garden relay' > /etc/sparrows/nomadnet/name
+
+/etc/init.d/nomadnet restart
+grep -E 'node_name|pages_path' /etc/nomadnetwork/config /home/nomadnetwork/config 2>/dev/null
+
+# A new address: the address is the hash of the node's identity, so a new identity = a new address.
+# The old address is gone for good: whoever saved it must find the new one in the announces
+/etc/init.d/nomadnet stop
+D=/etc/nomadnetwork; mount | grep -q ' /home ' && D=/home/nomadnetwork
+mv "$D/storage/identity" /tmp/old-identity      # /tmp is RAM: gone at the next reboot
+/etc/init.d/nomadnet start                      # makes a new identity, announces the new address
+
+# Undo: rm -r /etc/sparrows/nomadnet, then restart (back to the Sparrows page and name).
+# The old address: put /tmp/old-identity back in $D/storage/identity before a reboot, then restart.

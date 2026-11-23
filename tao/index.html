@@ -1836,13 +1836,10 @@ cd sparrows-openwrt/tree/files/usr/share/sparrows/nomadnet/pages
 nano index.mu fr.mu es.mu         # keep the three saying the same thing
 cd - &amp;&amp; ./build.sh tree           # rebuild (rebuild the Tao first: the image ships tao/index.html too)
 
-# Try it on one tree first: the pages are in the read-only image, so copy them to the overlay
-mkdir -p /etc/sparrows-pages &amp;&amp; cp /usr/share/sparrows/nomadnet/pages/* /etc/sparrows-pages/
-vi /etc/sparrows-pages/index.mu
-sed -i 's|^  pages_path = .*|  pages_path = /etc/sparrows-pages|' /etc/nomadnetwork/config
-/etc/init.d/nomadnet restart
-
-# Undo the try: put pages_path back to /usr/share/sparrows/nomadnet/pages, restart, rm -r /etc/sparrows-pages</code></pre></div>
+# Try a change on one tree first: put your version in the owner's folder (see own-node), restart
+mkdir -p /etc/sparrows/nomadnet/pages &amp;&amp; cp /usr/share/sparrows/nomadnet/pages/index.mu /etc/sparrows/nomadnet/pages/
+vi /etc/sparrows/nomadnet/pages/index.mu &amp;&amp; /etc/init.d/nomadnet restart
+# Undo the try: rm /etc/sparrows/nomadnet/pages/index.mu &amp;&amp; /etc/init.d/nomadnet restart</code></pre></div>
 <div class="code"><div class="hd"><span class="file">laptop on the village, then the tree</span></div><pre><code># Find it from a laptop on the village Wi-Fi or cable. Name and address come from the radio's MAC.
 ping -6 -c2 ff02::1%&lt;if&gt;; ip -6 neigh show dev &lt;if&gt;
 ssh root@&lt;its fe80:: or fd7e:4c1a:9b20:1:... address&gt;
@@ -1863,6 +1860,36 @@ rnstatus
 
 # Undo the page only: /etc/init.d/nomadnet disable &amp;&amp; /etc/init.d/nomadnet stop
 # Undo all: write the card with another image</code></pre></div>
+<h4 id="own-node"><span lang="en">Your own pages, name and address</span><span lang="fr">Vos propres pages, nom et adresse</span><span lang="es">Sus propias páginas, nombre y dirección</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
+<p lang="en">Added on 2026-11-23. Each tree is its own page node: its own identity, so its own address, and its own copy of the Sparrows page, with its own book of traces. It is a copy, not a mirror: nothing is synchronised between trees, and if one tree goes, the others keep serving. In the announces you see one entry per tree; the name in brackets tells them apart. That is what "no centre" looks like.</p>
+<p lang="fr">Ajouté le 2026-11-23. Chaque arbre est son propre nœud de pages : sa propre identité, donc sa propre adresse, et sa propre copie de la page Sparrows, avec son propre livre de traces. C'est une copie, pas un miroir : rien n'est synchronisé entre les arbres, et si un arbre s'en va, les autres continuent de servir. Dans les annonces, on voit une entrée par arbre ; le nom entre parenthèses les distingue. C'est à ça que ressemble « pas de centre ».</p>
+<p lang="es">Añadido el 2026-11-23. Cada árbol es su propio nodo de páginas: su propia identidad, así que su propia dirección, y su propia copia de la página Sparrows, con su propio libro de huellas. Es una copia, no un espejo: nada se sincroniza entre árboles, y si un árbol se va, los demás siguen sirviendo. En los anuncios se ve una entrada por árbol; el nombre entre paréntesis las distingue. Así es «sin centro».</p>
+<p lang="en">Whoever looks after a tree can make it their own, without rebuilding the image: extra pages (a forum, a notice board, your own projects) and another name, in <code>/etc/sparrows/nomadnet/</code>. The tree serves the Sparrows page with your pages next to it; a page of yours with the same file name replaces the Sparrows one. Updates keep that folder. A new address means a new identity: the old address stops working for good. What you put there is yours, not part of the project.</p>
+<p lang="fr">La personne qui s'occupe d'un arbre peut se l'approprier, sans reconstruire l'image : des pages en plus (un forum, un tableau d'annonces, ses propres projets) et un autre nom, dans <code>/etc/sparrows/nomadnet/</code>. L'arbre sert la page Sparrows avec vos pages à côté ; une page à vous qui porte le même nom de fichier remplace celle de Sparrows. Les mises à jour gardent ce dossier. Une nouvelle adresse veut dire une nouvelle identité : l'ancienne adresse cesse de marcher pour de bon. Ce que vous y mettez est à vous, pas au projet.</p>
+<p lang="es">Quien cuida un árbol puede hacerlo suyo, sin reconstruir la imagen: páginas extra (un foro, un tablón de anuncios, sus propios proyectos) y otro nombre, en <code>/etc/sparrows/nomadnet/</code>. El árbol sirve la página Sparrows con sus páginas al lado; una página suya con el mismo nombre de archivo sustituye a la de Sparrows. Las actualizaciones conservan esa carpeta. Una dirección nueva significa una identidad nueva: la dirección antigua deja de funcionar para siempre. Lo que pone ahí es suyo, no del proyecto.</p>
+<div class="code"><div class="hd"><span class="file">a tree</span></div><pre><code># On a tree you look after. Not yet tested. Everything here lives in /etc/sparrows/nomadnet/,
+# which updates keep. The page node reads it at each start: /etc/init.d/nomadnet restart after a change.
+
+# Your own pages, next to the Sparrows page (Micron, .mu). Same file name as a Sparrows page = yours wins
+mkdir -p /etc/sparrows/nomadnet/pages
+vi /etc/sparrows/nomadnet/pages/forum.mu       # reached as /page/forum.mu; link it from your pages
+chmod 755 /etc/sparrows/nomadnet/pages/forum.mu # only for a page that is a program (like guestbook.mu)
+
+# Your own name in the announces (one line, 64 characters at most), instead of "Sparrows-Network (tree-xxxx)"
+echo 'The garden relay' &gt; /etc/sparrows/nomadnet/name
+
+/etc/init.d/nomadnet restart
+grep -E 'node_name|pages_path' /etc/nomadnetwork/config /home/nomadnetwork/config 2&gt;/dev/null
+
+# A new address: the address is the hash of the node's identity, so a new identity = a new address.
+# The old address is gone for good: whoever saved it must find the new one in the announces
+/etc/init.d/nomadnet stop
+D=/etc/nomadnetwork; mount | grep -q ' /home ' &amp;&amp; D=/home/nomadnetwork
+mv "$D/storage/identity" /tmp/old-identity      # /tmp is RAM: gone at the next reboot
+/etc/init.d/nomadnet start                      # makes a new identity, announces the new address
+
+# Undo: rm -r /etc/sparrows/nomadnet, then restart (back to the Sparrows page and name).
+# The old address: put /tmp/old-identity back in $D/storage/identity before a reboot, then restart.</code></pre></div>
 <h4 id="nest-image"><span lang="en">Nest image: a Raspberry Pi 4 as nest + feeder</span><span lang="fr">Image de nid : un Raspberry Pi 4 en nid + mangeoire</span><span lang="es">Imagen de nido: una Raspberry Pi 4 como nido + comedero</span> <span class="st nt" data-ui="nt">not yet tested</span></h4>
 <p lang="en">Decided on 2026-11-21: nests run OpenWrt too, so every unit of the village runs one system, is built by one <code>build.sh</code> and updated one way. The nest is a role like the others, so one Pi 4 can be <code>nest+feeder</code>: its cable on the site's switch, its own Wi-Fi as <code>Sparrows</code> Wi-Fi. It has no home side: admin from a laptop on the village with the SSH key, software as images built on the admin laptop.</p>
 <p lang="fr">Décidé le 2026-11-21 : les nids passent eux aussi sous OpenWrt, donc chaque boîtier du village fait tourner un seul système, construit par un seul <code>build.sh</code> et mis à jour d'une seule façon. Le nid est un rôle comme les autres, donc un Pi 4 peut être <code>nest+feeder</code> : son câble sur le switch du site, son propre Wi-Fi en Wi-Fi <code>Sparrows</code>. Il n'a pas de côté maison : l'admin se fait depuis un portable sur le village avec la clé SSH, les logiciels arrivent en images construites sur le portable d'admin.</p>
