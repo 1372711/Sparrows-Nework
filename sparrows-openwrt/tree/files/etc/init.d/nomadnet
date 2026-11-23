@@ -2,7 +2,7 @@
 # Sparrows-Network tree: Nomad Network page node (the Sparrows page), as user rns.
 # It uses the rnsd started just before it (shared instance).
 # Its config comes from the image (/etc/nomadnetwork/config); its name and extra pages from the owner
-# (/etc/sparrows/nomadnet/name and pages/, kept on update). Its identity: /etc/nomadnetwork/storage,
+# (own/name and own/pages/, next to its identity). Its identity: /etc/nomadnetwork/storage,
 # or /home/nomadnetwork on a Pi whose locked /home is set up. While /home is locked it waits:
 # sparrows-unlock opens /home and starts it.
 
@@ -18,12 +18,13 @@ start_service() {
 	if [ "$D" != /etc/nomadnetwork ]; then
 		cp /etc/nomadnetwork/config "$D/config"     # the image's config, each start
 	fi
-	# The pages it serves: the image's (the Sparrows page), then the owner's on top, from
-	# /etc/sparrows/nomadnet/pages (kept on update). A file with the same name: the owner's wins
-	local OWN=/etc/sparrows/nomadnet LIVE="$D/pages" NAME
+	# The pages it serves: the image's (the Sparrows page), then the owner's on top, from own/pages
+	# next to the identity: inside the locked /home on a Pi that has one (encrypted, kept when the
+	# card's system is rewritten), else /etc/nomadnetwork/own (kept on update). Same name: the owner's wins
+	local OWN="$D/own" LIVE="$D/pages" NAME
 	rm -rf "$LIVE" && mkdir -p "$LIVE" && cp -a /usr/share/sparrows/nomadnet/pages/. "$LIVE/"
 	[ ! -d "$OWN/pages" ] || cp -a "$OWN/pages/." "$LIVE/"
-	# Its name in the announces: /etc/sparrows/nomadnet/name (one line), else the Sparrows one
+	# Its name in the announces: own/name (one line), else the Sparrows one
 	NAME="Sparrows-Network ($(uci -q get system.@system[0].hostname))"
 	[ ! -s "$OWN/name" ] || NAME=$(head -n 1 "$OWN/name" | tr -d '\r|&\\' | cut -c1-64)
 	sed -i -e "s|^  node_name = .*|  node_name = $NAME|" -e "s|^  pages_path = .*|  pages_path = $LIVE|" "$D/config"

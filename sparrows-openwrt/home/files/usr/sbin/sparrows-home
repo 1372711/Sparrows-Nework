@@ -106,9 +106,11 @@ move() {
 		cp -a /etc/nomadnetwork/storage /home/nomadnetwork/storage && rm -rf /etc/nomadnetwork/storage &&
 			log "page node identity moved to /home/nomadnetwork"
 	fi
-	if [ -f /etc/nomadnetwork/guestbook.txt ] && [ ! -e /home/nomadnetwork/guestbook.txt ]; then
-		cp -a /etc/nomadnetwork/guestbook.txt /home/nomadnetwork/ && rm -f /etc/nomadnetwork/guestbook.txt
-	fi
+	for N in guestbook.txt own; do      # the book of traces, the owner's own pages and name
+		if [ -e "/etc/nomadnetwork/$N" ] && [ ! -e "/home/nomadnetwork/$N" ]; then
+			cp -a "/etc/nomadnetwork/$N" /home/nomadnetwork/ && rm -rf "/etc/nomadnetwork/$N"
+		fi
+	done
 	for N in $KEPT; do mkdir -p "/home/$N"; chown -R rns:rns "/home/$N"; done
 }
 
