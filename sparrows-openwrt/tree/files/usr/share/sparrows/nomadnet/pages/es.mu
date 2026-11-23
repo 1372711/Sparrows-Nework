@@ -20,11 +20,11 @@ Has llegado a esta página a través de ella: la sirve una cajita cercana, un á
 
 >>Dejar una huella
 
-Ha pasado por aquí: dígalo. Un saludo, de dónde viene, qué le gustaría en esta red.
-`!Es anónimo.`! No se pide nombre, no hay cuenta. Este árbol solo guarda sus palabras: ni quién las escribió, ni cuándo, ni desde dónde. Su app no le dice a la página quién es usted, salvo si elige identificarse.
+Has pasado por aquí: dilo. Un saludo, de dónde vienes, qué te gustaría en esta red.
+`!Es anónimo.`! No se pide nombre, no hay cuenta. Este árbol solo guarda tus palabras: ni quién las escribió, ni cuándo, ni desde dónde. Tu app no le dice a la página quién eres, salvo si eliges identificarte.
 `<60|message`>
 `[Dejarla aquí`:/page/guestbook.mu`message|lang=es]  ·  `[Leer las huellas`:/page/guestbook.mu`lang=es]
-`*Sus palabras son públicas: ni nombre, ni lugar, nada que le señale.`*
+`*Tus palabras son públicas: ni nombre, ni lugar, nada que te señale.`*
 
 >>Cómo funciona
 
