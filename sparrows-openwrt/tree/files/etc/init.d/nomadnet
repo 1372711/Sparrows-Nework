@@ -27,9 +27,10 @@ start_service() {
 	# Its name in the announces: the owner's name (own/name, one line) or Sparrows-Network, then the
 	# unit's own name in brackets, so every node stays unique: "The garden relay (tree-7cd0)"
 	NAME=Sparrows-Network
-	[ ! -s "$OWN/name" ] || NAME=$(head -n 1 "$OWN/name" | tr -d '\r|&\\()' | cut -c1-48)
+	[ ! -s "$OWN/name" ] || NAME=$(head -n 1 "$OWN/name" | tr -d '\r|&\\()"' | cut -c1-48)
 	NAME="$NAME ($(uci -q get system.@system[0].hostname))"
-	sed -i -e "s|^  node_name = .*|  node_name = $NAME|" -e "s|^  pages_path = .*|  pages_path = $LIVE|" "$D/config"
+	# In quotes: the config reader takes a bare comma for a list and a bare # for a comment
+	sed -i -e "s|^  node_name = .*|  node_name = \"$NAME\"|" -e "s|^  pages_path = .*|  pages_path = $LIVE|" "$D/config"
 	chown -R rns:rns "$D/config" "$LIVE"
 	procd_open_instance
 	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python HOME="$D"
