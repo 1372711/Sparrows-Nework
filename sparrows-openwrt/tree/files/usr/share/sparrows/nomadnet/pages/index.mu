@@ -18,6 +18,14 @@ You reached this page over it: it was served by a small box nearby, a tree or a 
 `!2.`! Open `!http://sparrows.lan/`! in a browser: the handbook, the Sparrows Tao.
 `!3.`! To write to others, use a Reticulum app: Sideband on Android, MeshChat or Nomad Network on a laptop. Your app makes your key. Your key is your address.
 
+>>Leave a trace
+
+You passed by: say so. Hello, where you come from, what you would like on this network.
+`!It is anonymous.`! No name asked, no account. This tree keeps only your words: not who wrote them, not when, not from where. Your app doesn't tell the page who you are unless you choose to identify.
+`<60|message`>
+`[Leave it here`:/page/guestbook.mu`message|lang=en]  ·  `[Read the traces`:/page/guestbook.mu`lang=en]
+`*Your words are public: no name, no place, nothing that points to you.`*
+
 >>How it works
 
 Stations are named after birds:
@@ -35,6 +43,6 @@ Stations are named after birds:
 
 >>Help
 
-Plant a tree, put up a feeder, or bring a mast. Everything is in the handbook.
+Plant a tree, put up a feeder, or bring a mast. A computer that stays on can relay too. Everything is in the handbook, "Start here".
 `[Download the handbook (HTML file)`:/file/sparrows-tao.html]
 `[Download the kit: scripts and sources to build the stations (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[its SHA-256`:/file/sparrows-kit.tar.gz.sha256]

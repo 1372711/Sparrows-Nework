@@ -18,6 +18,14 @@ Vous avez atteint cette page par lui : elle vient d'un petit boîtier tout proch
 `!2.`! Ouvrez `!http://sparrows.lan/`! dans un navigateur : le manuel, le Sparrows Tao.
 `!3.`! Pour écrire aux autres, prenez une appli Reticulum : Sideband sur Android, MeshChat ou Nomad Network sur un portable. Votre appli crée votre clé. Votre clé est votre adresse.
 
+>>Laisser une trace
+
+Vous êtes passé par ici : dites-le. Bonjour, d'où vous venez, ce que vous aimeriez sur ce réseau.
+`!C'est anonyme.`! Pas de nom demandé, pas de compte. Cet arbre ne garde que vos mots : ni qui les a écrits, ni quand, ni d'où. Votre appli ne dit pas à la page qui vous êtes, sauf si vous choisissez de vous identifier.
+`<60|message`>
+`[La laisser ici`:/page/guestbook.mu`message|lang=fr]  ·  `[Lire les traces`:/page/guestbook.mu`lang=fr]
+`*Vos mots sont publics : ni nom, ni lieu, rien qui vous désigne.`*
+
 >>Comment ça marche
 
 Les stations portent des noms d'oiseaux :
@@ -35,6 +43,6 @@ Les stations portent des noms d'oiseaux :
 
 >>Aider
 
-Plantez un arbre, posez une mangeoire, ou apportez un mât. Tout est dans le manuel.
+Plantez un arbre, posez une mangeoire, ou apportez un mât. Un ordinateur qui reste allumé peut aussi relayer. Tout est dans le manuel, « Commencer ici ».
 `[Télécharger le manuel (fichier HTML)`:/file/sparrows-tao.html]
 `[Télécharger le kit : scripts et sources pour construire les stations (.tar.gz)`:/file/sparrows-kit.tar.gz]  ·  `[son SHA-256`:/file/sparrows-kit.tar.gz.sha256]

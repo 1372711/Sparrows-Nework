@@ -106,6 +106,9 @@ move() {
 		cp -a /etc/nomadnetwork/storage /home/nomadnetwork/storage && rm -rf /etc/nomadnetwork/storage &&
 			log "page node identity moved to /home/nomadnetwork"
 	fi
+	if [ -f /etc/nomadnetwork/guestbook.txt ] && [ ! -e /home/nomadnetwork/guestbook.txt ]; then
+		cp -a /etc/nomadnetwork/guestbook.txt /home/nomadnetwork/ && rm -f /etc/nomadnetwork/guestbook.txt
+	fi
 	for N in $KEPT; do mkdir -p "/home/$N"; chown -R rns:rns "/home/$N"; done
 }
 

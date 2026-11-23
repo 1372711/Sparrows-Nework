@@ -527,6 +527,8 @@ build_one() (
 	for D in usr/sbin usr/bin etc/init.d; do
 		if [ -d "$F/$D" ]; then chmod 755 "$F/$D"/*; fi
 	done
+	# Nomad Network runs a page that is executable (the guestbook): it must stay so in the image
+	if [ -f "$F/usr/share/sparrows/nomadnet/pages/guestbook.mu" ]; then chmod 755 "$F/usr/share/sparrows/nomadnet/pages/guestbook.mu"; fi
 
 	# --- Reticulum: Python wheels (tree/role.conf), fetched once, checked, unpacked into the image ---
 	WHEELS='' HANDBOOK_TO='' KIT_TO='' LICENSES_TO='' PKG_nest=''

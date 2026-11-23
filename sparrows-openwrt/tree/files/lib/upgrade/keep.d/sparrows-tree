@@ -1,2 +1,3 @@
 /etc/reticulum/storage/
 /etc/nomadnetwork/storage/identity
+/etc/nomadnetwork/guestbook.txt
