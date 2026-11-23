@@ -570,3 +570,28 @@ reboot                                   # lxmd and nomadnet start fresh in /etc
 # Check: restart the app; within a minute the village's trees and nest show up as peers.
 # On a laptop with rnsd:  rnstatus   -> AutoInterface[Sparrows] Up, Peers: 1 or more
 # Undo: put back the app's own config file (keep a copy before you change it).
+### rns-relay
+# A computer that stays on, on the village (Linux, Windows, macOS; Python 3). Not yet tested.
+python3 -m pip install rns==1.6.1            # the version the units run (Windows: py -m pip install ...)
+rnsd                                         # once, then Ctrl-C: it makes ~/.reticulum/config
+# In ~/.reticulum/config: the interfaces of "An app that asks for a config file", and in [reticulum]:
+#   enable_transport = Yes                   # this is what makes it a relay
+#   share_instance = Yes                     # your own apps on this computer use this rnsd
+rnsd                                         # keep it running (or start it at boot with your system's tools)
+
+# Verify, in another terminal on the same computer
+rnstatus                                     # AutoInterface Up, peers 1 or more; "Transport Instance ... running"
+rnpath <a tree's or a nest's address>        # a path: the village is reachable through this relay's interface
+
+# Undo: enable_transport = No (or stop rnsd). Your own apps keep working.
+### guestbook-admin
+# On a tree. The book: one trace per line, newest last. No name, no date, no address in it.
+F=/etc/nomadnetwork/guestbook.txt; mount | grep -q ' /home ' && F=/home/nomadnetwork/guestbook.txt
+cat "$F"                                     # read it all
+grep -n 'some words' "$F"                    # find a trace that harms someone
+sed -i '12d' "$F"                            # remove line 12 (the number grep printed)
+: > "$F"                                     # empty the book
+
+# Verify from a laptop: in Nomad Network or MeshChat, open "Sparrows-Network (tree-xxxx)", write in
+# "Leave a trace", press "Leave it here": the page says thank you and shows the trace on top.
+# Undo: nothing to undo; the page is in the image (pages/guestbook.mu), the book is plain text.
