@@ -19,7 +19,7 @@
 # working with nothing to redo (decided 2026-11-28). The sealed keys open only for their approver; the
 # door's private key was already readable on the card, so the token makes nothing weaker.
 # Status: tested 2026-11-28 on the Pi 4 nest (accept). Reject and erase: tested on a laptop only.
-# The copy in /home's header (token_save, token_restore): NOT YET TESTED.
+# The copy in /home's header: tested 2026-11-28 (the nest's rewritten card kept its door).
 import base64, json, os, subprocess, sys, tempfile, threading, time
 
 sys.path.insert(0, "/usr/lib/sparrows/python")
@@ -252,7 +252,10 @@ class Door:
                 return
             # Often at first, then every 15 min: an approver may come by later
             if n % (12 if n < 180 else 90) == 0:
-                self.dest.announce(app_data=self.unit.encode())
+                try:
+                    self.dest.announce(app_data=self.unit.encode())
+                except Exception as e:            # rnsd restarting: the next announce goes through
+                    log("announce failed (%s): trying again later" % type(e).__name__)
             n += 1
             self.done.wait(10)
 
@@ -268,6 +271,7 @@ def run():
     # own config folder (it runs as root, rnsd as rns), so it gives rnsd's RPC key, which Reticulum
     # derives from rnsd's transport identity (seen 2026-11-22: without it, "digest sent was rejected")
     os.makedirs(RNSDIR, mode=0o700, exist_ok=True)
+    waited = False
     while True:
         try:
             tid = RNS.Identity.from_file(TRANSPORT_ID) if os.path.isfile(TRANSPORT_ID) else None
@@ -279,8 +283,10 @@ def run():
                 os.umask(old)
                 RNS.Reticulum(configdir=RNSDIR, require_shared_instance=True)
                 break
-        except SystemError:
-            pass
+        except Exception as e:                    # rnsd not up yet, or restarting: wait, never die
+            if not waited:
+                log("waiting for the unit's rnsd (%s)" % type(e).__name__)
+                waited = True
         time.sleep(20)
     Door().run()
 

@@ -6,4 +6,9 @@ DEV=$(sed -n 's/^ *devices *= *//p' /etc/reticulum/config 2>/dev/null | head -n 
 [ -n "$DEV" ] && [ "$DEVICE" = "$DEV" ] || exit 0
 /etc/init.d/rnsd running || exit 0
 logger -t sparrows "$DEV came up again: rnsd restarted so Reticulum hears the village"
-( sleep 5; /etc/init.d/rnsd restart ) &
+# Not in the background: a background job of a hotplug script can be cut off between the stop and the
+# start, which left rnsd stopped (seen 2026-11-28 on the tree). rnsd-run waits for the address itself
+/etc/init.d/rnsd restart
+# The door (a locked /home) talks through rnsd: restart it too, so it announces to the new rnsd now
+# rather than up to 15 minutes later. It ends by itself when /home is open or has no approver
+[ ! -x /etc/init.d/sparrows-door ] || ! /usr/sbin/sparrows-home locked || /etc/init.d/sparrows-door restart

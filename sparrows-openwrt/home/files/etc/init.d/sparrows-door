@@ -11,5 +11,6 @@ start_service() {
 	procd_open_instance
 	procd_set_param env PYTHONPATH=/usr/lib/sparrows/python
 	procd_set_param command /usr/bin/python3 /usr/sbin/sparrows-door run
+	procd_set_param stderr 1        # a crash goes to the log (logread), not nowhere (seen 2026-11-28)
 	procd_close_instance
 }
