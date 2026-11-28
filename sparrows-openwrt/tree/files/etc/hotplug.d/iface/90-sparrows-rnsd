@@ -1,0 +1,9 @@
+#!/bin/sh
+# When Reticulum's device comes up again after rnsd started (a network reload, a Pi's Wi-Fi that shows
+# up late), restart rnsd so its AutoInterface listens on the device as it is now (seen 2026-11-28).
+[ "$ACTION" = ifup ] || exit 0
+DEV=$(sed -n 's/^ *devices *= *//p' /etc/reticulum/config 2>/dev/null | head -n 1)
+[ -n "$DEV" ] && [ "$DEVICE" = "$DEV" ] || exit 0
+/etc/init.d/rnsd running || exit 0
+logger -t sparrows "$DEV came up again: rnsd restarted so Reticulum hears the village"
+( sleep 5; /etc/init.d/rnsd restart ) &

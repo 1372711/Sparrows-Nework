@@ -1,0 +1,12 @@
+#!/bin/sh
+# Start rnsd once its device has a usable fe80:: address. Reticulum's AutoInterface takes the device's
+# link-local address when it starts: started too early, it is "Up" but hears nobody, Peers 0 (seen
+# 2026-11-28 on the Pi 4 nest after a fresh card, until rnsd was restarted by hand).
+DEV=$(sed -n 's/^ *devices *= *//p' /etc/reticulum/config | head -n 1)
+N=0
+while [ -n "$DEV" ] && [ "$N" -lt 120 ]; do
+	ip -6 addr show dev "$DEV" scope link 2>/dev/null | grep 'inet6 fe80' | grep -qv tentative && break
+	sleep 1; N=$((N + 1))
+done
+[ "$N" -lt 120 ] || logger -t rnsd-run "no fe80:: address on $DEV after 120 s: rnsd starts anyway"
+exec /usr/bin/python3 -m RNS.Utilities.rnsd --config /etc/reticulum -s
