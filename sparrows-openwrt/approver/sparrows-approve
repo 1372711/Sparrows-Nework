@@ -16,7 +16,7 @@
 # Your approver identity is ~/.sparrows-approver/identity: keep it only for this, back it up, and keep
 # the device locked. Whoever holds it and a stolen card opens that card. This tool never announces:
 # it links to a unit's door only when it answers, and proves who it is to that door alone.
-# Status: NOT YET TESTED with a unit (written 2026-11-22; tested against a door on the same laptop).
+# Status: tested 2026-11-28 with the Pi 4 nest (accept opened /home after an update and a reboot).
 import os, queue, sys, threading, time
 
 import RNS
@@ -117,7 +117,11 @@ class Watch:
             print()
             print("=" * 70)
             print("%s asks to open /home%s" % (req["unit"], "   (" + note + ")" if note else ""))
-            print("  started   %s" % time.strftime("%Y-%m-%d %H:%M", time.localtime(req["started"])))
+            if "now" in req:                        # the unit's clock is often wrong: only the difference counts
+                m = max(0, req["now"] - req["started"]) // 60
+                print("  started   %s ago (by the unit's own clock)" % ("%d h %02d min" % divmod(m, 60) if m >= 60 else "%d min" % m))
+            else:
+                print("  started   %s (the unit's clock: may be wrong)" % time.strftime("%Y-%m-%d %H:%M", time.localtime(req["started"])))
             print("  heard     %s hop(s) away, through %s" % (hops, via))
             print("  door      %s" % h)
             print("Did this unit have a reason to restart now? In doubt: reject, and go and look.")
@@ -146,6 +150,7 @@ class Watch:
             r = self.request(link, "/decide", umsgpack.packb(msg))
             res = umsgpack.unpackb(r) if r else {"ok": False, "error": "no answer"}
             print("%s: %s" % (req["unit"], res.get("state") if res.get("ok") else "NOT DONE, " + res.get("error", "?")))
+            print("Still waiting for the other requests. Ctrl-C to stop.")
             link.teardown()
         finally:
             self.busy.discard(h)

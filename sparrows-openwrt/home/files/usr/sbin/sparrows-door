@@ -14,7 +14,7 @@
 #   erase    /home's lock is destroyed, the system wiped, the unit switched off
 # The passphrase never travels. An old answer is useless: each boot makes a new key and a new request.
 # The door identity lives on the system side (it must answer while /home is locked); it names nobody.
-# Status: NOT YET TESTED on a unit (written 2026-11-22; the exchange tested on a laptop).
+# Status: tested 2026-11-28 on the Pi 4 nest (accept). Reject and erase: tested on a laptop only.
 import os, subprocess, sys, threading, time
 
 sys.path.insert(0, "/usr/lib/sparrows/python")
@@ -121,7 +121,10 @@ class Door:
             sealed = open(os.path.join(SEALED, remote_identity.hash.hex()), "rb").read()
         except FileNotFoundError:
             return umsgpack.packb({"error": "no sealed key for you on this unit"})
+        # "now" too: a unit has no clock it can trust (no battery, no time server in the village), so
+        # the approver shows how long ago it started by the unit's own clock, never a date (2026-11-28)
         return umsgpack.packb({"unit": self.unit, "boot": self.boot_id, "started": self.started,
+                               "now": int(time.time()),
                                "key": self.boot.get_public_key(), "sealed": sealed})
 
     def decide(self, path, data, request_id, remote_identity, requested_at):
