@@ -132,7 +132,6 @@ setup() {
 	mount_home || die "Can't mount /home."
 	services stop
 	move
-	door_keep
 	printf '%s' "$KEY" | approvers_key     # the passphrase, still in memory, adds the approvers' slot
 	KEY='' K2=''
 	services start
@@ -151,7 +150,6 @@ open() {
 		fi
 	fi
 	is_open || mount_home || die "Opened, but can't mount /home."
-	door_keep
 	rotate
 	services start
 	log "/home is open"
@@ -182,6 +180,7 @@ approvers_key() {
 	else
 		[ ! -s "$UK" ] || cryptsetup luksRemoveKey --batch-mode "$P3" "$UK" 2>/dev/null
 		rm -f "$UK" /etc/sparrows/door/sealed/*
+		cryptsetup token remove --token-id 7 "$P3" 2>/dev/null   # the door's copy in the header (sparrows-door)
 		log "no approver in this image: /home opens by hand only (sparrows-unlock)"
 	fi
 	sha256sum "$APPROVERS" 2>/dev/null | cut -d' ' -f1 > /home/.sparrows/approvers.sha256
@@ -206,27 +205,11 @@ rotate() {
 	fi
 }
 
-# The door's identity, kept inside /home too: after a rewritten card the door gets its old address back
-# when /home opens, so the approvers' lists stay right. The system copy must stay outside: the door
-# answers while /home is locked. A unit that never had a door identity: the first one is copied in
-door_keep() {
-	local D=/etc/sparrows/door B=/home/.sparrows/door-identity
-	mkdir -p /home/.sparrows && chmod 700 /home/.sparrows
-	if [ -s "$B" ]; then
-		[ "$(sha256sum < "$B")" = "$(sha256sum < "$D/identity" 2>/dev/null)" ] && return 0   # no cmp needed
-		mkdir -p "$D" && chmod 700 "$D" && cp "$B" "$D/identity" && chmod 600 "$D/identity" &&
-			log "the door's identity put back from /home: its address stays $(/usr/sbin/sparrows-door id 2>/dev/null)"
-	else
-		[ -s "$D/identity" ] || /usr/sbin/sparrows-door id >/dev/null 2>&1   # makes it
-		[ -s "$D/identity" ] && cp "$D/identity" "$B" && chmod 600 "$B"
-	fi
-}
 
 # The approvers again, with the passphrase (a /home set up before approvers existed, or to redo it)
 approvers() {
 	is_open || die "/home is locked: open it first (sparrows-unlock)."
 	read_key
-	door_keep
 	printf '%s' "$KEY" | approvers_key
 	KEY='' K2=''
 }

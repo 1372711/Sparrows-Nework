@@ -501,6 +501,7 @@ nano keys/approvers.txt                      # or let ./build.sh ask for them on
 # Verify on the unit
 sparrows-home status                         # LOCKED ... or an approver's yes (door <address>)
 ls /etc/sparrows/door/sealed/                # one sealed copy per approver
+cryptsetup token export --token-id 7 /dev/mmcblk0p3 | head -c 80; echo   # the door's copy in /home's header
 /etc/init.d/sparrows-door status             # running while /home is locked
 logread -e sparrows-door                     # "asks to open /home", then "said yes: /home is open"
 cryptsetup luksDump /dev/mmcblk0p3 | sed -n '/^Keyslots:/,/^Tokens:/p' | grep -E '^  [0-9]+: '   # 0 the passphrase, 1 the unlock key

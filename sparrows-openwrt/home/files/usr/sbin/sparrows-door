@@ -14,8 +14,13 @@
 #   erase    /home's lock is destroyed, the system wiped, the unit switched off
 # The passphrase never travels. An old answer is useless: each boot makes a new key and a new request.
 # The door identity lives on the system side (it must answer while /home is locked); it names nobody.
+# A copy of it and of the sealed keys is kept in /home's LUKS header, as a token readable without the
+# key: a rewritten card (new system side, /home kept) gets them back at boot, so the approvers keep
+# working with nothing to redo (decided 2026-11-28). The sealed keys open only for their approver; the
+# door's private key was already readable on the card, so the token makes nothing weaker.
 # Status: tested 2026-11-28 on the Pi 4 nest (accept). Reject and erase: tested on a laptop only.
-import os, subprocess, sys, threading, time
+# The copy in /home's header (token_save, token_restore): NOT YET TESTED.
+import base64, json, os, subprocess, sys, tempfile, threading, time
 
 sys.path.insert(0, "/usr/lib/sparrows/python")
 import RNS
@@ -35,7 +40,78 @@ def log(msg):
     print(msg, flush=True)
 
 
+TOKEN_ID = "7"                                   # our slot among the LUKS2 tokens of /home
+LABEL = "sparrows-home"
+
+
+def luks_dev():
+    r = subprocess.run(["blkid", "-L", LABEL], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    return r.stdout.strip() or None
+
+
+def token_save():
+    """The door identity and the sealed keys, into /home's LUKS header (no key needed to write it)."""
+    dev = luks_dev()
+    if not dev or not os.path.isfile(IDENTITY):
+        return
+    sealed = {}
+    if os.path.isdir(SEALED):
+        for name in os.listdir(SEALED):
+            sealed[name] = base64.b64encode(open(os.path.join(SEALED, name), "rb").read()).decode()
+    data = {"type": "sparrows-door", "keyslots": [],
+            "identity": base64.b64encode(open(IDENTITY, "rb").read()).decode(), "sealed": sealed}
+    fd, tmp = tempfile.mkstemp(dir="/tmp")         # /tmp is RAM, never the card
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f)
+        subprocess.run(["cryptsetup", "token", "remove", "--token-id", TOKEN_ID, dev],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        r = subprocess.run(["cryptsetup", "token", "import", "--token-id", TOKEN_ID, "--json-file", tmp, dev],
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        if r.returncode == 0:
+            log("door identity and %d sealed key(s) kept in /home's header" % len(sealed))
+        else:
+            log("ERROR: could not keep the door in /home's header: %s" % r.stdout.strip())
+    finally:
+        os.remove(tmp)
+
+
+def token_restore():
+    """After a rewritten card: put the door identity and the sealed keys back from /home's header."""
+    dev = luks_dev()
+    if not dev:
+        return
+    r = subprocess.run(["cryptsetup", "token", "export", "--token-id", TOKEN_ID, dev],
+                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    if r.returncode != 0:
+        return
+    try:
+        data = json.loads(r.stdout)
+        ident = base64.b64decode(data["identity"])
+        sealed = {n: base64.b64decode(v) for n, v in data.get("sealed", {}).items()}
+    except (ValueError, KeyError):
+        log("the door's token in /home's header is not readable: left alone")
+        return
+    os.makedirs(SEALED, mode=0o700, exist_ok=True)
+    old = os.umask(0o077)
+    try:
+        if not os.path.isfile(IDENTITY) or open(IDENTITY, "rb").read() != ident:
+            with open(IDENTITY, "wb") as f:
+                f.write(ident)
+            log("door identity put back from /home's header")
+        if not os.listdir(SEALED) and sealed:
+            for n, v in sealed.items():
+                if len(n) == 32 and all(c in "0123456789abcdef" for c in n):
+                    with open(os.path.join(SEALED, n), "wb") as f:
+                        f.write(v)
+            log("%d sealed key(s) put back from /home's header" % len(sealed))
+    finally:
+        os.umask(old)
+
+
 def door_identity():
+    if not os.path.isfile(IDENTITY):
+        token_restore()                           # a rewritten card: the old identity, not a new one
     os.makedirs(DOOR, mode=0o700, exist_ok=True)
     if os.path.isfile(IDENTITY):
         return RNS.Identity.from_file(IDENTITY)
@@ -90,6 +166,8 @@ def seal():
         if name not in keep:
             os.remove(os.path.join(SEALED, name))
     print("unlock key sealed for %d approver(s)" % len(keep))
+    door_identity()                               # the door must exist to be kept with the keys
+    token_save()
 
 
 def home(*args, stdin=None):
@@ -182,6 +260,7 @@ class Door:
 def run():
     if home("locked").returncode != 0:
         return                                    # no /home here, or already open
+    token_restore()                               # a rewritten card: the door and its keys come back
     if not approvers() or not (os.path.isdir(SEALED) and os.listdir(SEALED)):
         log("no approver for this unit: /home opens by hand only (sparrows-unlock)")
         return
