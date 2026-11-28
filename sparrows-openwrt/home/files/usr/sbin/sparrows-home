@@ -163,7 +163,12 @@ approvers_key() {
 	( umask 077; cat > "$OLD" )
 	mkdir -p /home/.sparrows && chmod 700 /home/.sparrows
 	if grep -q '^[0-9a-fA-F]\{128\}' "$APPROVERS" 2>/dev/null; then
-		( umask 077; head -c 32 /dev/urandom | base64 | tr -d '\n' > "$NEW" )   # exactly what is sealed
+		# 32 random bytes in base64: exactly what is sealed. Python, not base64: OpenWrt's busybox has no
+		# base64 (seen 2026-11-28: the key came out empty). Never add a key that isn't full length
+		( umask 077; python3 -I -c 'import base64, os, sys; sys.stdout.write(base64.b64encode(os.urandom(32)).decode())' > "$NEW" )
+		if [ "$(wc -c < "$NEW" 2>/dev/null)" -ne 44 ]; then
+			rm -f "$OLD" "$NEW"; log "ERROR: no unlock key could be made: nothing changed on /home"; return 1
+		fi
 		# A random key needs no slow key derivation (a passphrase does): quick on a Pi Zero too
 		if ! cryptsetup luksAddKey --batch-mode --pbkdf pbkdf2 --pbkdf-force-iterations 1000 \
 			--key-file="$OLD" "$P3" "$NEW"; then
