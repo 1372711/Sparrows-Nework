@@ -183,6 +183,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#schematic"><span lang="en">Schematic</span><span lang="fr">Schéma</span><span lang="es">Esquema</span></a>
     <a href="#roles"><span lang="en">Role of each station</span><span lang="fr">Rôle de chaque station</span><span lang="es">Papel de cada estación</span></a>
     <a href="#standard"><span lang="en">Standard software</span><span lang="fr">Logiciel standard</span><span lang="es">Software estándar</span></a>
+    <a href="#settings"><span lang="en">What can change</span><span lang="fr">Ce qui peut changer</span><span lang="es">Lo que puede cambiar</span></a>
     <a href="#flyways"><span lang="en">Flyways: any medium</span><span lang="fr">Voies : tout support</span><span lang="es">Rutas: cualquier medio</span></a>
     <a href="#segment"><span lang="en">One village, one segment</span><span lang="fr">Un village, un segment</span><span lang="es">Un pueblo, un segmento</span></a>
     <a href="#names"><span lang="en">Names and addresses</span><span lang="fr">Noms et adresses</span><span lang="es">Nombres y direcciones</span></a>
@@ -196,6 +197,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#nest-image"><span lang="en">Nest image (Pi 4)</span><span lang="fr">Image de nid (Pi 4)</span><span lang="es">Imagen de nido (Pi 4)</span></a>
     <a href="#reticulum">Reticulum</a>
     <a href="#unnamed"><span lang="en">Staying unnamed</span><span lang="fr">Rester sans nom</span><span lang="es">Quedarse sin nombre</span></a>
+    <a href="#security"><span lang="en">Security audit</span><span lang="fr">Audit de sécurité</span><span lang="es">Auditoría de seguridad</span></a>
     <a href="#check"><span lang="en">Check and troubleshoot</span><span lang="fr">Vérifier et chercher la panne</span><span lang="es">Comprobar y buscar la avería</span></a>
     <a href="#pitfalls"><span lang="en">Pitfalls</span><span lang="fr">Pièges</span><span lang="es">Trampas</span></a>
     <a href="#recovery"><span lang="en">Recovery</span><span lang="fr">Dépannage</span><span lang="es">Recuperación</span></a>
@@ -205,6 +207,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
     <a href="#ideas"><span lang="en">Ideas not yet decided</span><span lang="fr">Idées pas encore décidées</span><span lang="es">Ideas aún sin decidir</span></a>
     <a href="#outside"><span lang="en">A hub between villages (VPS)</span><span lang="fr">Un hub entre villages (VPS)</span><span lang="es">Un hub entre pueblos (VPS)</span></a>
     <a href="#lora"><span lang="en">A LoRa flyway (15 km)</span><span lang="fr">Une voie LoRa (15 km)</span><span lang="es">Una ruta LoRa (15 km)</span></a>
+    <a href="#lora-village"><span lang="en">LoRa in the village</span><span lang="fr">Le LoRa au village</span><span lang="es">LoRa en el pueblo</span></a>
     <a href="#home"><span lang="en">Kept data: a locked /home</span><span lang="fr">Données gardées : /home verrouillé</span><span lang="es">Datos guardados: /home cerrado</span></a>
     <a href="#growing"><span lang="en">How this page grows</span><span lang="fr">Comment cette page grandit</span><span lang="es">Cómo crece esta página</span></a>
     <p class="tg"><span lang="en">Glossary</span><span lang="fr">Lexique</span><span lang="es">Glosario</span></p>
@@ -458,6 +461,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>IPv6 only.</strong> No IPv4 and no DHCP on the mesh. Legacy IPv4-only devices are not supported.</li>
   <li><strong>Only nests send router advertisements.</strong> Never a perch, a feeder, a hedge, a tree or a user device.</li>
   <li><strong>Names and addresses come from the MAC.</strong> Every station is <code>role-xxxx</code>, the last four hex digits of its MAC, and builds its IPv6 address from the same MAC. Nothing to set per unit, no list to keep (decided 2026-11-15). Nests too, since 2026-11-21: they set that address themselves and announce it as the DNS server.</li>
+  <li><strong>Works alone, the same everywhere.</strong> Every station works from its first boot with nothing to set: no SSH, no screen, no question. What people's devices rely on to find the network and collect their messages is the same in every village and can't be changed on a unit: the Wi-Fi name <code>Sparrows</code>, Reticulum's default group, the names, the way addresses are made. What belongs to someone (the name of their page node, their own pages) can change, but only from a short list, checked when it is read, and nothing on that list can break the network. Every update puts the standard back. The standard is what keeps the network safe: a setting outside it is a bug (decided 2026-11-24; <a href="#settings">what can change</a>).</li>
   <li><strong>Never filter ICMPv6.</strong> IPv6 doesn't work without it.</li>
   <li><strong>DNS and HTTP are the on-ramp and nothing more.</strong> No accounts, no logs, no streaming, no service that depends on a DNS name.</li>
   <li><strong>No user key on a nest.</strong> So no web client hosted on a nest.</li>
@@ -474,6 +478,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>IPv6 seulement.</strong> Ni IPv4 ni DHCP sur le mesh. Les vieux appareils IPv4 seuls ne sont pas pris en charge.</li>
   <li><strong>Seuls les nids envoient des annonces de routeur.</strong> Jamais un perchoir, une mangeoire, une haie, un arbre ni l'appareil d'un usager.</li>
   <li><strong>Les noms et les adresses viennent de la MAC.</strong> Chaque station s'appelle <code>rôle-xxxx</code>, les quatre derniers chiffres hexadécimaux de sa MAC, et construit son adresse IPv6 à partir de la même MAC. Rien à régler par boîtier, aucune liste à tenir (décidé le 2026-11-15). Les nids aussi, depuis le 2026-11-21 : ils se donnent eux-mêmes cette adresse et l'annoncent comme serveur DNS.</li>
+  <li><strong>Marche seul, pareil partout.</strong> Chaque station marche dès son premier démarrage sans rien régler : pas de SSH, pas d'écran, aucune question. Ce dont les appareils des gens ont besoin pour trouver le réseau et relever leurs messages est pareil dans chaque village et ne se change pas sur un boîtier : le nom du Wi-Fi <code>Sparrows</code>, le groupe par défaut de Reticulum, les noms, la façon de faire les adresses. Ce qui appartient à quelqu'un (le nom de son nœud de pages, ses propres pages) peut changer, mais seulement dans une courte liste, vérifiée à la lecture, et rien dans cette liste ne peut casser le réseau. Chaque mise à jour remet le standard. C'est le standard qui garde le réseau sûr : un réglage hors du standard est un bug (décidé le 2026-11-24 ; <a href="#settings">ce qui peut changer</a>).</li>
   <li><strong>Ne jamais filtrer ICMPv6.</strong> IPv6 ne marche pas sans lui.</li>
   <li><strong>DNS et HTTP sont la rampe d'accès, rien de plus.</strong> Pas de comptes, pas de journaux, pas de streaming, aucun service qui dépende d'un nom DNS.</li>
   <li><strong>Aucune clé d'usager sur un nid.</strong> Donc pas de client web hébergé sur un nid.</li>
@@ -490,6 +495,7 @@ footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);font-
   <li><strong>Solo IPv6.</strong> Ni IPv4 ni DHCP en la malla. Los aparatos antiguos que solo hablan IPv4 no están soportados.</li>
   <li><strong>Solo los nidos envían anuncios de router.</strong> Nunca una percha, un comedero, un seto, un árbol ni el aparato de un usuario.</li>
   <li><strong>Los nombres y las direcciones salen de la MAC.</strong> Cada estación se llama <code>papel-xxxx</code>, las cuatro últimas cifras hexadecimales de su MAC, y construye su dirección IPv6 a partir de la misma MAC. Nada que ajustar por unidad, ninguna lista que mantener (decidido el 2026-11-15). Los nidos también, desde el 2026-11-21: se ponen ellos mismos esa dirección y la anuncian como servidor DNS.</li>
+  <li><strong>Funciona sola, igual en todas partes.</strong> Cada estación funciona desde su primer arranque sin ajustar nada: sin SSH, sin pantalla, sin preguntas. Lo que los aparatos de la gente necesitan para encontrar la red y recoger sus mensajes es igual en cada pueblo y no se cambia en una unidad: el nombre del Wi-Fi <code>Sparrows</code>, el grupo por defecto de Reticulum, los nombres, la forma de hacer las direcciones. Lo que es de alguien (el nombre de su nodo de páginas, sus propias páginas) puede cambiar, pero solo dentro de una lista corta, comprobada al leerla, y nada de esa lista puede romper la red. Cada actualización vuelve a poner el estándar. El estándar es lo que mantiene la red segura: un ajuste fuera de él es un fallo (decidido el 2026-11-24; <a href="#settings">lo que puede cambiar</a>).</li>
   <li><strong>No filtrar nunca ICMPv6.</strong> IPv6 no funciona sin él.</li>
   <li><strong>DNS y HTTP son la rampa de acceso y nada más.</strong> Sin cuentas, sin registros, sin streaming, ningún servicio que dependa de un nombre DNS.</li>
   <li><strong>Ninguna clave de usuario en un nido.</strong> Por tanto, ningún cliente web alojado en un nido.</li>
@@ -1077,6 +1083,67 @@ rnpath &lt;a tree's or a nest's address&gt;        # a path: the village is reac
   </tbody>
 </table></div>
 
+<h3 id="settings"><span lang="en">What can change, and who changes it</span><span lang="fr">Ce qui peut changer, et qui le change</span><span lang="es">Lo que puede cambiar, y quién lo cambia</span></h3>
+<p lang="en">Decided on 2026-11-24 (hard rule <a href="#limits">Works alone, the same everywhere</a>). A phone that knows Sparrows in one village must know it in every village, and find its messages there. So settings come in three kinds, and only the last one is up to each owner.</p>
+<p lang="fr">Décidé le 2026-11-24 (règle dure <a href="#limits">Marche seul, pareil partout</a>). Un téléphone qui connaît Sparrows dans un village doit le connaître dans tous, et y trouver ses messages. Les réglages sont donc de trois sortes, et seule la dernière dépend de chaque propriétaire.</p>
+<p lang="es">Decidido el 2026-11-24 (regla firme <a href="#limits">Funciona sola, igual en todas partes</a>). Un teléfono que conoce Sparrows en un pueblo debe conocerlo en todos, y encontrar allí sus mensajes. Por eso los ajustes son de tres clases, y solo la última depende de cada dueño.</p>
+<div class="tw"><table>
+  <thead><tr>
+    <th><span lang="en">Kind</span><span lang="fr">Sorte</span><span lang="es">Clase</span></th>
+    <th><span lang="en">What</span><span lang="fr">Quoi</span><span lang="es">Qué</span></th>
+    <th><span lang="en">Where it is set</span><span lang="fr">Où on le règle</span><span lang="es">Dónde se ajusta</span></th>
+    <th><span lang="en">Who</span><span lang="fr">Qui</span><span lang="es">Quién</span></th></tr></thead>
+  <tbody>
+  <tr><th><span lang="en">Fixed for every Sparrows network</span><span lang="fr">Fixe pour tout réseau Sparrows</span><span lang="es">Fijo para toda red Sparrows</span></th>
+    <td><span lang="en">the open Wi-Fi <code>Sparrows</code>; Reticulum's default group on an AutoInterface; the message store on nests; <code>sparrows.lan</code>, <code>role-xxxx</code> and addresses from the MAC; RAs from nests only; no logs of people; SSH keys only</span><span lang="fr">le Wi-Fi ouvert <code>Sparrows</code> ; le groupe par défaut de Reticulum sur une AutoInterface ; la boîte aux lettres sur les nids ; <code>sparrows.lan</code>, <code>rôle-xxxx</code> et les adresses tirées de la MAC ; des RA par les nids seulement ; aucun journal sur les gens ; SSH par clés seulement</span><span lang="es">el Wi-Fi abierto <code>Sparrows</code>; el grupo por defecto de Reticulum en una AutoInterface; el buzón en los nidos; <code>sparrows.lan</code>, <code>papel-xxxx</code> y las direcciones sacadas de la MAC; RA solo desde los nidos; ningún registro sobre la gente; SSH solo con claves</span></td>
+    <td><span lang="en">the kit (<code>sparrows-openwrt/</code>); changed only by a decision written in this page, for everyone</span><span lang="fr">le kit (<code>sparrows-openwrt/</code>) ; ne change que par une décision écrite dans cette page, pour tout le monde</span><span lang="es">el kit (<code>sparrows-openwrt/</code>); solo cambia por una decisión escrita en esta página, para todos</span></td>
+    <td><span lang="en">nobody alone</span><span lang="fr">personne seul</span><span lang="es">nadie por su cuenta</span></td></tr>
+  <tr><th><span lang="en">Chosen once per village</span><span lang="fr">Choisi une fois par village</span><span lang="es">Elegido una vez por pueblo</span></th>
+    <td><span lang="en">the country and the radio power; the flyway and hedge keys; the admin SSH keys; the approvers of the locked /home; the village prefix (today written in <code>91-sparrows-nest</code>)</span><span lang="fr">le pays et la puissance radio ; les clés de voie et de haie ; les clés SSH d'admin ; les approbateurs du /home verrouillé ; le préfixe du village (aujourd'hui écrit dans <code>91-sparrows-nest</code>)</span><span lang="es">el país y la potencia de radio; las claves de ruta y de seto; las claves SSH de administración; los aprobadores del /home cerrado; el prefijo del pueblo (hoy escrito en <code>91-sparrows-nest</code>)</span></td>
+    <td><span lang="en">at build time, on the builder's laptop: <code>local.conf</code>, <code>secrets/</code>, <code>keys/</code></span><span lang="fr">à la construction, sur le portable de qui construit : <code>local.conf</code>, <code>secrets/</code>, <code>keys/</code></span><span lang="es">al construir, en el portátil de quien construye: <code>local.conf</code>, <code>secrets/</code>, <code>keys/</code></span></td>
+    <td><span lang="en">the village's builders</span><span lang="fr">ceux qui construisent le village</span><span lang="es">quienes construyen el pueblo</span></td></tr>
+  <tr><th><span lang="en">Chosen by a unit's owner</span><span lang="fr">Choisi par le propriétaire d'un boîtier</span><span lang="es">Elegido por el dueño de una unidad</span></th>
+    <td><span lang="en">the name of its page node and its own pages (<code>own/name</code>, <code>own/pages/</code>); its /home passphrase; which end of a flyway is the AP (<code>perch ap</code>)</span><span lang="fr">le nom de son nœud de pages et ses propres pages (<code>own/name</code>, <code>own/pages/</code>) ; la phrase de passe de son /home ; quel bout d'une voie est l'AP (<code>perch ap</code>)</span><span lang="es">el nombre de su nodo de páginas y sus propias páginas (<code>own/name</code>, <code>own/pages/</code>); la frase de paso de su /home; qué extremo de una ruta es el AP (<code>perch ap</code>)</span></td>
+    <td><span lang="en">on the unit, kept through updates, checked each time it is read</span><span lang="fr">sur le boîtier, gardé à chaque mise à jour, vérifié à chaque lecture</span><span lang="es">en la unidad, conservado en cada actualización, comprobado cada vez que se lee</span></td>
+    <td><span lang="en">its owner</span><span lang="fr">son propriétaire</span><span lang="es">su dueño</span></td></tr>
+  </tbody>
+</table></div>
+<h4><span lang="en">How the standard holds</span><span lang="fr">Comment le standard tient</span><span lang="es">Cómo se mantiene el estándar</span></h4>
+<ul lang="en">
+  <li>Every update runs the first-boot files again: what the kit fixes comes back, whatever was changed by hand.</li>
+  <li>An owner's setting is read from a short list of files and checked; a value outside what is allowed is ignored, and the log says so. The perch's mode and channel, and the page node's name, already work this way.</li>
+  <li>A change made by hand (SSH, LuCI) is a test. To keep it, it goes into the kit; if it would change what is fixed for everyone, it is decided in this page first.</li>
+</ul>
+<ul lang="fr">
+  <li>Chaque mise à jour relance les fichiers de premier démarrage : ce que le kit fixe revient, quoi qu'on ait changé à la main.</li>
+  <li>Un réglage de propriétaire est lu dans une courte liste de fichiers, et vérifié ; une valeur hors de ce qui est permis est ignorée, et le journal le dit. Le mode et le canal du perchoir, et le nom du nœud de pages, marchent déjà ainsi.</li>
+  <li>Un changement fait à la main (SSH, LuCI) est un essai. Pour le garder, il va dans le kit ; s'il changerait ce qui est fixe pour tous, il est d'abord décidé dans cette page.</li>
+</ul>
+<ul lang="es">
+  <li>Cada actualización vuelve a ejecutar los archivos del primer arranque: lo que el kit fija vuelve, se haya cambiado lo que se haya cambiado a mano.</li>
+  <li>Un ajuste del dueño se lee de una lista corta de archivos y se comprueba; un valor fuera de lo permitido se ignora, y el registro lo dice. El modo y el canal de la percha, y el nombre del nodo de páginas, ya funcionan así.</li>
+  <li>Un cambio hecho a mano (SSH, LuCI) es una prueba. Para conservarlo, va al kit; si cambiara lo que es fijo para todos, se decide antes en esta página.</li>
+</ul>
+<h4><span lang="en">Alone from the first boot: where it stands</span><span lang="fr">Seul dès le premier démarrage : où on en est</span><span lang="es">Sola desde el primer arranque: en qué punto está</span></h4>
+<ul lang="en">
+  <li><strong>Feeder, hedge:</strong> nothing to set by design. The feeder's radios came up alone on an EAP225-Outdoor v3 on 2026-11-22; the hedge image is not yet tested.</li>
+  <li><strong>Tree, nest:</strong> nothing to set by design; the owner's name and pages are optional. Not yet tested as built images. A Pi whose /home is set up keeps its message store and page closed until an approver says yes or the passphrase is typed: on purpose, since the data comes before the service. The relay (<code>rnsd</code>) runs meanwhile.</li>
+  <li><strong>Perch: not yet.</strong> Both ends of a new pair start as clients, and nothing links until one end gets <code>perch ap</code> over SSH. Left to do (<a href="#ideas">Part IV</a>).</li>
+  <li><strong>Owner settings:</strong> today they need SSH. Left to do: a way that needs no terminal (<a href="#ideas">Part IV</a>).</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Mangeoire, haie :</strong> rien à régler, par construction. Les radios de la mangeoire se sont réglées seules sur un EAP225-Outdoor v3 le 2026-11-22 ; l'image de haie n'est pas encore testée.</li>
+  <li><strong>Arbre, nid :</strong> rien à régler, par construction ; le nom et les pages du propriétaire sont en option. Pas encore testés en images construites. Un Pi dont le /home est en place garde sa boîte aux lettres et sa page fermées jusqu'au oui d'un approbateur ou à la phrase de passe : c'est voulu, les données passent avant le service. Le relais (<code>rnsd</code>) tourne pendant ce temps.</li>
+  <li><strong>Perchoir : pas encore.</strong> Les deux bouts d'une nouvelle paire démarrent en client, et rien ne se relie tant qu'un bout n'a pas reçu <code>perch ap</code> par SSH. Reste à faire (<a href="#ideas">partie IV</a>).</li>
+  <li><strong>Réglages du propriétaire :</strong> aujourd'hui il faut SSH. Reste à faire : une façon sans terminal (<a href="#ideas">partie IV</a>).</li>
+</ul>
+<ul lang="es">
+  <li><strong>Comedero, seto:</strong> nada que ajustar, por diseño. Las radios del comedero se ajustaron solas en un EAP225-Outdoor v3 el 2026-11-22; la imagen de seto aún no está probada.</li>
+  <li><strong>Árbol, nido:</strong> nada que ajustar, por diseño; el nombre y las páginas del dueño son opcionales. Aún sin probar como imágenes construidas. Una Pi con su /home en marcha mantiene cerrados su buzón y su página hasta el sí de un aprobador o la frase de paso: es a propósito, los datos van antes que el servicio. El relevo (<code>rnsd</code>) funciona mientras tanto.</li>
+  <li><strong>Percha: todavía no.</strong> Los dos extremos de un par nuevo arrancan como cliente, y nada se enlaza hasta que un extremo recibe <code>perch ap</code> por SSH. Queda por hacer (<a href="#ideas">parte IV</a>).</li>
+  <li><strong>Ajustes del dueño:</strong> hoy necesitan SSH. Queda por hacer: una manera sin terminal (<a href="#ideas">parte IV</a>).</li>
+</ul>
+
 <h3 id="flyways"><span lang="en">Flyways: any medium</span><span lang="fr">Voies de migration : n'importe quel support</span><span lang="es">Rutas migratorias: cualquier medio</span></h3>
 <p lang="en">A flyway is any link between two places, and the design depends on no single band. batman-adv carries a village over any Wi-Fi or Ethernet link. Reticulum carries Layer 1 over almost anything, including links far too slow for IP. The on-ramp (Layer 0) only exists where people's devices connect, so slow flyways only ever carry Layer 1.</p>
 <p lang="fr">Une voie de migration est n'importe quel lien entre deux lieux, et la conception ne dépend d'aucune bande en particulier. batman-adv porte un village sur n'importe quel lien Wi-Fi ou Ethernet. Reticulum porte la couche 1 sur presque tout, y compris des liens bien trop lents pour IP. La rampe d'accès (couche 0) n'existe que là où les appareils des gens se connectent : les voies lentes ne portent donc que la couche 1.</p>
@@ -1427,6 +1494,9 @@ iw dev                            # as the uses say
 <p lang="en">On the village, with no Internet: a nest offers the kit next to this page, at <a href="kit/sparrows-kit.tar.gz">kit/sparrows-kit.tar.gz</a>, and every tree and nest offers it on its Sparrows page over Reticulum, each with a <code>.sha256</code> file. <code>build.sh</code> makes it from git, so it holds only committed files, never <code>keys/</code>, <code>secrets/</code> or <code>build/</code>. Made and checked on the admin laptop on 2026-11-21; not yet tested in an image.</p>
 <p lang="fr">Au village, sans Internet : un nid propose le kit à côté de cette page, à <a href="kit/sparrows-kit.tar.gz">kit/sparrows-kit.tar.gz</a>, et chaque arbre et chaque nid le propose sur sa page Sparrows par Reticulum, chacun avec un fichier <code>.sha256</code>. <code>build.sh</code> le fabrique depuis git : il ne contient que des fichiers enregistrés dans git, jamais <code>keys/</code>, <code>secrets/</code> ou <code>build/</code>. Fabriqué et vérifié sur le portable d'admin le 2026-11-21 ; pas encore testé dans une image.</p>
 <p lang="es">En el pueblo, sin Internet: un nido ofrece el kit junto a esta página, en <a href="kit/sparrows-kit.tar.gz">kit/sparrows-kit.tar.gz</a>, y cada árbol y cada nido lo ofrece en su página Sparrows por Reticulum, cada uno con un archivo <code>.sha256</code>. <code>build.sh</code> lo hace desde git: solo lleva archivos guardados en git, nunca <code>keys/</code>, <code>secrets/</code> ni <code>build/</code>. Hecho y comprobado en el portátil de administración el 2026-11-21; aún sin probar en una imagen.</p>
+<p class="note" lang="en">Nothing on the village proves a kit is the real one: a fake nest or tree can serve a fake kit with a matching <code>.sha256</code> (<a href="#security">security audit</a>). Before you build from it, compare its checksum with a second source you trust: git, or the person who gave you the USB stick.</p>
+<p class="note" lang="fr">Rien, au village, ne prouve qu'un kit est le vrai : un faux nid ou un faux arbre peut servir un faux kit avec un <code>.sha256</code> qui va avec (<a href="#security">audit de sécurité</a>). Avant de construire avec, comparez sa somme de contrôle avec une deuxième source de confiance : git, ou la personne qui vous a donné la clé USB.</p>
+<p class="note" lang="es">Nada en el pueblo prueba que un kit sea el verdadero: un nido o un árbol falsos pueden servir un kit falso con un <code>.sha256</code> que coincide (<a href="#security">auditoría de seguridad</a>). Antes de construir con él, compare su suma de control con una segunda fuente de confianza: git, o la persona que le dio la memoria USB.</p>
 <div class="code"><div class="hd"><span class="file">any computer, then the admin laptop</span></div><pre><code># On the village, no Internet needed: from a nest (or the Sparrows page of a tree, in Nomad Network)
 wget http://sparrows.lan/kit/sparrows-kit.tar.gz http://sparrows.lan/kit/sparrows-kit.tar.gz.sha256
 sha256sum -c sparrows-kit.tar.gz.sha256 &amp;&amp; tar -xzf sparrows-kit.tar.gz &amp;&amp; cd sparrows
@@ -2308,6 +2378,93 @@ ssh-keygen -t ed25519 -C "sparrows-admin"
 mat2 photo.jpg                  # writes photo.cleaned.jpg   (Debian/Ubuntu: apt install mat2)
 exiftool photo.cleaned.jpg      # check what is left         (apt install libimage-exiftool-perl)</code></pre></div>
 
+<h3 id="security"><span lang="en">Security audit</span><span lang="fr">Audit de sécurité</span><span lang="es">Auditoría de seguridad</span></h3>
+<p lang="en">A reading of the kit (commit <code>279a52b</code>) made on 2026-11-24, against attacks from inside the village, from a stolen unit and from outside. Nothing here was tried as an attack: each point is to be checked on the bench. Fixes that change a hard rule wait for a decision (<a href="#ideas">Part IV</a>).</p>
+<p lang="fr">Une lecture du kit (commit <code>279a52b</code>) faite le 2026-11-24, face aux attaques de l'intérieur du village, d'un boîtier volé et de l'extérieur. Rien ici n'a été essayé comme une attaque : chaque point est à vérifier au banc. Les corrections qui changent une règle dure attendent une décision (<a href="#ideas">partie IV</a>).</p>
+<p lang="es">Una lectura del kit (commit <code>279a52b</code>) hecha el 2026-11-24, frente a ataques desde dentro del pueblo, desde una unidad robada y desde fuera. Nada de esto se probó como un ataque: cada punto está por comprobar en el banco. Los arreglos que cambian una regla firme esperan una decisión (<a href="#ideas">parte IV</a>).</p>
+<h4><span lang="en">Already strong</span><span lang="fr">Déjà solide</span><span lang="es">Ya sólido</span></h4>
+<ul lang="en">
+  <li><strong>Messages:</strong> Reticulum and LXMF encrypt end to end, and an address proves itself. A station that carries a message can't read it or forge it, and a fake nest can't pretend to be a person.</li>
+  <li><strong>Admin:</strong> SSH keys only, root password locked, and the key list rewritten from the image at every update, so a key taken out really goes.</li>
+  <li><strong>Flyways:</strong> SAE (WPA3), with protected management frames: a stranger can't join the backbone or knock its links off.</li>
+  <li><strong>Build:</strong> OpenWrt's checksums checked against its signing keys; the Python wheels pinned by sha256; the kit made from committed files only, so no secret in it.</li>
+  <li><strong>Little to steal:</strong> no account, no DNS or connection log, logs in RAM; a Pi's /home encrypted, its passphrase never on the card, an approver's answer valid for one boot only.</li>
+  <li><strong>Message store:</strong> <code>lxmd</code> asks senders for a proof of work (stamps) and stops at 500 MB by default.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Messages :</strong> Reticulum et LXMF chiffrent de bout en bout, et une adresse se prouve elle-même. Une station qui porte un message ne peut ni le lire ni le falsifier, et un faux nid ne peut pas se faire passer pour une personne.</li>
+  <li><strong>Admin :</strong> SSH par clés seulement, mot de passe root verrouillé, et la liste des clés réécrite depuis l'image à chaque mise à jour : une clé retirée part vraiment.</li>
+  <li><strong>Voies :</strong> SAE (WPA3), avec trames de gestion protégées : un inconnu ne peut ni rejoindre la dorsale ni faire tomber ses liens.</li>
+  <li><strong>Construction :</strong> les sommes de contrôle d'OpenWrt vérifiées avec ses clés de signature ; les paquets Python fixés par sha256 ; le kit fait seulement de fichiers enregistrés dans git, donc sans aucun secret.</li>
+  <li><strong>Peu à voler :</strong> aucun compte, aucun journal de DNS ni de connexion, des journaux en RAM ; le /home d'un Pi chiffré, sa phrase de passe jamais sur la carte, la réponse d'un approbateur valable pour un seul démarrage.</li>
+  <li><strong>Boîte aux lettres :</strong> <code>lxmd</code> demande aux expéditeurs une preuve de travail (des timbres) et s'arrête à 500 Mo par défaut.</li>
+</ul>
+<ul lang="es">
+  <li><strong>Mensajes:</strong> Reticulum y LXMF cifran de extremo a extremo, y una dirección se prueba a sí misma. Una estación que lleva un mensaje no puede leerlo ni falsificarlo, y un nido falso no puede hacerse pasar por una persona.</li>
+  <li><strong>Administración:</strong> SSH solo con claves, contraseña de root bloqueada, y la lista de claves reescrita desde la imagen en cada actualización: una clave retirada se va de verdad.</li>
+  <li><strong>Rutas:</strong> SAE (WPA3), con tramas de gestión protegidas: un extraño no puede unirse a la troncal ni tumbar sus enlaces.</li>
+  <li><strong>Construcción:</strong> las sumas de control de OpenWrt comprobadas con sus claves de firma; los paquetes Python fijados por sha256; el kit hecho solo con archivos guardados en git, así que sin ningún secreto.</li>
+  <li><strong>Poco que robar:</strong> ninguna cuenta, ningún registro de DNS ni de conexiones, registros en RAM; el /home de una Pi cifrado, su frase de paso nunca en la tarjeta, la respuesta de un aprobador válida para un solo arranque.</li>
+  <li><strong>Buzón:</strong> <code>lxmd</code> pide a los remitentes una prueba de trabajo (sellos) y se detiene en 500 MB por defecto.</li>
+</ul>
+<h4><span lang="en">From inside: anyone on the open Wi-Fi</span><span lang="fr">De l'intérieur : n'importe qui sur le Wi-Fi ouvert</span><span lang="es">Desde dentro: cualquiera en el Wi-Fi abierto</span></h4>
+<p lang="en">The open Wi-Fi and every station are one segment: whoever joins it is inside.</p>
+<p lang="fr">Le Wi-Fi ouvert et toutes les stations forment un seul segment : qui le rejoint est à l'intérieur.</p>
+<p lang="es">El Wi-Fi abierto y todas las estaciones son un solo segmento: quien se une está dentro.</p>
+<ol lang="en">
+  <li><strong>Fake router advertisements (serious for the on-ramp).</strong> Any phone or laptop can send RAs, name itself DNS server, or take a nest's address. The welcome page and the kit over HTTP can then be faked. Messages over Reticulum are not touched. Today nothing enforces the hard rule "only nests send RAs". To decide: a guard on feeders (<a href="#ideas">Part IV</a>).</li>
+  <li><strong>A fake kit.</strong> Same cause, and the <code>.sha256</code> sits next to the kit, so whoever fakes one fakes both. Done today: a warning in <a href="#kit">Get the files</a>. To decide: a signed kit.</li>
+  <li><strong>Flooding.</strong> A device that sends a lot of broadcast fills every flyway of the village, since the segment is one. Nothing limits it today. Idea: a rate limit per Wi-Fi client on feeders.</li>
+  <li><strong>SSH visible to all.</strong> Port 22 of every station answers on the open Wi-Fi. Keys only (and 3 tries per connection, OpenWrt's default), so guessing is useless; but a flaw in <code>dropbear</code> would reach the whole village. Keep OpenWrt up to date.</li>
+  <li><strong>Listening.</strong> The Wi-Fi is open on purpose: a neighbour can read the on-ramp's DNS and HTTP. Nothing private goes there. Idea: Enhanced Open.</li>
+  <li><strong>The guestbook.</strong> 300 messages push every trace out. Accepted for now: it holds nothing of value.</li>
+</ol>
+<ol lang="fr">
+  <li><strong>Faux RA (grave pour la rampe d'accès).</strong> N'importe quel téléphone ou portable peut envoyer des RA, se déclarer serveur DNS, ou prendre l'adresse d'un nid. La page d'accueil et le kit par HTTP peuvent alors être faux. Les messages par Reticulum ne sont pas touchés. Aujourd'hui rien ne fait respecter la règle dure « seuls les nids envoient des RA ». À décider : une garde sur les mangeoires (<a href="#ideas">partie IV</a>).</li>
+  <li><strong>Un faux kit.</strong> Même cause, et le <code>.sha256</code> est à côté du kit : qui falsifie l'un falsifie l'autre. Fait aujourd'hui : un avertissement dans <a href="#kit">Récupérer les fichiers</a>. À décider : un kit signé.</li>
+  <li><strong>L'inondation.</strong> Un appareil qui envoie beaucoup de diffusion remplit toutes les voies du village, puisque le segment est unique. Rien ne la limite aujourd'hui. Idée : un débit maximum par client Wi-Fi sur les mangeoires.</li>
+  <li><strong>SSH visible de tous.</strong> Le port 22 de chaque station répond sur le Wi-Fi ouvert. Clés seulement (et 3 essais par connexion, le réglage d'OpenWrt), donc deviner ne sert à rien ; mais une faille de <code>dropbear</code> toucherait tout le village. Garder OpenWrt à jour.</li>
+  <li><strong>L'écoute.</strong> Le Wi-Fi est ouvert exprès : un voisin peut lire le DNS et le HTTP de la rampe d'accès. Rien de privé n'y passe. Idée : Enhanced Open.</li>
+  <li><strong>Le livre d'or.</strong> 300 messages chassent toutes les traces. Accepté pour l'instant : il ne contient rien de précieux.</li>
+</ol>
+<ol lang="es">
+  <li><strong>RA falsos (grave para la rampa de acceso).</strong> Cualquier teléfono o portátil puede enviar RA, declararse servidor DNS o quedarse con la dirección de un nido. La página de bienvenida y el kit por HTTP pueden entonces ser falsos. Los mensajes por Reticulum no se ven afectados. Hoy nada hace cumplir la regla firme «solo los nidos envían RA». Por decidir: una guarda en los comederos (<a href="#ideas">parte IV</a>).</li>
+  <li><strong>Un kit falso.</strong> La misma causa, y el <code>.sha256</code> está junto al kit: quien falsifica uno falsifica los dos. Hecho hoy: un aviso en <a href="#kit">Conseguir los archivos</a>. Por decidir: un kit firmado.</li>
+  <li><strong>La inundación.</strong> Un aparato que envía mucha difusión llena todas las rutas del pueblo, porque el segmento es uno solo. Hoy nada la limita. Idea: un caudal máximo por cliente Wi-Fi en los comederos.</li>
+  <li><strong>SSH visible para todos.</strong> El puerto 22 de cada estación responde en el Wi-Fi abierto. Solo claves (y 3 intentos por conexión, el valor de OpenWrt), así que adivinar no sirve de nada; pero un fallo de <code>dropbear</code> alcanzaría a todo el pueblo. Mantener OpenWrt al día.</li>
+  <li><strong>La escucha.</strong> El Wi-Fi es abierto a propósito: un vecino puede leer el DNS y el HTTP de la rampa de acceso. Nada privado pasa por ahí. Idea: Enhanced Open.</li>
+  <li><strong>El libro de visitas.</strong> 300 mensajes echan todas las huellas. Aceptado por ahora: no guarda nada valioso.</li>
+</ol>
+<h4><span lang="en">A stolen or opened unit</span><span lang="fr">Un boîtier volé ou ouvert</span><span lang="es">Una unidad robada o abierta</span></h4>
+<ol lang="en">
+  <li><strong>The village keys are in clear on every unit</strong> (<code>/etc/sparrows/flyway.key</code>, <code>hedge.key</code>), and OpenWrt's failsafe mode gives root with a button and a cable, no password. With them, a stranger's device joins the backbone. If a unit goes missing: new keys, then update every unit, the farthest first, or they lose the link on the way. Idea: one key per flyway. Failsafe stays: it is how a unit is recovered, and the locked /home is what protects kept data.</li>
+  <li><strong>One approver can erase.</strong> A single approver's phone, stolen with its Reticulum identity, can open or wipe every unit that trusts it. To decide: erasing takes two approvers.</li>
+</ol>
+<ol lang="fr">
+  <li><strong>Les clés du village sont en clair sur chaque boîtier</strong> (<code>/etc/sparrows/flyway.key</code>, <code>hedge.key</code>), et le mode failsafe d'OpenWrt donne root avec un bouton et un câble, sans mot de passe. Avec elles, l'appareil d'un inconnu rejoint la dorsale. Si un boîtier disparaît : de nouvelles clés, puis mettre à jour chaque boîtier, le plus lointain d'abord, sinon ils perdent le lien en route. Idée : une clé par voie. Le failsafe reste : c'est lui qui permet de récupérer un boîtier, et c'est le /home verrouillé qui protège les données gardées.</li>
+  <li><strong>Un seul approbateur peut effacer.</strong> Le téléphone d'un seul approbateur, volé avec son identité Reticulum, peut ouvrir ou effacer tous les boîtiers qui lui font confiance. À décider : effacer demande deux approbateurs.</li>
+</ol>
+<ol lang="es">
+  <li><strong>Las claves del pueblo están en claro en cada unidad</strong> (<code>/etc/sparrows/flyway.key</code>, <code>hedge.key</code>), y el modo failsafe de OpenWrt da root con un botón y un cable, sin contraseña. Con ellas, el aparato de un extraño se une a la troncal. Si una unidad desaparece: claves nuevas, y después actualizar cada unidad, la más lejana primero, o pierden el enlace por el camino. Idea: una clave por ruta. El failsafe se queda: es lo que permite recuperar una unidad, y el /home cerrado es lo que protege los datos guardados.</li>
+  <li><strong>Un solo aprobador puede borrar.</strong> El teléfono de un solo aprobador, robado con su identidad Reticulum, puede abrir o borrar todas las unidades que confían en él. Por decidir: borrar requiere dos aprobadores.</li>
+</ol>
+<h4><span lang="en">From outside</span><span lang="fr">De l'extérieur</span><span lang="es">Desde fuera</span></h4>
+<ul lang="en">
+  <li>The mesh has no link to the Internet (hard rule <a href="#limits">Standalone</a>), so there is no way in from it. The hub on a VPS (<a href="#outside">Part IV</a>) will need the same audit before it is built.</li>
+  <li>What comes from outside, OpenWrt and the Python wheels, is checked by signature and checksum at build time.</li>
+  <li>Automatic updates, when they come, are remote code execution by design: signed by several independent signers, and the checker itself audited (<a href="#rule">Who rules? Nobody</a>).</li>
+</ul>
+<ul lang="fr">
+  <li>Le mesh n'a aucun lien vers Internet (règle dure <a href="#limits">Autonome</a>) : on ne peut pas entrer par là. Le hub sur un VPS (<a href="#outside">partie IV</a>) aura besoin du même audit avant d'être construit.</li>
+  <li>Ce qui vient de l'extérieur, OpenWrt et les paquets Python, est vérifié par signature et somme de contrôle à la construction.</li>
+  <li>Les mises à jour automatiques, quand elles viendront, sont par construction de l'exécution de code à distance : signées par plusieurs signataires indépendants, et le vérificateur lui-même audité (<a href="#rule">Qui dirige ? Personne</a>).</li>
+</ul>
+<ul lang="es">
+  <li>La malla no tiene ningún enlace con Internet (regla firme <a href="#limits">Autónoma</a>): no se puede entrar por ahí. El hub en un VPS (<a href="#outside">parte IV</a>) necesitará la misma auditoría antes de construirse.</li>
+  <li>Lo que viene de fuera, OpenWrt y los paquetes Python, se comprueba por firma y suma de control al construir.</li>
+  <li>Las actualizaciones automáticas, cuando lleguen, son por diseño ejecución remota de código: firmadas por varios firmantes independientes, y el propio comprobador auditado (<a href="#rule">¿Quién manda? Nadie</a>).</li>
+</ul>
+
 <h3 id="check"><span lang="en">Check and troubleshoot</span><span lang="fr">Vérifier et chercher la panne</span><span lang="es">Comprobar y buscar la avería</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
 <p lang="en">Added on 2026-11-22. The same checks on every unit, in order: can you reach it, who is it, what was it built to do, is its network up, what does the log say. Each role's own checks are in its section (verify blocks). This list gathers commands that each ran on their own; run in this order, it has not been tried yet.</p>
 <p lang="fr">Ajouté le 2026-11-22. Les mêmes vérifications sur chaque boîtier, dans l'ordre : peut-on l'atteindre, qui est-il, pour quoi a-t-il été construit, son réseau est-il là, que dit le journal. Les vérifications propres à chaque rôle sont dans sa section (blocs verify). Cette liste rassemble des commandes qui ont chacune tourné seule ; lancée dans cet ordre, elle n'a pas encore été essayée.</p>
@@ -2776,6 +2933,57 @@ dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=32   # leave it empty again for ./
     <p lang="fr"><span class="k">Coût</span>Reticulum accepte d'être empaqueté pour OpenWrt depuis la version 0.8.7 (2024), mais son dépôt de paquets OpenWrt était encore en cours de stabilisation, et LXMF, Nomad Network et Retipedia sont à tester un par un dessus. Une mise à jour du Pi réécrit la carte SD : Wikipédia et les autres grosses données vont donc sur un disque USB. Moins de gens connaissent OpenWrt comme serveur, mais tous ceux qui construisent des stations l'apprennent de toute façon.</p>
     <p lang="es"><span class="k">Coste</span>Reticulum admite empaquetarse para OpenWrt desde la versión 0.8.7 (2024), pero su repositorio de paquetes OpenWrt aún se estaba estabilizando, y LXMF, Nomad Network y Retipedia hay que probarlos uno a uno encima. Una actualización de la Pi reescribe la tarjeta SD, así que Wikipedia y los demás datos grandes van en un disco USB. Menos gente conoce OpenWrt como servidor, aunque todo el que construye estaciones lo aprende de todos modos.</p>
   </div>
+  <div class="card">
+    <h4><span lang="en">A perch pair that links by itself</span><span lang="fr">Une paire de perchoirs qui se relie seule</span><span lang="es">Un par de perchas que se enlaza solo</span></h4>
+    <p lang="en">Added on 2026-11-24, for the rule <a href="#limits">Works alone</a>. Today both ends start as clients and one needs <code>perch ap</code> over SSH. Instead, a perch that hears no AP of its flyway for a random 2 to 5 minutes becomes the AP itself; one that hears an AP stays a client.</p>
+    <p lang="fr">Ajouté le 2026-11-24, pour la règle <a href="#limits">Marche seul</a>. Aujourd'hui les deux bouts démarrent en client et l'un d'eux a besoin de <code>perch ap</code> par SSH. À la place, un perchoir qui n'entend aucun AP de sa voie pendant 2 à 5 minutes tirées au hasard devient lui-même l'AP ; celui qui entend un AP reste client.</p>
+    <p lang="es">Añadido el 2026-11-24, para la regla <a href="#limits">Funciona sola</a>. Hoy los dos extremos arrancan como cliente y uno necesita <code>perch ap</code> por SSH. En su lugar, una percha que no oye ningún AP de su ruta durante 2 a 5 minutos al azar se vuelve AP; la que oye un AP sigue de cliente.</p>
+    <p lang="en"><span class="k">Cost</span>two perches that start at the same moment may both become AP: each must keep listening and step back to client. An AP also waits 60 s for radar (DFS) before it beacons.</p>
+    <p lang="fr"><span class="k">Coût</span>deux perchoirs qui démarrent au même moment peuvent devenir AP tous les deux : chacun doit continuer d'écouter et redevenir client. Un AP attend aussi 60 s le radar (DFS) avant d'émettre.</p>
+    <p lang="es"><span class="k">Coste</span>dos perchas que arrancan a la vez pueden volverse AP las dos: cada una debe seguir escuchando y volver a cliente. Un AP además espera 60 s al radar (DFS) antes de emitir.</p>
+  </div>
+  <div class="card">
+    <h4><span lang="en">Owner settings without a terminal</span><span lang="fr">Les réglages du propriétaire sans terminal</span><span lang="es">Los ajustes del dueño sin terminal</span></h4>
+    <p lang="en">Added on 2026-11-24. The owner's short list (the page node's name, its own pages) set without SSH. Two ways: a plain text file on the Pi's boot partition, which any computer opens (Linux, Windows, macOS); or a message signed by the owner's Reticulum identity, as the approvers already do for /home. Either way the unit reads only the allowed lines and checks them.</p>
+    <p lang="fr">Ajouté le 2026-11-24. La courte liste du propriétaire (le nom du nœud de pages, ses propres pages) réglée sans SSH. Deux façons : un simple fichier texte sur la partition de démarrage du Pi, que n'importe quel ordinateur ouvre (Linux, Windows, macOS) ; ou un message signé par l'identité Reticulum du propriétaire, comme le font déjà les approbateurs pour /home. Dans les deux cas, le boîtier ne lit que les lignes permises, et les vérifie.</p>
+    <p lang="es">Añadido el 2026-11-24. La lista corta del dueño (el nombre del nodo de páginas, sus propias páginas) ajustada sin SSH. Dos maneras: un simple archivo de texto en la partición de arranque de la Pi, que cualquier ordenador abre (Linux, Windows, macOS); o un mensaje firmado por la identidad Reticulum del dueño, como ya hacen los aprobadores para /home. En los dos casos, la unidad solo lee las líneas permitidas, y las comprueba.</p>
+    <p lang="en"><span class="k">Cost</span>the boot partition is not encrypted: whoever takes the card reads the name. The message way keeps it inside the locked /home.</p>
+    <p lang="fr"><span class="k">Coût</span>la partition de démarrage n'est pas chiffrée : qui prend la carte lit le nom. La façon par message le garde dans le /home verrouillé.</p>
+    <p lang="es"><span class="k">Coste</span>la partición de arranque no está cifrada: quien se lleva la tarjeta lee el nombre. La manera por mensaje lo guarda dentro del /home cerrado.</p>
+  </div>
+  <div class="card">
+    <h4><span lang="en">A router-advertisement guard on feeders</span><span lang="fr">Une garde contre les faux RA sur les mangeoires</span><span lang="es">Una guarda contra RA falsos en los comederos</span></h4>
+    <p lang="en">From the <a href="#security">security audit</a> of 2026-11-24. A feeder drops what only a nest may send when it comes in from its open Wi-Fi: router advertisements, DHCPv6 server answers, and neighbour advertisements for a nest's address. Then the hard rule <a href="#limits">Only nests send router advertisements</a> holds even against someone who breaks it on purpose.</p>
+    <p lang="fr">Issu de l'<a href="#security">audit de sécurité</a> du 2026-11-24. Une mangeoire jette ce que seul un nid a le droit d'envoyer quand ça arrive de son Wi-Fi ouvert : annonces de routeur, réponses de serveur DHCPv6, et annonces de voisin pour l'adresse d'un nid. La règle dure <a href="#limits">Seuls les nids envoient des annonces de routeur</a> tient alors même face à qui la viole exprès.</p>
+    <p lang="es">Salido de la <a href="#security">auditoría de seguridad</a> del 2026-11-24. Un comedero tira lo que solo un nido puede enviar cuando entra por su Wi-Fi abierto: anuncios de router, respuestas de servidor DHCPv6 y anuncios de vecino para la dirección de un nido. La regla firme <a href="#limits">Solo los nidos envían anuncios de router</a> se cumple entonces incluso frente a quien la rompe a propósito.</p>
+    <p lang="en"><span class="k">To decide</span>it takes a bridge filter of a few lines (nftables, bridge family, about 200 KB), and the hard rules say "no firewall" on a feeder. Is a filter that only enforces a hard rule allowed? ICMPv6 as a whole stays unfiltered.</p>
+    <p lang="fr"><span class="k">À décider</span>il faut un filtre de pont de quelques lignes (nftables, famille bridge, environ 200 Ko), et les règles dures disent « pas de pare-feu » sur une mangeoire. Un filtre qui ne fait que tenir une règle dure est-il permis ? ICMPv6 dans son ensemble reste non filtré.</p>
+    <p lang="es"><span class="k">Por decidir</span>hace falta un filtro de puente de pocas líneas (nftables, familia bridge, unos 200 KB), y las reglas firmes dicen «sin cortafuegos» en un comedero. ¿Se permite un filtro que solo hace cumplir una regla firme? ICMPv6 en conjunto sigue sin filtrar.</p>
+  </div>
+  <div class="card">
+    <h4><span lang="en">A signed kit</span><span lang="fr">Un kit signé</span><span lang="es">Un kit firmado</span></h4>
+    <p lang="en">From the <a href="#security">security audit</a>. Each version's kit and <code>SHA256SUMS</code> signed by the project's key, whose fingerprint is printed in this page and in the README; later by several independent signers, as Tor does. A fake nest or tree could then serve a fake kit, but not one that passes the check.</p>
+    <p lang="fr">Issu de l'<a href="#security">audit de sécurité</a>. Le kit et les <code>SHA256SUMS</code> de chaque version signés par la clé du projet, dont l'empreinte est imprimée dans cette page et dans le README ; plus tard par plusieurs signataires indépendants, comme le fait Tor. Un faux nid ou un faux arbre pourrait alors servir un faux kit, mais pas un qui passe la vérification.</p>
+    <p lang="es">Salido de la <a href="#security">auditoría de seguridad</a>. El kit y los <code>SHA256SUMS</code> de cada versión firmados con la clave del proyecto, cuya huella se imprime en esta página y en el README; más adelante por varios firmantes independientes, como hace Tor. Un nido o un árbol falsos podrían entonces servir un kit falso, pero no uno que pase la comprobación.</p>
+  </div>
+  <div class="card">
+    <h4><span lang="en">Erasing takes two approvers</span><span lang="fr">Effacer demande deux approbateurs</span><span lang="es">Borrar requiere dos aprobadores</span></h4>
+    <p lang="en">From the <a href="#security">security audit</a>. Today one approver can erase a unit. With two, a single stolen phone can still open a /home it was trusted with, but can no longer wipe every unit that trusts it.</p>
+    <p lang="fr">Issu de l'<a href="#security">audit de sécurité</a>. Aujourd'hui un seul approbateur peut effacer un boîtier. Avec deux, un seul téléphone volé peut encore ouvrir un /home qu'on lui a confié, mais ne peut plus effacer tous les boîtiers qui lui font confiance.</p>
+    <p lang="es">Salido de la <a href="#security">auditoría de seguridad</a>. Hoy un solo aprobador puede borrar una unidad. Con dos, un solo teléfono robado todavía puede abrir un /home que se le confió, pero ya no puede borrar todas las unidades que confían en él.</p>
+    <p lang="en"><span class="k">Cost</span>in an emergency, two people must answer in time.</p>
+    <p lang="fr"><span class="k">Coût</span>en cas d'urgence, deux personnes doivent répondre à temps.</p>
+    <p lang="es"><span class="k">Coste</span>en una emergencia, dos personas deben responder a tiempo.</p>
+  </div>
+  <div class="card">
+    <h4><span lang="en">One key per flyway, and Enhanced Open</span><span lang="fr">Une clé par voie, et Enhanced Open</span><span lang="es">Una clave por ruta, y Enhanced Open</span></h4>
+    <p lang="en">From the <a href="#security">security audit</a>. A key per flyway instead of one for the village: a stolen perch then opens only its own link. And Wi-Fi Enhanced Open (OWE) beside the open <code>Sparrows</code> Wi-Fi: encryption with no password, so a neighbour can't read the on-ramp, for the phones that support it.</p>
+    <p lang="fr">Issu de l'<a href="#security">audit de sécurité</a>. Une clé par voie au lieu d'une pour le village : un perchoir volé n'ouvre alors que son propre lien. Et Wi-Fi Enhanced Open (OWE) à côté du Wi-Fi ouvert <code>Sparrows</code> : du chiffrement sans mot de passe, pour qu'un voisin ne lise pas la rampe d'accès, sur les téléphones qui le savent.</p>
+    <p lang="es">Salido de la <a href="#security">auditoría de seguridad</a>. Una clave por ruta en vez de una para el pueblo: una percha robada solo abre entonces su propio enlace. Y Wi-Fi Enhanced Open (OWE) junto al Wi-Fi abierto <code>Sparrows</code>: cifrado sin contraseña, para que un vecino no lea la rampa de acceso, en los teléfonos que lo admiten.</p>
+    <p lang="en"><span class="k">Cost</span>per-flyway keys mean a list to keep per village; OWE needs a second, hidden network name, and old phones don't see it.</p>
+    <p lang="fr"><span class="k">Coût</span>des clés par voie, c'est une liste à tenir par village ; OWE demande un deuxième nom de réseau, caché, et les vieux téléphones ne le voient pas.</p>
+    <p lang="es"><span class="k">Coste</span>claves por ruta significan una lista que mantener por pueblo; OWE necesita un segundo nombre de red, oculto, y los teléfonos viejos no lo ven.</p>
+  </div>
 </div>
 
 <h3 id="outside"><span lang="en">A hub between villages, on a VPS</span><span lang="fr">Un hub entre villages, sur un VPS</span><span lang="es">Un hub entre pueblos, en un VPS</span> <span class="st idea" data-ui="idea">idea</span></h3>
@@ -3010,6 +3218,172 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
 <p class="note" lang="fr">Cela respecte la règle dure « Autonome » : ni Internet ni entreprise sur le lien. Le LoRa lui-même n'est pas chiffré, mais Reticulum chiffre chaque paquet. La carte et l'antenne sur un bâtiment public demandent l'accord du propriétaire.</p>
 <p class="note" lang="es">Respeta la regla firme «Autónoma»: ni Internet ni empresa en el enlace. LoRa en sí no va cifrado, pero Reticulum cifra cada paquete. La placa y la antena en un edificio público necesitan el permiso del dueño.</p>
 
+<h3 id="lora-village"><span lang="en">LoRa in the village: radios in the pocket</span><span lang="fr">Le LoRa au village : des radios dans la poche</span><span lang="es">LoRa en el pueblo: radios en el bolsillo</span> <span class="st idea" data-ui="idea">idea</span></h3>
+<p lang="en">Asked for on 2026-11-28. Not decided, not tested. A LoRa channel that covers the village, for small radios people carry: a LoRa board linked to a phone, or a handheld with its own screen and keyboard. It reaches places the Wi-Fi doesn't (fields, woods, a power cut with the feeders down) and uses very little battery. It is still Reticulum: the same keys, the same LXMF messages, the same apps. A nest with a LoRa board joins the two: someone on LoRa writes to someone on the Wi-Fi as if both were on the Wi-Fi.</p>
+<p lang="fr">Demandé le 2026-11-28. Pas décidé, pas testé. Un canal LoRa qui couvre le village, pour de petites radios que les gens portent sur eux : une carte LoRa reliée à un téléphone, ou un appareil de poche avec son propre écran et son clavier. Il va là où le Wi-Fi ne va pas (champs, bois, coupure de courant avec les mangeoires éteintes) et use très peu de batterie. C'est toujours Reticulum : les mêmes clés, les mêmes messages LXMF, les mêmes applis. Un nid avec une carte LoRa relie les deux : quelqu'un sur le LoRa écrit à quelqu'un sur le Wi-Fi comme si les deux étaient sur le Wi-Fi.</p>
+<p lang="es">Pedido el 2026-11-28. Sin decidir, sin probar. Un canal LoRa que cubre el pueblo, para radios pequeñas que la gente lleva encima: una placa LoRa unida a un teléfono, o un aparato de bolsillo con su propia pantalla y teclado. Llega donde el Wi-Fi no llega (campos, bosques, un corte de luz con los comederos apagados) y gasta muy poca batería. Sigue siendo Reticulum: las mismas claves, los mismos mensajes LXMF, las mismas apps. Un nido con una placa LoRa une los dos: alguien en LoRa escribe a alguien en el Wi-Fi como si los dos estuvieran en el Wi-Fi.</p>
+
+<h4><span lang="en">What it can carry, and what it can't</span><span lang="fr">Ce qu'il peut porter, et ce qu'il ne peut pas</span><span lang="es">Lo que puede llevar, y lo que no</span></h4>
+<ul lang="en">
+  <li><strong>Text: yes.</strong> At the channel below (about 6 kbit/s), a short message is about a third of a second on air.</li>
+  <li><strong>Voice notes: yes.</strong> This is the walkie-talkie way: press, speak, send. Sideband records them with Codec2, a voice codec made for slow radio: 10 seconds is about 1.5 kB, a few seconds on air.</li>
+  <li><strong>Live calls: not over LoRa in the EU.</strong> Codec2 can go down to 700 bit/s, but a call sends without a break while someone talks. By our estimate it would use about a third of the air time, far over the 10 % the law allows. Live calls stay on the Wi-Fi, where Sideband already makes them (LXST).</li>
+  <li><strong>Photos and files: no.</strong> They take the whole channel for minutes. Send them over the Wi-Fi.</li>
+  <li><strong>The nest's 10 % is the village's budget.</strong> Every packet the nest relays to LoRa counts against its own air time. Two radios in range of each other talk directly, without the nest, and spend nothing of it.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Le texte : oui.</strong> Avec le canal plus bas (environ 6 kbit/s), un message court passe environ un tiers de seconde en l'air.</li>
+  <li><strong>Les messages vocaux : oui.</strong> C'est la manière talkie-walkie : appuyer, parler, envoyer. Sideband les enregistre en Codec2, un codec de voix fait pour les radios lentes : 10 secondes font environ 1,5 ko, quelques secondes en l'air.</li>
+  <li><strong>Les appels en direct : pas sur le LoRa dans l'UE.</strong> Codec2 descend jusqu'à 700 bit/s, mais un appel émet sans arrêt pendant que quelqu'un parle. À notre estimation, il prendrait environ un tiers du temps d'antenne, bien au-delà des 10 % que la loi permet. Les appels en direct restent sur le Wi-Fi, où Sideband les fait déjà (LXST).</li>
+  <li><strong>Les photos et les fichiers : non.</strong> Ils prennent tout le canal pendant des minutes. Les envoyer par le Wi-Fi.</li>
+  <li><strong>Les 10 % du nid sont le budget du village.</strong> Chaque paquet que le nid relaie vers le LoRa compte sur son propre temps d'antenne. Deux radios à portée l'une de l'autre se parlent en direct, sans le nid, et n'en dépensent rien.</li>
+</ul>
+<ul lang="es">
+  <li><strong>Texto: sí.</strong> Con el canal de abajo (unos 6 kbit/s), un mensaje corto pasa un tercio de segundo en el aire.</li>
+  <li><strong>Notas de voz: sí.</strong> Es la manera walkie-talkie: pulsar, hablar, enviar. Sideband las graba con Codec2, un códec de voz hecho para radios lentas: 10 segundos son unos 1,5 kB, unos segundos en el aire.</li>
+  <li><strong>Llamadas en directo: no por LoRa en la UE.</strong> Codec2 baja hasta 700 bit/s, pero una llamada emite sin parar mientras alguien habla. Según nuestra estimación usaría un tercio del tiempo de antena, muy por encima del 10 % que permite la ley. Las llamadas en directo se quedan en el Wi-Fi, donde Sideband ya las hace (LXST).</li>
+  <li><strong>Fotos y archivos: no.</strong> Ocupan todo el canal durante minutos. Enviarlos por el Wi-Fi.</li>
+  <li><strong>El 10 % del nido es el presupuesto del pueblo.</strong> Cada paquete que el nido retransmite a LoRa cuenta en su propio tiempo de antena. Dos radios al alcance una de otra hablan directamente, sin el nido, y no gastan nada de él.</li>
+</ul>
+
+<h4><span lang="en">Which radio</span><span lang="fr">Quelle radio</span><span lang="es">Qué radio</span></h4>
+<ul lang="en">
+  <li><strong>A board linked to a phone (the default).</strong> A board with RNode firmware, joined to Sideband on Android by a USB cable or by Bluetooth. The phone does everything else: contacts, messages, voice notes. Sideband also runs on Linux, Windows and macOS; there is no iPhone app we can recommend yet.
+    <ul>
+      <li><strong>Heltec LoRa32 V3 or V4:</strong> cheap, SX1262, a small screen that shows the Bluetooth pairing code. Its antenna socket is fragile.</li>
+      <li><strong>LilyGO T-Beam Supreme:</strong> SX1262, GPS, a holder for an 18650 battery: the sturdiest pocket radio of the list.</li>
+      <li><strong>LilyGO T-Echo, RAK4631:</strong> nRF52 chip, Bluetooth Low Energy only, very little power. Check that the Sideband version you have connects to them before buying several.</li>
+    </ul></li>
+  <li><strong>A handheld with no phone.</strong> The LilyGO T-Deck Plus (screen, keyboard, SX1262). Two firmwares to try, both young: <em>Ratdeck / rsDeck</em>, a standalone LXMF messenger that can also act as an RNode for a phone; and <em>Pyxis</em>, which adds LXST voice, marked as work in progress by its author. They run on this board only, unlike RNode, which runs on many: a known exception to the multiplatform aim.</li>
+  <li><strong>The nest's board:</strong> any board above, plugged into the nest by USB, high up, with an outdoor antenna (about 5 dBi). The nest relays between LoRa and the Wi-Fi.</li>
+  <li>For a first test: three Heltec V3 (two phones, one nest) and one T-Deck Plus. Check the list of boards in <code>rnodeconf</code> first: it changes with new versions.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Une carte reliée à un téléphone (le choix par défaut).</strong> Une carte avec le firmware RNode, reliée à Sideband sur Android par un câble USB ou par Bluetooth. Le téléphone fait tout le reste : contacts, messages, messages vocaux. Sideband tourne aussi sous Linux, Windows et macOS ; il n'y a pas encore d'appli iPhone à recommander.
+    <ul>
+      <li><strong>Heltec LoRa32 V3 ou V4 :</strong> pas chère, SX1262, un petit écran qui affiche le code d'appairage Bluetooth. Sa prise d'antenne est fragile.</li>
+      <li><strong>LilyGO T-Beam Supreme :</strong> SX1262, GPS, un support pour une batterie 18650 : la radio de poche la plus solide de la liste.</li>
+      <li><strong>LilyGO T-Echo, RAK4631 :</strong> puce nRF52, Bluetooth basse consommation seulement, très peu gourmandes. Vérifier que sa version de Sideband s'y connecte avant d'en acheter plusieurs.</li>
+    </ul></li>
+  <li><strong>Un appareil de poche sans téléphone.</strong> Le LilyGO T-Deck Plus (écran, clavier, SX1262). Deux firmwares à essayer, jeunes tous les deux : <em>Ratdeck / rsDeck</em>, une messagerie LXMF autonome qui peut aussi servir de RNode à un téléphone ; et <em>Pyxis</em>, qui ajoute la voix LXST, marqué « en cours » par son auteur. Ils ne tournent que sur cette carte, au contraire de RNode, qui tourne sur beaucoup : une exception connue au but multiplateforme.</li>
+  <li><strong>La carte du nid :</strong> n'importe quelle carte ci-dessus, branchée en USB sur le nid, en hauteur, avec une antenne d'extérieur (environ 5 dBi). Le nid relaie entre le LoRa et le Wi-Fi.</li>
+  <li>Pour un premier essai : trois Heltec V3 (deux téléphones, un nid) et un T-Deck Plus. Vérifier d'abord la liste des cartes dans <code>rnodeconf</code> : elle change avec les versions.</li>
+</ul>
+<ul lang="es">
+  <li><strong>Una placa unida a un teléfono (la opción por defecto).</strong> Una placa con el firmware RNode, unida a Sideband en Android por un cable USB o por Bluetooth. El teléfono hace todo lo demás: contactos, mensajes, notas de voz. Sideband también funciona en Linux, Windows y macOS; todavía no hay app de iPhone que podamos recomendar.
+    <ul>
+      <li><strong>Heltec LoRa32 V3 o V4:</strong> barata, SX1262, una pantalla pequeña que muestra el código de emparejamiento Bluetooth. Su conector de antena es frágil.</li>
+      <li><strong>LilyGO T-Beam Supreme:</strong> SX1262, GPS, un soporte para una batería 18650: la radio de bolsillo más robusta de la lista.</li>
+      <li><strong>LilyGO T-Echo, RAK4631:</strong> chip nRF52, solo Bluetooth de bajo consumo, gastan muy poco. Comprobar que la versión de Sideband que se tiene se conecta a ellas antes de comprar varias.</li>
+    </ul></li>
+  <li><strong>Un aparato de bolsillo sin teléfono.</strong> El LilyGO T-Deck Plus (pantalla, teclado, SX1262). Dos firmwares para probar, jóvenes los dos: <em>Ratdeck / rsDeck</em>, una mensajería LXMF autónoma que también puede servir de RNode a un teléfono; y <em>Pyxis</em>, que añade voz LXST, marcado «en desarrollo» por su autor. Solo funcionan en esta placa, al contrario que RNode, que funciona en muchas: una excepción conocida al objetivo multiplataforma.</li>
+  <li><strong>La placa del nido:</strong> cualquiera de arriba, enchufada por USB al nido, en alto, con una antena de exterior (unos 5 dBi). El nido retransmite entre LoRa y el Wi-Fi.</li>
+  <li>Para una primera prueba: tres Heltec V3 (dos teléfonos, un nido) y un T-Deck Plus. Comprobar antes la lista de placas en <code>rnodeconf</code>: cambia con las versiones.</li>
+</ul>
+
+<h4><span lang="en">One channel for every Sparrows village</span><span lang="fr">Un seul canal pour tous les villages Sparrows</span><span lang="es">Un solo canal para todos los pueblos Sparrows</span></h4>
+<p lang="en">By the hard rule <a href="#limits">Works alone, the same everywhere</a>, the channel would be fixed for every Sparrows network, like the Wi-Fi name: a radio set up in one village works in all of them. The country chosen at build time picks the band. Proposed for the EU, to decide after the test:</p>
+<p lang="fr">Par la règle dure <a href="#limits">Marche seul, pareil partout</a>, le canal serait fixe pour tous les réseaux Sparrows, comme le nom du Wi-Fi : une radio réglée dans un village marche dans tous. Le pays choisi au build donne la bande. Proposé pour l'UE, à décider après l'essai :</p>
+<p lang="es">Por la regla firme <a href="#limits">Funciona sola, igual en todas partes</a>, el canal sería fijo para todas las redes Sparrows, como el nombre del Wi-Fi: una radio configurada en un pueblo funciona en todos. El país elegido al construir da la banda. Propuesto para la UE, a decidir tras la prueba:</p>
+<ul lang="en">
+  <li><strong>869.525 MHz, 250 kHz wide, SF8, coding rate 5:</strong> the 500 mW sub-band (10 % of the time), about 6 kbit/s. Fast enough for voice notes, far enough for a village when the nest's antenna is high.</li>
+  <li><strong>The air is shared.</strong> Meshtastic's default EU channel sits in the same sub-band, and so would a <a href="#lora">LoRa flyway</a>. LoRa with different settings mostly doesn't decode the other, but it still takes air time. The test must show how much is left.</li>
+  <li><strong>Power:</strong> a pocket radio at 17 dBm with its small antenna is about 50 mW ERP, well under the limit, and saves battery. The nest's board may go higher: see the ERP rule in <a href="#lora">the flyway</a>.</li>
+  <li><strong>Other regions:</strong> the same width and SF on the band your law allows (for example 915 MHz in the Americas). Check it.</li>
+</ul>
+<ul lang="fr">
+  <li><strong>869,525 MHz, 250 kHz de large, SF8, taux de codage 5 :</strong> la sous-bande à 500 mW (10 % du temps), environ 6 kbit/s. Assez rapide pour les messages vocaux, assez loin pour un village quand l'antenne du nid est haute.</li>
+  <li><strong>L'air est partagé.</strong> Le canal UE par défaut de Meshtastic est dans la même sous-bande, et une <a href="#lora">voie LoRa</a> le serait aussi. Un LoRa aux réglages différents ne décode en général pas l'autre, mais il prend quand même du temps d'antenne. L'essai doit montrer ce qu'il reste.</li>
+  <li><strong>Puissance :</strong> une radio de poche à 17 dBm avec sa petite antenne fait environ 50 mW PAR, bien sous la limite, et économise la batterie. La carte du nid peut monter plus haut : voir la règle de la PAR dans <a href="#lora">la voie</a>.</li>
+  <li><strong>Autres régions :</strong> la même largeur et le même SF sur la bande que permet votre loi (par exemple 915 MHz sur le continent américain). Le vérifier.</li>
+</ul>
+<ul lang="es">
+  <li><strong>869,525 MHz, 250 kHz de ancho, SF8, tasa de codificación 5:</strong> la subbanda de 500 mW (10 % del tiempo), unos 6 kbit/s. Bastante rápido para notas de voz, bastante lejos para un pueblo cuando la antena del nido está alta.</li>
+  <li><strong>El aire se comparte.</strong> El canal UE por defecto de Meshtastic está en la misma subbanda, y también lo estaría una <a href="#lora">ruta LoRa</a>. Un LoRa con otros ajustes en general no descodifica al otro, pero igual ocupa tiempo de antena. La prueba debe mostrar cuánto queda.</li>
+  <li><strong>Potencia:</strong> una radio de bolsillo a 17 dBm con su antena pequeña son unos 50 mW PRA, muy por debajo del límite, y ahorra batería. La placa del nido puede subir más: ver la regla de la PRA en <a href="#lora">la ruta</a>.</li>
+  <li><strong>Otras regiones:</strong> el mismo ancho y el mismo SF en la banda que permita vuestra ley (por ejemplo 915 MHz en América). Comprobarlo.</li>
+</ul>
+
+<h4><span lang="en">How we would test it, in four steps</span><span lang="fr">Comment on l'essaierait, en quatre étapes</span><span lang="es">Cómo lo probaríamos, en cuatro pasos</span></h4>
+<ol lang="en">
+  <li><strong>Two phones, no nest.</strong> Flash two boards, link each to a phone running Sideband, set the channel above in both, and send a message and a voice note. Walk apart and note where it stops.</li>
+  <li><strong>The nest joins.</strong> Plug a third board into the nest and add the block below. A phone on LoRa writes to a phone on the Sparrows Wi-Fi, and back.</li>
+  <li><strong>Someone away.</strong> Turn one phone off, send to it, turn it on: the nest's message store hands the message over the LoRa.</li>
+  <li><strong>The handheld.</strong> A T-Deck Plus with Ratdeck, on the same channel, writes to a phone on the Wi-Fi.</li>
+</ol>
+<ol lang="fr">
+  <li><strong>Deux téléphones, sans nid.</strong> Flasher deux cartes, relier chacune à un téléphone avec Sideband, régler le canal ci-dessus sur les deux, et envoyer un message et un message vocal. S'éloigner et noter où cela s'arrête.</li>
+  <li><strong>Le nid s'ajoute.</strong> Brancher une troisième carte sur le nid et ajouter le bloc plus bas. Un téléphone sur le LoRa écrit à un téléphone sur le Wi-Fi Sparrows, et retour.</li>
+  <li><strong>Quelqu'un d'absent.</strong> Éteindre un téléphone, lui écrire, le rallumer : la boîte aux lettres du nid remet le message par le LoRa.</li>
+  <li><strong>L'appareil de poche.</strong> Un T-Deck Plus avec Ratdeck, sur le même canal, écrit à un téléphone sur le Wi-Fi.</li>
+</ol>
+<ol lang="es">
+  <li><strong>Dos teléfonos, sin nido.</strong> Flashear dos placas, unir cada una a un teléfono con Sideband, poner el canal de arriba en los dos, y enviar un mensaje y una nota de voz. Alejarse y apuntar dónde se corta.</li>
+  <li><strong>Se suma el nido.</strong> Enchufar una tercera placa al nido y añadir el bloque de abajo. Un teléfono en LoRa escribe a un teléfono en el Wi-Fi Sparrows, y vuelta.</li>
+  <li><strong>Alguien ausente.</strong> Apagar un teléfono, escribirle, encenderlo: el buzón del nido entrega el mensaje por LoRa.</li>
+  <li><strong>El aparato de bolsillo.</strong> Un T-Deck Plus con Ratdeck, en el mismo canal, escribe a un teléfono en el Wi-Fi.</li>
+</ol>
+<p lang="en">In Sideband: Preferences, Connectivity, turn on <em>Connect via RNode</em>; then Hardware, RNode: the channel values, and USB or Bluetooth. For Bluetooth, put the board in pairing mode from that screen, then pair it in Android's Bluetooth settings with the code the board shows. <span class="st nt" data-ui="nt">not yet tested</span></p>
+<p lang="fr">Dans Sideband : Préférences, Connectivité, activer <em>Connect via RNode</em> ; puis Matériel, RNode : les valeurs du canal, et USB ou Bluetooth. Pour le Bluetooth, mettre la carte en mode appairage depuis cet écran, puis l'appairer dans les réglages Bluetooth d'Android avec le code que la carte affiche. <span class="st nt" data-ui="nt">not yet tested</span></p>
+<p lang="es">En Sideband: Preferencias, Conectividad, activar <em>Connect via RNode</em>; luego Hardware, RNode: los valores del canal, y USB o Bluetooth. Para Bluetooth, poner la placa en modo emparejamiento desde esa pantalla, y emparejarla en los ajustes Bluetooth de Android con el código que muestra la placa. <span class="st nt" data-ui="nt">not yet tested</span></p>
+<div class="code"><div class="hd"><span class="file">admin laptop, then the nest</span></div><pre><code># Not yet tested. ---- On the admin laptop, while it has Internet: flash each board once ----
+python3 -m venv ~/rns &amp;&amp; ~/rns/bin/pip install rns
+~/rns/bin/rnodeconf --autoinstall            # pick the board (e.g. Heltec LoRa32 V3) and 868 MHz
+~/rns/bin/rnodeconf /dev/ttyACM0 --info      # firmware version, board, frequency range
+~/rns/bin/rnodeconf /dev/ttyACM0 -b          # Bluetooth on (pocket radios used with a phone)
+# Leave it in normal (host-controlled) mode: the app or the nest sets the channel at each start
+
+# ---- In Sideband, on each phone (Hardware -&gt; RNode). The same values everywhere ----
+#   Frequency 869525000   Bandwidth 250000   Spreading factor 8   Coding rate 5   TX power 17
+
+# ---- On the nest: the board on USB. Add under [interfaces] in /etc/reticulum/config ----
+ls -l /dev/serial/by-id/                     # a stable name for the board
+  [[Sparrows LoRa]]
+    type = RNodeInterface
+    enabled = yes
+    port = /dev/serial/by-id/&lt;the board&gt;
+    frequency = 869525000         # 869.4-869.65 MHz: 500 mW ERP, 10 % of the time
+    bandwidth = 250000            # the whole sub-band
+    spreadingfactor = 8           # about 6 kbit/s: text and voice notes
+    codingrate = 5
+    txpower = 17                  # ERP = txpower + antenna dBi - cable loss - 2.15, max 27
+    airtime_limit_long = 9        # under the 10 % of the law
+    airtime_limit_short = 33
+    # mode = access_point         # to try later: fewer announces on the air
+
+# Apply and verify on the nest
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart
+rns status                        # "Sparrows LoRa" Up, its airtime and channel load
+logread -e rnsd | tail -n 50      # no serial error
+# From a phone on the Sparrows Wi-Fi: the LoRa phone shows up in Sideband's announces; send it a message
+
+# Undo on the nest: enabled = no on that block (or delete it), then
+/etc/init.d/rnsd restart &amp;&amp; /etc/init.d/lxmd restart
+# Undo on a phone: turn off "Connect via RNode" in Sideband</code></pre></div>
+
+<h4><span lang="en">Care for people</span><span lang="fr">Prendre soin des gens</span><span lang="es">Cuidar a la gente</span></h4>
+<ul lang="en">
+  <li><strong>A radio that sends can be found.</strong> Reticulum hides what you say, not where you stand: anyone with a direction finder can locate a transmitter. Where that matters, leave the radio off, or only listen.</li>
+  <li><strong>Announces carry your display name</strong> to everyone in range, in every village: use a pseudonym, as on the Wi-Fi.</li>
+  <li><strong>A lost handheld is a lost key.</strong> Find out whether the firmware protects its identity; until then, assume it doesn't.</li>
+  <li><strong>Licences:</strong> read each firmware's before putting it in the kit (Ratdeck is GPL-3.0; LXST is CC BY-NC-ND for now).</li>
+</ul>
+<ul lang="fr">
+  <li><strong>Une radio qui émet peut être trouvée.</strong> Reticulum cache ce qu'on dit, pas où l'on est : quiconque a un goniomètre peut localiser un émetteur. Là où cela compte, laisser la radio éteinte, ou seulement écouter.</li>
+  <li><strong>Les annonces portent votre nom affiché</strong> à tous ceux à portée, dans tous les villages : prendre un pseudonyme, comme sur le Wi-Fi.</li>
+  <li><strong>Un appareil de poche perdu, c'est une clé perdue.</strong> Chercher si le firmware protège son identité ; d'ici là, supposer que non.</li>
+  <li><strong>Licences :</strong> lire celle de chaque firmware avant de le mettre dans le kit (Ratdeck est en GPL-3.0 ; LXST est en CC BY-NC-ND pour l'instant).</li>
+</ul>
+<ul lang="es">
+  <li><strong>Una radio que emite se puede encontrar.</strong> Reticulum oculta lo que se dice, no dónde se está: cualquiera con un goniómetro puede localizar un emisor. Donde eso importe, dejar la radio apagada, o solo escuchar.</li>
+  <li><strong>Los anuncios llevan tu nombre visible</strong> a todos los que están al alcance, en todos los pueblos: usar un seudónimo, como en el Wi-Fi.</li>
+  <li><strong>Un aparato de bolsillo perdido es una clave perdida.</strong> Averiguar si el firmware protege su identidad; mientras tanto, suponer que no.</li>
+  <li><strong>Licencias:</strong> leer la de cada firmware antes de ponerlo en el kit (Ratdeck es GPL-3.0; LXST es CC BY-NC-ND por ahora).</li>
+</ul>
+<p lang="en"><span class="k">Left to do</span>the test; then, if it is decided, the nest image finds a plugged board by itself and sets the standard channel, with nothing to configure.</p>
+<p lang="fr"><span class="k">Reste à faire</span>l'essai ; puis, si c'est décidé, l'image de nid trouve toute seule une carte branchée et règle le canal standard, sans rien à configurer.</p>
+<p lang="es"><span class="k">Queda</span>la prueba; luego, si se decide, la imagen de nido encuentra sola una placa enchufada y pone el canal estándar, sin nada que configurar.</p>
+
 <h3 id="home"><span lang="en">Kept data: a locked /home</span><span lang="fr">Les données gardées : un /home verrouillé</span><span lang="es">Los datos guardados: un /home cerrado</span> <span class="st nt" data-ui="nt">not yet tested</span></h3>
 <p lang="en">Decided on 2026-11-21. Started on 2026-11-22: the partition, the lock, opening it by hand and the update guard are written, not yet tested (<a href="#home-setup">Locked /home</a>). The request over Reticulum was written on 2026-11-22, tested on a laptop, not yet on a unit (<a href="#home-approvers">Approvers</a>). On units with an SD card (Pi nests and trees), what must outlive every update lives on a third partition, <code>/home</code>, made at first boot in the empty rest of the card: the identities people know (the unit's address, its message store, its Sparrows page) and the unit's own choices. It is locked with <a href="#g-luks">LUKS</a>, and opens in one of two ways: a person approves a request the unit sends over Reticulum, or the admin types the passphrase over SSH. Units with flash only (CPE510, EAP225) have no room for it, and nothing of their own to keep.</p>
 <p lang="fr">Décidé le 2026-11-21. Commencé le 2026-11-22 : la partition, le verrou, l'ouverture à la main et la protection des mises à jour sont écrits, pas encore testés (<a href="#home-setup">/home verrouillé</a>). La demande par Reticulum a été écrite le 2026-11-22, testée sur un portable, pas encore sur un boîtier (<a href="#home-approvers">Approbateurs</a>). Sur les boîtiers à carte SD (nids et arbres sur Pi), ce qui doit survivre à chaque mise à jour vit sur une troisième partition, <code>/home</code>, créée au premier démarrage dans le reste vide de la carte : les identités que les gens connaissent (l'adresse du boîtier, sa boîte aux lettres, sa page Sparrows) et les choix propres au boîtier. Elle est verrouillée avec <a href="#g-luks">LUKS</a>, et s'ouvre de deux façons : une personne accepte une demande que le boîtier envoie par Reticulum, ou l'admin tape la phrase de passe par SSH. Les boîtiers à mémoire flash seule (CPE510, EAP225) n'ont pas la place, et rien à eux à garder.</p>
@@ -3237,6 +3611,14 @@ rnprobe rnstransport.probe &lt;the other nest's transport hash&gt;   # RSSI and 
   <dd lang="en">Radiated power compared with a simple dipole antenna: EIRP minus 2.15 dB. The LoRa limits are given in ERP.</dd>
   <dd lang="fr">Puissance rayonnée comparée à une simple antenne dipôle : la PIRE moins 2,15 dB. Les limites du LoRa sont données en PAR.</dd>
   <dd lang="es">Potencia radiada comparada con una simple antena dipolo: la PIRE menos 2,15 dB. Los límites de LoRa se dan en PRA.</dd>
+  <dt>RNode</dt>
+  <dd lang="en">A cheap LoRa board running the RNode firmware. It turns radio into a Reticulum interface for a nest, a laptop or a phone (by USB or Bluetooth).</dd>
+  <dd lang="fr">Une carte LoRa bon marché avec le firmware RNode. Elle fait de la radio une interface Reticulum pour un nid, un portable ou un téléphone (par USB ou Bluetooth).</dd>
+  <dd lang="es">Una placa LoRa barata con el firmware RNode. Convierte la radio en una interfaz Reticulum para un nido, un portátil o un teléfono (por USB o Bluetooth).</dd>
+  <dt>Codec2</dt>
+  <dd lang="en">An open voice codec made for slow radio links: speech still understood at 700 to 3200 bit/s. Sideband uses it for voice notes over LoRa.</dd>
+  <dd lang="fr">Un codec de voix libre fait pour les liens radio lents : la parole reste compréhensible de 700 à 3200 bit/s. Sideband s'en sert pour les messages vocaux sur le LoRa.</dd>
+  <dd lang="es">Un códec de voz libre hecho para enlaces de radio lentos: el habla se entiende aún entre 700 y 3200 bit/s. Sideband lo usa para las notas de voz por LoRa.</dd>
   <dt><span lang="en">Fresnel zone</span><span lang="fr">Zone de Fresnel</span><span lang="es">Zona de Fresnel</span></dt>
   <dd lang="en">The fat oval of space around the straight line between two antennas. Most of the signal travels through it, so trees or roofs inside it weaken a link even when each end can see the other.</dd>
   <dd lang="fr">L'ovale épais autour de la ligne droite entre deux antennes. L'essentiel du signal passe par là : des arbres ou des toits dedans affaiblissent un lien même quand chaque bout voit l'autre.</dd>

@@ -641,3 +641,38 @@ dd if=/dev/zero of=/dev/mmcblk0p3 bs=1M count=32   # leave it empty again for ./
 # All ok: go on with ./build.sh home. Any BAD: another card (or a better power supply), then again.
 # On the admin laptop, f3 tells a card's real size. It ERASES the card:
 #   sudo apt install f3 && sudo f3probe --destructive --time-ops /dev/sdX
+### lora-village
+# Not yet tested. ---- On the admin laptop, while it has Internet: flash each board once ----
+python3 -m venv ~/rns && ~/rns/bin/pip install rns
+~/rns/bin/rnodeconf --autoinstall            # pick the board (e.g. Heltec LoRa32 V3) and 868 MHz
+~/rns/bin/rnodeconf /dev/ttyACM0 --info      # firmware version, board, frequency range
+~/rns/bin/rnodeconf /dev/ttyACM0 -b          # Bluetooth on (pocket radios used with a phone)
+# Leave it in normal (host-controlled) mode: the app or the nest sets the channel at each start
+
+# ---- In Sideband, on each phone (Hardware -> RNode). The same values everywhere ----
+#   Frequency 869525000   Bandwidth 250000   Spreading factor 8   Coding rate 5   TX power 17
+
+# ---- On the nest: the board on USB. Add under [interfaces] in /etc/reticulum/config ----
+ls -l /dev/serial/by-id/                     # a stable name for the board
+  [[Sparrows LoRa]]
+    type = RNodeInterface
+    enabled = yes
+    port = /dev/serial/by-id/<the board>
+    frequency = 869525000         # 869.4-869.65 MHz: 500 mW ERP, 10 % of the time
+    bandwidth = 250000            # the whole sub-band
+    spreadingfactor = 8           # about 6 kbit/s: text and voice notes
+    codingrate = 5
+    txpower = 17                  # ERP = txpower + antenna dBi - cable loss - 2.15, max 27
+    airtime_limit_long = 9        # under the 10 % of the law
+    airtime_limit_short = 33
+    # mode = access_point         # to try later: fewer announces on the air
+
+# Apply and verify on the nest
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
+rns status                        # "Sparrows LoRa" Up, its airtime and channel load
+logread -e rnsd | tail -n 50      # no serial error
+# From a phone on the Sparrows Wi-Fi: the LoRa phone shows up in Sideband's announces; send it a message
+
+# Undo on the nest: enabled = no on that block (or delete it), then
+/etc/init.d/rnsd restart && /etc/init.d/lxmd restart
+# Undo on a phone: turn off "Connect via RNode" in Sideband
