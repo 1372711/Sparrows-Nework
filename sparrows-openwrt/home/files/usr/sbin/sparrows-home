@@ -22,7 +22,7 @@
 # identity stays on the system side, so the unit relays even while /home is locked.
 # The passphrase is never written on the card. The unlock key that approvers open (sparrows-door) is
 # kept inside /home, so it can be sealed again when the approvers change; outside, only sealed copies.
-# Status: tested 2026-11-22 on the Pi 4 nest (setup, lock, sparrows-unlock). On a Pi Zero 2 W the same
+# Status: tested 2026-11-22 on the Pi 4 nest (setup, lock, sparrows-unlock), again 2026-11-28. On a Pi Zero 2 W the same
 # day, setup failed ("No key available", then a mount error): its SD card gave back other data than
 # was written, with no error (a read-back test, Sparrows Tao, Pitfalls). Approvers and erase: NOT YET TESTED.
 
@@ -82,7 +82,9 @@ ensure() {
 # The passphrase: from stdin (build.sh, over SSH), or typed twice on a terminal. Never written anywhere
 read_key() {
 	if [ -t 0 ]; then
-		stty -echo; printf 'Passphrase for /home: '; read -r KEY; printf '\nAgain: '; read -r K2; stty echo; echo
+		# read -s hides what is typed (busybox ash has it; OpenWrt has no stty, seen 2026-11-28). If a
+		# shell lacks -s, read fails, KEY stays empty and "too short" stops it: nothing is ever shown
+		printf 'Passphrase for /home: '; read -rs KEY; printf '\nAgain: '; read -rs K2; echo
 		[ "$KEY" = "$K2" ] || die "Not the same. Nothing done."
 	else
 		read -r KEY
