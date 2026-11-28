@@ -39,9 +39,12 @@ die() { echo "$*" >&2; exit 1; }
 
 # The card: the disk that holds the root partition (root=/dev/mmcblk0p2 on a Pi)
 ROOT=$(sed -n 's/.*root=\([^ ]*\).*/\1/p' /proc/cmdline)
+# Other boards name the root by its partition's id (root=PARTUUID=...): find its device. Never guess a
+# disk: on a board with an eMMC and an SD card, a guess could make /home on the wrong one (2026-11-28)
+case "$ROOT" in PARTUUID=*) ROOT=$(blkid -t "$ROOT" -o device 2>/dev/null | head -n 1) ;; esac
 case "$ROOT" in
 	/dev/mmcblk*p[0-9]*) DISK=${ROOT%p[0-9]*} ;;
-	*) DISK=/dev/mmcblk0 ;;
+	*) DISK='' ;;
 esac
 P3="${DISK}p3"
 START=$(( ${HOME_START_MB:-0} * 2048 ))          # in 512-byte sectors
@@ -56,6 +59,7 @@ services() {                    # start or stop what keeps its data on /home, wh
 
 ensure() {
 	[ "$START" -gt 0 ] || return 0
+	[ -n "$DISK" ] || { log "the card holding the system was not found (root=$ROOT): no /home"; return 0; }
 	mkdir -p /home
 	[ -b "$P3" ] && return 0
 	if [ "$(blkid -p -O $((START * 512)) -s LABEL -o value "$DISK" 2>/dev/null)" = "$LABEL" ]; then

@@ -38,3 +38,5 @@ tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
 nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui
 # Pi 1 (B, B+): no radio, a wired nest next to a feeder. Not yet tested.
 nest      bcm27xx/bcm2708 rpi                        -    -    ui
+# Radxa ZERO 3W: no radio under OpenWrt, a wired tree with a USB Ethernet adapter. Not yet tested.
+tree      rockchip/armv8  radxa_zero-3w              -    -    ui
