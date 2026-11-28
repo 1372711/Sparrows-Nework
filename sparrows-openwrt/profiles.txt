@@ -36,3 +36,5 @@ tree+feeder bcm27xx/bcm2710 rpi-zero-2-w             17   -    ui
 # Pi 4 as a nest, its own Wi-Fi as Sparrows Wi-Fi (2.4 GHz: its chip has no radar check for 5 GHz
 # outdoor channels). First run on the bench 2026-11-21 (fixed by hand); the rebuilt image not yet tested.
 nest+feeder bcm27xx/bcm2711 rpi-4                    17   -    ui
+# Pi 1 (B, B+): no radio, a wired nest next to a feeder. Not yet tested.
+nest      bcm27xx/bcm2708 rpi                        -    -    ui
