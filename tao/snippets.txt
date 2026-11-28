@@ -503,11 +503,11 @@ sparrows-home status                         # LOCKED ... or an approver's yes (
 ls /etc/sparrows/door/sealed/                # one sealed copy per approver
 /etc/init.d/sparrows-door status             # running while /home is locked
 logread -e sparrows-door                     # "asks to open /home", then "said yes: /home is open"
-cryptsetup luksDump /dev/mmcblk0p3 | grep -E '^  [0-9]+: '   # every slot: 0 the passphrase, 1 the unlock key
+cryptsetup luksDump /dev/mmcblk0p3 | sed -n '/^Keyslots:/,/^Tokens:/p' | grep -E '^  [0-9]+: '   # 0 the passphrase, 1 the unlock key
 # A unit that ran sparrows-home before 2026-11-28 (no base64 there): an EMPTY key must not open /home
 : > /tmp/empty
 cryptsetup open --test-passphrase --key-file=/tmp/empty /dev/mmcblk0p3 && echo "DANGER: an empty key opens /home" || echo "OK"
-# After DANGER: remove every empty key (one slot per pass; the passphrase's slot stays), then test again
+# After DANGER: remove every empty key (one slot per pass; the passphrase's slot stays). Tested 2026-11-28
 while cryptsetup open --test-passphrase --key-file=/tmp/empty /dev/mmcblk0p3 2>/dev/null; do
   cryptsetup luksRemoveKey --batch-mode --key-file=/tmp/empty /dev/mmcblk0p3 || break
 done
