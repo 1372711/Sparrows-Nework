@@ -862,7 +862,7 @@ menu() {
 		echo "   n) add a device that is not in the list (m there: manual mode, the use of each interface)"
 		echo "   v) another OpenWrt release"
 		echo "   w) web interface on/off (only where it fits)"
-		echo "   s) write a Raspberry Pi image to an SD card (no build)"
+		echo "   s) write an SD-card image (Raspberry Pi, Radxa...) to a card (no build)"
 		echo "   q) quit"
 		CH=$(ask "Build: numbers and/or roles, with spaces (e.g. 1 3, or hedge). Enter = all: ")
 		case "$CH" in
@@ -924,10 +924,15 @@ write_sd() {
 	else
 		shopt -s nullglob
 		IMGS=("$OUT"/latest/*factory*.img.gz)
+		# Some SD-card boards have one image only, named sysupgrade (rockchip, e.g. Radxa): it is also the
+		# card image. List it when there is no factory image beside it (seen 2026-11-28: it was missing)
+		for i in "$OUT"/latest/*sysupgrade*.img.gz; do
+			[ -e "${i/sysupgrade/factory}" ] || IMGS+=("$i")
+		done
 		[ "${#IMGS[@]}" -gt 0 ] || IMGS=("$OUT"/*/*factory*.img.gz "$OUT"/*.img.gz)
 		shopt -u nullglob
 	fi
-	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT/latest: build a Raspberry Pi image first."; return 0; }
+	[ "${#IMGS[@]}" -gt 0 ] || { echo "No .img.gz in $OUT/latest: build an SD-card image (Raspberry Pi, Radxa...) first."; return 0; }
 	IMG=${IMGS[0]}
 	if [ "${#IMGS[@]}" -gt 1 ]; then
 		for i in "${!IMGS[@]}"; do printf '  %2d) %s\n' $((i + 1)) "${IMGS[$i]#"$OUT"/}"; done
@@ -1226,5 +1231,5 @@ fi
 
 if [ "$MENU" = 1 ] && grep -q '\.img\.gz$' "$BUILD/.built"; then
 	echo
-	case "$(ask "Write a Raspberry Pi image to an SD card now? [y/N] ")" in [yY]*) write_sd ;; esac
+	case "$(ask "Write an SD-card image (Raspberry Pi, Radxa...) to a card now? [y/N] ")" in [yY]*) write_sd ;; esac
 fi
