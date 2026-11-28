@@ -161,6 +161,8 @@ class Watch:
         if not self.trusted:
             sys.exit("No door yet: sparrows-approve add <door address>")
         print("Waiting for requests from %d door(s). Ctrl-C to stop." % len(self.trusted))
+        for h, note in sorted(self.trusted.items()):  # which doors: a wrong one is seen at once
+            print("  %s %s" % (h, note))
         for h in self.trusted:                     # units already waiting answer a path request
             RNS.Transport.request_path(bytes.fromhex(h))
         while True:
